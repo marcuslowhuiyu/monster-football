@@ -1,5 +1,6 @@
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Players;
+using MonsterFootball.Simulation.Positioning;
 
 namespace MonsterFootball.Simulation.Tests.TestSupport;
 
@@ -20,16 +21,8 @@ internal static class TestTeams
     public static TeamDefinition Team(string name = "Blue", int firstId = 1) => new(name, Players(name, firstId));
 
     public static MatchState Match() =>
-        MatchState.Create(Team("Blue", 1), Team("Red", 101), PitchGeometry.Standard, SpreadInOwnHalf);
+        MatchState.Create(MatchConfig.Default, Team("Blue", 1), Team("Red", 101), KickoffLayout);
 
-    /// <summary>Deterministic, valid placeholder layout until formation positioning exists (M1.4).</summary>
-    public static Vec2 SpreadInOwnHalf(TeamSide side, PlayerDefinition player)
-    {
-        var index = (int)player.Position;
-        var pitch = PitchGeometry.Standard;
-        var depth = 5 + index * 4;
-        var x = side == TeamSide.Home ? depth : pitch.Length - depth;
-        var y = 4 + index * 6;
-        return new Vec2(x, y);
-    }
+    public static Vec2 KickoffLayout(TeamSide side, PlayerDefinition player) =>
+        Formation433.KickoffPosition(PitchGeometry.Standard, side, player.Position);
 }
