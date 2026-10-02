@@ -61,16 +61,16 @@ public class MatchStateTests
         var away = TestTeams.Team("Red", 1);
 
         Assert.Throws<ArgumentException>(
-            () => MatchState.Create(home, away, PitchGeometry.Standard, TestTeams.SpreadInOwnHalf));
+            () => MatchState.Create(MatchConfig.Default, home, away, TestTeams.KickoffLayout));
     }
 
     [Fact]
     public void Rejects_starting_positions_off_the_pitch()
     {
         var ex = Assert.Throws<ArgumentException>(() => MatchState.Create(
+            MatchConfig.Default,
             TestTeams.Team("Blue", 1),
             TestTeams.Team("Red", 101),
-            PitchGeometry.Standard,
             (_, _) => new Vec2(-1, 34)));
 
         Assert.Contains("outside", ex.Message);

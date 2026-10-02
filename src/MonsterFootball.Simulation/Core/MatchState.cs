@@ -14,11 +14,13 @@ public sealed class MatchState
 
     private MatchState(
         PitchGeometry pitch,
+        double tickSeconds,
         TeamDefinition homeTeam,
         TeamDefinition awayTeam,
         IReadOnlyList<PlayerMatchState> players)
     {
         Pitch = pitch;
+        Clock = new MatchClock(tickSeconds);
         HomeTeam = homeTeam;
         AwayTeam = awayTeam;
         Players = players;
@@ -27,6 +29,7 @@ public sealed class MatchState
     }
 
     public PitchGeometry Pitch { get; }
+    public MatchClock Clock { get; }
     public TeamDefinition HomeTeam { get; }
     public TeamDefinition AwayTeam { get; }
 
@@ -36,6 +39,9 @@ public sealed class MatchState
     public BallState Ball { get; }
     public Score Score { get; } = new();
     public MatchPhase Phase { get; internal set; } = MatchPhase.Kickoff;
+
+    /// <summary>The side that takes the next kickoff.</summary>
+    public TeamSide KickoffTeam { get; internal set; } = TeamSide.Home;
 
     public PlayerId? PossessionPlayerId => Ball.PossessorId;
 
@@ -48,15 +54,16 @@ public sealed class MatchState
     /// The ball starts loose at the centre spot.
     /// </summary>
     public static MatchState Create(
+        MatchConfig config,
         TeamDefinition homeTeam,
         TeamDefinition awayTeam,
-        PitchGeometry pitch,
         Func<TeamSide, PlayerDefinition, Vec2> startingPosition)
     {
+        ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(homeTeam);
         ArgumentNullException.ThrowIfNull(awayTeam);
-        ArgumentNullException.ThrowIfNull(pitch);
         ArgumentNullException.ThrowIfNull(startingPosition);
+        var pitch = config.Pitch;
 
         var sharedIds = homeTeam.Players.Select(p => p.Id)
             .Intersect(awayTeam.Players.Select(p => p.Id))
@@ -75,7 +82,7 @@ public sealed class MatchState
             throw new ArgumentException(
                 $"Starting positions must be on the pitch; outside: {string.Join("; ", outside)}.");
 
-        return new MatchState(pitch, homeTeam, awayTeam, players.AsReadOnly());
+        return new MatchState(pitch, config.TickSeconds, homeTeam, awayTeam, players.AsReadOnly());
     }
 
     public TeamDefinition Team(TeamSide side) => side == TeamSide.Home ? HomeTeam : AwayTeam;
