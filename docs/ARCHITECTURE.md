@@ -51,6 +51,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotResolver`, `ShotExecution` | M1.7 |
 | `Restarts` | `RestartSystem` (goal reset, kickoff) | M1.7 |
 | `AI` | `OnBallDecisionSystem` (placeholder shoot/pass/carry choice) | M1.5–M1.7 |
+| `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
 | root | `MatchContext` | M1.5 |
 | `Core` additions | `Curves` | M1.5 |
 | `Statistics` | — | planned |
@@ -90,6 +91,11 @@ Each action type (pass, carry, tackle, shot) follows this pattern so future modi
 - **Estimates are shared**: a resolver exposes an RNG-free `Estimate` that both resolution and AI target selection use, so the AI judges options with the same maths that decides outcomes.
 - **Execution is separate**: a small execution step applies the result to state and emits events.
 - **Determinism-safe maths** only in outcome code (ADR-013).
+- **Cross-cutting effects live in one model.** Fatigue is applied through `FatigueModel` factors inside resolvers; resolvers never compute fatigue themselves (ADR-016). Future modifiers (traits, cards, species) should follow the same pattern.
+
+### Event consumers inside the simulation
+
+Systems may read the event log as well as write it: `StaminaSystem` charges action costs from new events since its last run. Such consumers must process each event exactly once and must not reorder or modify events.
 
 ## 6. Testing philosophy
 

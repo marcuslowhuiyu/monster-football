@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -41,6 +41,7 @@ Each `Step()`:
      6. `MovementSystem` — move all players.
      7. Sync a possessed ball to its carrier.
      8. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
+     9. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
    - `GoalRestart` — `RestartSystem.ResetForKickoff`: all players back to the kickoff layout, intents and cooldowns cleared, ball loose on the centre spot; phase → `Kickoff`.
 4. Advance the clock one tick.
 5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
@@ -184,6 +185,32 @@ Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `Tackl
 4. Outfield player with space ahead (no opponent within 7 m level with or ahead of them, and not at the goal line) → start a carry. In the final third, carries bend toward goal.
 5. Otherwise, held ≥ 2.5 s → pass.
 
+## Stamina and fatigue (implemented)
+
+ADR-016. `CurrentStamina` runs 0–100 and starts at 100.
+
+**Drain** (`StaminaSystem`, last step of each open-play tick), always × `DrainMultiplier = 1.3 − 0.06 × Stamina attribute` (1.24 at 1, 1.0 at 5, 0.7 at 10):
+
+| Source | Cost (stamina points) |
+|---|---|
+| Jogging | 0.002 per metre |
+| Carrying | 0.003 per metre |
+| Sprinting | 0.004 per metre |
+| `PassAttempted` (passer) | 0.05 |
+| `CarryStarted` | 0.1 |
+| `TackleAttempted` | 0.2 tackler, 0.1 carrier |
+| `ShotTaken` | 0.3 |
+
+Action costs are read from events emitted since the system last ran, so each event is charged exactly once. Standing still costs nothing. No recovery.
+
+**Penalties** (`FatigueModel`, linear in tiredness = 1 − stamina/100):
+
+- Speed × (1 − 0.3 × tiredness).
+- Action effectiveness × (1 − 0.15 × tiredness), applied to: pass ability and interceptor chance; tackle defender and carrier ratings; shot ability; goalkeeper rating.
+- Pressing: presser chosen by distance × (1 + tiredness).
+
+Typical full-time stamina (all-5 teams): GK ≈ 86, defenders ≈ 63–67, midfielders ≈ 36–54, wingers ≈ 27, ST ≈ 8. A Stamina-9 side finishes ~8–17 points fresher per position.
+
 ## Possession bookkeeping (implemented)
 
 - `MatchContext.GiveBall` is the only way systems transfer possession; it emits `PossessionChanged` (actor = new holder, team = new team) when the team differs from `LastPossessionTeam`. The opening kickoff does not emit it.
@@ -195,9 +222,9 @@ Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `Tackl
 
 `MovementSystem.Apply(state, tickSeconds)` moves each player straight toward `MovementTarget`, never overshooting, clamped to the pitch. No collisions or avoidance.
 
-- Top speed (m/s) = (5.0 + 0.4 × Pace) × fatigue factor. Pace 1 → 5.4, Pace 5 → 7.0, Pace 10 → 9.0.
-- Fatigue factor = 1 − 0.3 × (1 − stamina / 100); at zero stamina a player keeps 70 % of top speed.
-- `Jog` = 60 % of top speed; `Sprint` = 100 %. Stamina is not yet consumed (M1.8), so the fatigue factor is currently always 1.
+- Top speed (m/s) = (5.0 + 0.4 × Pace) × `FatigueModel.SpeedFactor`. Pace 1 → 5.4, Pace 5 → 7.0, Pace 10 → 9.0 when fresh.
+- `Jog` = 60 % of top speed; `Sprint` = 100 %; `Carry` = 0.55 + 0.03 × Technique.
+- Each player's `LastTickDistance` is recorded for stamina drain.
 
 A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`); an invariant checks that a possessed ball is always at its carrier's position.
 
@@ -248,6 +275,7 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 - Placeholder decisions (40 matches, all-5 teams): ~2.0 goals, ~34 shots (27 % on target), ~2 000 passes, ~790 carries, ~450 tackles, ~320 possession changes per match. Too busy, too many shots.
 - **Only strikers score.** Nearly all shots come from the ST at 15–25 m; wingers and midfielders rarely reach shooting positions. The shot threshold sits on a cliff (0.06 → ~6 shots, 0.05 → ~34) because the ST spends most of the match about 20–25 m out, where xG ≈ 0.05. Fix with off-ball forward runs and utility selection (M1.9) and tune in M1.11.
 - No blocks, rebounds, posts, corners or goal kicks.
+- Players cover 16–18 km per match (real ≈ 10–12 km) because shape targets move with the ball every tick and pressers sprint a lot; strikers carry most of the pressing and finish nearly empty. Tune with M1.9/M1.11.
 - The ball never goes out of play; misplaced passes are clamped to the pitch.
 - No off-ball decision-making (support runs, forward runs) — players only follow shape anchors.
 - No statistics in `MatchResult` yet.
