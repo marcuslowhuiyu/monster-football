@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5) implemented. Players hold shape, press and pass; nobody carries, tackles or shoots yet. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6) implemented. Players hold shape, press, pass, carry and tackle; nobody shoots yet. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -34,11 +34,13 @@ Each `Step()`:
    - `Kickoff` — kicking side's ST is placed on the centre spot and given the ball; emit `Kickoff`; phase → `OpenPlay`.
    - `OpenPlay` — in this order:
      1. `BallFlightSystem` — move a ball in flight; on its arrival tick, land the pass.
-     2. `PassDecisionSystem` — carrier may pass (placeholder, see below).
-     3. `TeamShapeSystem` — assign movement targets.
-     4. `MovementSystem` — move all players.
-     5. Sync a possessed ball to its carrier.
-     6. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
+     2. `CarrySystem` — end carries whose time is up, whose target is reached, or whose carrier lost the ball.
+     3. `OnBallDecisionSystem` — carrier passes or starts a carry (placeholder, see below).
+     4. `TackleSystem` — an opponent in range may challenge (placeholder, see below).
+     5. `TeamShapeSystem` — assign movement targets (carrier follows their carry).
+     6. `MovementSystem` — move all players.
+     7. Sync a possessed ball to its carrier.
+     8. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
    - `GoalRestart` — reserved for goals (M1.7).
 4. Advance the clock one tick.
 5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
@@ -121,16 +123,46 @@ PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolv
 
 **Target selection** (`PassTargetSelector`): for every teammate ≥ 4 m away, `score = 100·SuccessProbability + 0.8·forward progress (m, team frame) − 15 if goalkeeper`; highest wins, ties to the earlier player. No randomness yet.
 
-**Decision placeholder** (`PassDecisionSystem`): the carrier passes once they have held the ball 2.5 s. Replaced by utility AI in M1.9.
+**Decision placeholder**: see *On-ball decisions* below.
 
 **During flight**: the receiver (or interceptor) sprints to the landing point; the passing team keeps its attacking shape; the defending presser chases the ball.
 
 **Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, then `PossessionChanged`), `PassMisplaced` (actor = passer, position = landing).
 
+## Carrying (implemented)
+
+`CarryIntent(Carrier, Destination)` → `CarryResolver.Resolve` → `CarryResult(Start, Target, Speed, Duration, EndTick, Quality)` (ADR-014). No randomness; the carrier keeps the ball.
+
+- `ChooseDestination`: up to 10 m forward in team frame, steered sideways away from the nearest opponent within 12 m (steer strength ∝ Awareness and closeness), with a small drift toward the centre; kept 3 m inside touchlines and goal lines.
+- Speed = top speed × (0.55 + 0.03 × Technique) — `MovementIntensity.Carry`.
+- `CarrySystem.Start` sets `CurrentIntent` / `ActiveCarry` and emits `CarryStarted`. The carry ends at `EndTick`, on reaching the target, or when the ball leaves the carrier.
+
+## Tackling (implemented)
+
+`TackleIntent(Tackler, Carrier)` → `TackleResolver.Resolve` → `TackleResult` (ADR-014):
+
+- Defender rating = Defending + 0.3·(Power − 5) + 0.3·(Awareness − 5). Carrier rating = Technique + 0.3·(Power − 5) + 0.3·(Awareness − 5).
+- Roll contact `Sigmoid(0.3·(def − car) + 0.15)` (≈ 0.57 between equals) → fail = **Lost**.
+- Roll clean `clamp(0.6 + 0.03·(tackler Awareness − 5), 0.1, 0.9)` → **Won**, otherwise **LooseBall** (ball 2–5 m away, random direction).
+- Pace matters indirectly: faster defenders reach challenge range sooner.
+
+`TackleSystem` (placeholder decision): the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability 1.0/s × tick length. Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
+
+Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
+
+## On-ball decisions (placeholder until M1.9)
+
+`OnBallDecisionSystem`, once the carrier has held the ball 0.5 s and is not mid-carry:
+
+1. Pressed (opponent within 3 m) → pass immediately.
+2. Space ahead (no opponent within 7 m level with or ahead of the carrier, and not at the goal line) → start a carry.
+3. Otherwise, held ≥ 2.5 s → pass.
+
 ## Possession bookkeeping (implemented)
 
 - `MatchContext.GiveBall` is the only way systems transfer possession; it emits `PossessionChanged` (actor = new holder, team = new team) when the team differs from `LastPossessionTeam`. The opening kickoff does not emit it.
 - `PossessionStartTick` records when the current holder got the ball.
+- When the ball leaves a player by any route, `MatchState` clears that player's `CurrentIntent` and `ActiveCarry`.
 - `AttackingTeam` = possessor's team, or the passing team during a flight; null when loose.
 
 ## Movement (implemented)
@@ -177,19 +209,19 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 
 ## Invariants (implemented)
 
-`MatchStateInvariants.FindViolations(state)` / `Verify(state)` check: 22 active players, 11 per side, unique ids, possessor is an active player and the ball is at their position, ball on the pitch, a ball in flight has no possessor, non-negative score, players on the pitch, stamina within bounds. Each message names the offending player. The clock cannot decrease by construction; the test helper `CheckedRun` additionally verifies invariants and clock advancement after every tick of a full match.
+`MatchStateInvariants.FindViolations(state)` / `Verify(state)` check: an active carry exists only on the ball carrier; 22 active players, 11 per side, unique ids, possessor is an active player and the ball is at their position, ball on the pitch, a ball in flight has no possessor, non-negative score, players on the pitch, stamina within bounds. Each message names the offending player. The clock cannot decrease by construction; the test helper `CheckedRun` additionally verifies invariants and clock advancement after every tick of a full match.
 
 ## Design targets
 
 | Topic | Target design | Subtask |
 |---|---|---|
-| Action pattern | Carry, tackle, shot follow the pass pattern. | M1.6–M1.7 |
+| Shooting | Shot intent/resolver, goalkeeper contest, goals, restarts. | M1.7 |
 | Utility AI | Score each valid action; choose high-utility with controlled deterministic randomness. | M1.9 |
 
 ## Current limitations
 
-- Only on-ball action is passing, every 2.5 s; no carrying, tackling or shooting; every match is 0–0.
-- ~1 500 passes per match (placeholder cadence) with ~92 % completion; interceptions are rare (< 1 %) because target selection avoids risky lanes and nothing forces risk yet. Revisit in M1.6/M1.9/M1.11.
+- No shooting; every match is 0–0. Carriers in the final third keep carrying or passing.
+- Placeholder decisions give ~2 000 passes (~91 % complete, ~3 % intercepted), ~780 carries and ~460 tackles per match, ~300 possession changes. Too busy; tune with utility AI (M1.9) and batch statistics (M1.11).
 - The ball never goes out of play; misplaced passes are clamped to the pitch.
 - No off-ball decision-making (support runs, forward runs) — players only follow shape anchors.
 - No statistics in `MatchResult` yet.

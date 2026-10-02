@@ -259,3 +259,24 @@ Reason:
 IEEE 754 requires basic arithmetic and square root to be correctly rounded, so they give identical results on
 every platform. `Math.Exp`, `Math.Sin` etc. delegate to platform maths libraries that can differ in the last bit,
 which would let the same seed play a different match on another OS or CPU.
+
+---
+
+## ADR-014 — Carries Keep the Ball; Tackles Resolve in Two Rolls
+
+Status: Accepted
+
+Decision:
+- A carry is a planned run of up to 10 m (`CarryResolver`, no randomness). The carrier keeps possession throughout; only an opponent's tackle (or the carrier's own pass) ends it early. Speed = top speed × (0.55 + 0.03 × Technique); Awareness steers away from the nearest opponent.
+- A tackle (`TackleResolver`) rolls **contact** — `Sigmoid(0.3 × (defender rating − carrier rating) + 0.15)` — and, if made, **clean** — `0.6 + 0.03 × (Awareness − 5)`. Outcomes: no contact → `Lost`; clean → `Won`; otherwise → `LooseBall` (ball 2–5 m away in a random direction).
+- The spec's "LooseBall" outcome is emitted as a new event type `TackleLooseBall`.
+- Any time the ball leaves a player (`GiveBallTo` someone else, `SetBallLoose`, `LaunchBall`), `MatchState` clears that player's intent and carry. An invariant checks a carry only exists on the ball carrier.
+
+Reason:
+The spec says carrying should "retain possession" and "expose the player to defenders": the exposure is the
+tackle, so a separate heavy-touch roll would double-count risk. Two-roll tackles give the three required
+outcomes with separate, tunable knobs (who wins the duel vs. who ends up with the ball). Clearing intents
+in `MatchState` rather than in each caller makes stale carries impossible (an invariant caught exactly this bug).
+
+Consequences:
+Tackle and carry *decisions* (when to tackle, when to carry) are placeholders until utility AI (M1.9).

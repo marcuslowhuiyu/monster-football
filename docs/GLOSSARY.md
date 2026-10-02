@@ -66,6 +66,14 @@
 
 **MatchContext** — What a system needs to act: state, config, random source, event output; owns possession transfer.
 
+**ActionIntent** — Base type for intents (`PassIntent`, `CarryIntent`, `TackleIntent`); `PlayerMatchState.CurrentIntent` holds an ongoing one.
+
+**Carry** — Running with the ball along a planned segment (≤ 10 m); the carrier keeps possession.
+
+**Challenge range** — Distance (1.8 m) within which a defender may attempt a tackle.
+
+**Contact / clean** — The two tackle rolls: did the defender get to the ball, and did they keep it.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.
