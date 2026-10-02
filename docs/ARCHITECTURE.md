@@ -47,7 +47,8 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | root | `MatchSimulation`, `MatchResult` | M1.3 |
 | `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
 | `Actions` | `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassResult`, `BallFlight`, `PassTargetSelector`, `PassExecution` | M1.5 |
-| `AI` | `PassDecisionSystem` (placeholder) | M1.5 |
+| `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleResolver`, `TackleSystem` | M1.6 |
+| `AI` | `OnBallDecisionSystem` (placeholder pass/carry choice) | M1.5–M1.6 |
 | root | `MatchContext` | M1.5 |
 | `Core` additions | `Curves` | M1.5 |
 | `Statistics` | — | planned |
