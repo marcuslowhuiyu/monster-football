@@ -280,3 +280,24 @@ in `MatchState` rather than in each caller makes stale carries impossible (an in
 
 Consequences:
 Tackle and carry *decisions* (when to tackle, when to carry) are placeholders until utility AI (M1.9).
+
+---
+
+## ADR-015 — Shots Resolve Immediately; Keeper Restarts After Saves and Misses
+
+Status: Accepted
+
+Decision:
+- A shot is resolved and applied in the same tick: `ShotTaken` then exactly one of `GoalScored`, `ShotSaved`, `ShotMissed`. The `ShotResult` still carries start/target position and travel duration for animation.
+- Two rolls: **on target** `Sigmoid(0.35·(ability − 0.15·distance − pressure − angle) − 1)`, then **save** `Sigmoid(0.35·(keeper rating − shot power) + 0.74)`. Keeper rating = Keeping + 0.3·(Awareness − 5) − 0.3·(metres out of position, ≤ 10). Shot power = 0.5·Finishing + 0.5·Power + 0.2·max(0, 20 − distance).
+- After a save **or a miss**, the defending goalkeeper gets the ball. A miss stands in for a goal kick until restarts exist.
+- A goal moves the match to `GoalRestart`; the next tick resets every player to the kickoff layout, and the tick after that the conceding side kicks off.
+- A goalkeeper holding the ball in their own penalty area cannot be tackled. Goalkeepers never shoot or carry.
+
+Reason:
+A shot lasts well under a second and Milestone 1 has nothing that could intervene (no blocks, deflections or
+rebounds), so flight adds complexity without changing outcomes. Unlike passes (ADR-012), no player needs to
+react while the ball travels. Giving the keeper the ball after a miss avoids inventing goal kicks, which are out of scope.
+
+Consequences:
+If blocks or rebounds are added, shots should move to the ball-flight model.

@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6) implemented. Players hold shape, press, pass, carry and tackle; nobody shoots yet. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -31,17 +31,17 @@ Each `Step()`:
 1. If finished → throw.
 2. First step only: coin toss (`Roll(0.5)`) picks `KickoffTeam`, emit `MatchStarted`.
 3. Run the current phase:
-   - `Kickoff` — kicking side's ST is placed on the centre spot and given the ball; emit `Kickoff`; phase → `OpenPlay`.
+   - `Kickoff` — `RestartSystem.TakeKickoff`: the kicking side's ST is placed on the centre spot; emit `Kickoff`; give them the ball (after a goal this also emits `PossessionChanged`); phase → `OpenPlay`.
    - `OpenPlay` — in this order:
      1. `BallFlightSystem` — move a ball in flight; on its arrival tick, land the pass.
      2. `CarrySystem` — end carries whose time is up, whose target is reached, or whose carrier lost the ball.
-     3. `OnBallDecisionSystem` — carrier passes or starts a carry (placeholder, see below).
+     3. `OnBallDecisionSystem` — carrier shoots, passes or starts a carry (placeholder, see below). If a goal was scored, the rest of the tick is skipped.
      4. `TackleSystem` — an opponent in range may challenge (placeholder, see below).
      5. `TeamShapeSystem` — assign movement targets (carrier follows their carry).
      6. `MovementSystem` — move all players.
      7. Sync a possessed ball to its carrier.
      8. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
-   - `GoalRestart` — reserved for goals (M1.7).
+   - `GoalRestart` — `RestartSystem.ResetForKickoff`: all players back to the kickoff layout, intents and cooldowns cleared, ball loose on the centre spot; phase → `Kickoff`.
 4. Advance the clock one tick.
 5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
 
@@ -49,7 +49,7 @@ Events emitted during a step carry the timestamp from **before** the clock advan
 
 ## Phases (implemented)
 
-`Kickoff → OpenPlay → (GoalRestart → Kickoff → OpenPlay)* → Finished`. `GoalRestart` is defined but not yet entered.
+`Kickoff → OpenPlay → (GoalRestart → Kickoff → OpenPlay)* → Finished`. A goal sets `GoalRestart` and `KickoffTeam` = the conceding side. The clock keeps running through restarts (one tick each).
 
 ## Deterministic RNG (implemented)
 
@@ -150,13 +150,39 @@ PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolv
 
 Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
 
+## Shooting and goalkeeping (implemented)
+
+`ShotIntent(Shooter)` → `ShotResolver` → `ShotResult` → `ShotExecution.Apply` (ADR-015).
+
+**Estimate** (no randomness; shared with the shooting decision):
+
+- Ability = Finishing + 0.3·(Technique − 5) + 0.2·(Power − 5).
+- Distance to goal centre; angle penalty = min(4, 1.5 × lateral offset ÷ distance to goal line); pressure = 0.5 × max(0, 3 − nearest outfield opponent distance).
+- On target = `Sigmoid(0.35·(Ability − 0.15·distance − pressure − angle) − 1)`.
+- Keeper rating = Keeping + 0.3·(Awareness − 5) − 0.3·min(10, distance from the keeper's ideal spot). The ideal spot is `GoalkeeperPositioning`, so Awareness counts twice: positioning and rating.
+- Shot power = 0.5·Finishing + 0.5·Power + 0.2·max(0, 20 − distance) (close shots are harder to save).
+- Save = `Sigmoid(0.35·(keeper rating − shot power) + 0.74)`.
+- `GoalProbability` (xG) = on target × (1 − save). All-5s, central, unpressed: ≈ 0.50 at 6 m, 0.09 at 15 m, 0.07 at 20 m, 0.05 at 25 m.
+
+**Resolve**: `Roll(onTarget)` → fail = **Missed**: `Roll(0.5)` picks a side, target 0.5–4 m wide of a post on the goal line. Otherwise the target is a random point inside the goal mouth, then `Roll(save)` → **Saved** or **Goal**. Travel duration = distance ÷ (18 + 1.2·Power) m/s.
+
+**Apply**: emit `ShotTaken` (metadata `xg`, `travel`), then:
+
+- **Goal** — ball loose at the target, score +1, `KickoffTeam` = conceding side, phase `GoalRestart`, emit `GoalScored` (metadata `score`).
+- **Saved** — emit `ShotSaved` (actor = keeper, target = shooter), keeper gets the ball (`PossessionChanged`).
+- **Missed** — emit `ShotMissed`, defending keeper gets the ball (stand-in for a goal kick).
+
+**Goalkeepers in possession**: cannot be tackled inside their own penalty area; never shoot or carry; distribute by passing.
+
 ## On-ball decisions (placeholder until M1.9)
 
-`OnBallDecisionSystem`, once the carrier has held the ball 0.5 s and is not mid-carry:
+`OnBallDecisionSystem`, once the carrier has held the ball 0.5 s:
 
-1. Pressed (opponent within 3 m) → pass immediately.
-2. Space ahead (no opponent within 7 m level with or ahead of the carrier, and not at the goal line) → start a carry.
-3. Otherwise, held ≥ 2.5 s → pass.
+1. Outfield player within 35 m of goal with xG ≥ 0.05 → shoot (may interrupt a carry).
+2. Mid-carry → continue.
+3. Pressed (opponent within 3 m) → pass immediately.
+4. Outfield player with space ahead (no opponent within 7 m level with or ahead of them, and not at the goal line) → start a carry. In the final third, carries bend toward goal.
+5. Otherwise, held ≥ 2.5 s → pass.
 
 ## Possession bookkeeping (implemented)
 
@@ -215,13 +241,13 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 
 | Topic | Target design | Subtask |
 |---|---|---|
-| Shooting | Shot intent/resolver, goalkeeper contest, goals, restarts. | M1.7 |
 | Utility AI | Score each valid action; choose high-utility with controlled deterministic randomness. | M1.9 |
 
 ## Current limitations
 
-- No shooting; every match is 0–0. Carriers in the final third keep carrying or passing.
-- Placeholder decisions give ~2 000 passes (~91 % complete, ~3 % intercepted), ~780 carries and ~460 tackles per match, ~300 possession changes. Too busy; tune with utility AI (M1.9) and batch statistics (M1.11).
+- Placeholder decisions (40 matches, all-5 teams): ~2.0 goals, ~34 shots (27 % on target), ~2 000 passes, ~790 carries, ~450 tackles, ~320 possession changes per match. Too busy, too many shots.
+- **Only strikers score.** Nearly all shots come from the ST at 15–25 m; wingers and midfielders rarely reach shooting positions. The shot threshold sits on a cliff (0.06 → ~6 shots, 0.05 → ~34) because the ST spends most of the match about 20–25 m out, where xG ≈ 0.05. Fix with off-ball forward runs and utility selection (M1.9) and tune in M1.11.
+- No blocks, rebounds, posts, corners or goal kicks.
 - The ball never goes out of play; misplaced passes are clamped to the pitch.
 - No off-ball decision-making (support runs, forward runs) — players only follow shape anchors.
 - No statistics in `MatchResult` yet.

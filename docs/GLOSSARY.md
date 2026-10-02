@@ -74,6 +74,12 @@
 
 **Contact / clean** — The two tackle rolls: did the defender get to the ball, and did they keep it.
 
+**xG (GoalProbability)** — A shot's estimated chance of scoring: on-target probability × (1 − save probability).
+
+**Out of position** — Distance between the goalkeeper and their ideal spot on the goal–ball line; lowers save chance.
+
+**GoalRestart** — Phase after a goal: players reset to the kickoff layout before the conceding side kicks off.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.
