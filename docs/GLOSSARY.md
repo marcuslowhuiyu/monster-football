@@ -12,6 +12,16 @@
 
 **PlayerMatchState** — Mutable per-match player data: position, movement target, stamina (and later current intent). Possession is not stored here.
 
+**Team frame** — Coordinates relative to a team: own goal at X = 0, attacking +X, left flank +Y. Shape rules are written in team frame.
+
+**Anchor** — A slot's reference position in a layout (kickoff, in possession, out of possession) before shifting with the ball.
+
+**Defensive line** — The single X shared by the back four out of possession; always goal-side of the ball.
+
+**Presser** — The nearest outfield player of a team without the ball, sent to close it down at sprint intensity.
+
+**MovementIntensity** — `Jog` (60 % of top speed) or `Sprint` (100 %).
+
 **BallState** — Ball position and possessor. The only stored record of possession (ADR-007).
 
 **Possessor** — The player currently holding the ball; none when the ball is loose.
