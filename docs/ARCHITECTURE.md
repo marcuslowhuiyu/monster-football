@@ -40,7 +40,12 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 |---|---|---|
 | `Core` | `MatchState`, `BallState`, `Score`, `MatchPhase`, `PitchGeometry`, `Vec2`, `TeamSide`, `MatchStateInvariants` | M1.2 |
 | `Players` | `PlayerId`, `PlayerStats`, `PlayerDefinition`, `PlayingPosition`, `TeamDefinition`, `PlayerMatchState` | M1.2 |
-| `Actions`, `AI`, `Events`, `Random`, `Statistics` | — | planned |
+| `Random` | `IMatchRandom`, `MatchRng` | M1.3 |
+| `Events` | `MatchEvent`, `MatchEventType`, `MatchEventLog` | M1.3 |
+| `Positioning` | `Formation433` (kickoff layout) | M1.3 (early M1.4) |
+| root | `MatchSimulation`, `MatchResult` | M1.3 |
+| `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
+| `Actions`, `AI`, `Statistics` | — | planned |
 
 ### State ownership and mutation
 
@@ -53,7 +58,8 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 Given identical starting state, configuration and seed, the simulation must produce identical results and event histories.
 
 - All randomness goes through a single match-owned `IMatchRandom` (ADR-005).
-- No wall-clock time, `System.Random`, `Guid.NewGuid()` or unordered-collection iteration that could affect outcomes.
+- No wall-clock time, `System.Random`, `Guid.NewGuid()` or unordered-collection iteration that could affect outcomes. The type-level ban is enforced by `Architecture/DeterminismGuardTests` (ADR-009).
+- The random algorithm is owned by the project (xoshiro256**), not the runtime, so seeds stay valid across .NET upgrades.
 - Simulation advances on a fixed timestep, independent of rendering framerate.
 
 ## 4. Event architecture
@@ -61,7 +67,7 @@ Given identical starting state, configuration and seed, the simulation must prod
 The simulation emits immutable, structured `MatchEvent` records into an ordered log exposed by `MatchSimulation`.
 Future consumers (commentary, statistics, replays, Opportunity detection) read the log; they do not alter outcomes.
 
-*Implementation: M1.3 onward. Details will be documented in `MATCH_SIMULATION.md`.*
+Events carry the simulated timestamp, never wall-clock time. Metadata is a sorted map so an event's canonical string form is deterministic. Details: `MATCH_SIMULATION.md`.
 
 ## 5. Action pattern
 

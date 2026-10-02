@@ -26,6 +26,18 @@
 
 **Tick** — One fixed simulation step (default 0.25 simulated seconds).
 
+**MatchConfig** — Match-wide settings: pitch, tick length, match duration.
+
+**MatchClock** — Counts ticks; the authoritative measure of elapsed match time.
+
+**MatchTime** — A simulated timestamp in seconds, displayed as MM:SS.
+
+**MatchSimulation** — Runs one match: owns the `MatchState`, the random source and the event log; advanced with `Step()` or `RunToCompletion()`.
+
+**MatchResult** — The outcome of a completed match: goals, events, final state, seed.
+
+**KickoffTeam** — The side that takes the next kickoff; decided by coin toss at the start, later the conceding side after a goal.
+
 **MatchRng / IMatchRandom** — The single seeded random source for a match. All simulation randomness goes through it.
 
 **Invariant** — A condition that must always hold for a valid `MatchState` (e.g. at most one player possesses the ball).
