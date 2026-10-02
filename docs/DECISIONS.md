@@ -323,3 +323,28 @@ recovery, substitutions or injuries a change to one class rather than to every r
 
 Consequences:
 Stamina cost now depends on how far players run, so movement tuning (M1.9/M1.11) changes fatigue too.
+
+---
+
+## ADR-017 — CI Pipeline and Branch/PR Workflow
+
+Status: Accepted
+
+Decision:
+- **Workflow**: all changes go through a short-lived branch (`feat/…`, `fix/…`, `chore/…`, `docs/…`) and a pull request into `main`. `main` is never committed to directly. PRs are merged with **rebase-and-merge** to keep the small, conventional commits (§4.8 of the milestone) on a linear history. Every commit must build.
+- **CI** (`.github/workflows/ci.yml`), on every PR and push to `main`:
+  - `Format` — `dotnet format --verify-no-changes` against `.editorconfig`.
+  - `Build & test` on **Ubuntu, Windows and macOS** — locked restore, Release build (warnings are errors), full test suite with TRX results and coverage uploaded as artifacts.
+  - `Cross-platform determinism` — each OS runs `DebugRunner fingerprint` for fixed seeds; the job fails if any OS produced a different match (`MatchFingerprint`, SHA-256 of every event and full-precision final state).
+- **Reproducibility**: `global.json` pins the SDK (patch roll-forward only); `packages.lock.json` files are committed and CI restores in locked mode; `.gitattributes` normalises line endings to LF.
+- **Supply chain**: third-party actions are pinned to commit SHAs (version in a comment); Dependabot proposes weekly NuGet and Actions updates.
+- **Code style**: `.editorconfig` rules are enforced in the build (`EnforceCodeStyleInBuild`); XML doc generation is on so unused usings (IDE0005) and broken `cref`s fail the build; CS1591 (missing XML comment) is suppressed.
+
+Reason:
+ADR-013 promises identical results on every platform; only a multi-OS comparison can prove it. CI turns the
+existing test discipline into a gate that a change cannot skip, and the PR flow gives each subtask a
+reviewable unit with its CI result attached.
+
+Rejected alternatives:
+Single-OS CI (cannot detect cross-platform divergence); squash merges (would collapse the small commits the
+milestone asks for); floating action tags such as `@v7` (mutable, supply-chain risk).

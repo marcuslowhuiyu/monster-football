@@ -104,7 +104,11 @@ Systems may read the event log as well as write it: `StaminaSystem` charges acti
 - Reusable invariant checks validate state after each tick in tests.
 - Architecture rules (dependency direction) are tests, not conventions.
 
-## 7. Extension points (documented, not implemented)
+## 7. Delivery pipeline
+
+Every change reaches `main` through a pull request gated by CI (ADR-017): formatting, a Release build with warnings as errors, and the full test suite on Ubuntu, Windows and macOS, followed by a cross-platform determinism comparison of match fingerprints (`Diagnostics.MatchFingerprint`). Builds are reproducible: pinned SDK (`global.json`) and locked NuGet restores.
+
+## 8. Extension points (documented, not implemented)
 
 - Utility-score modifiers from roles, traits, tactics, manager instructions, species and cards.
 - Opportunity detection as an event-log consumer.

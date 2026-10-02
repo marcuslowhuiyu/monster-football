@@ -86,6 +86,8 @@
 
 **Effectiveness factor** — Fatigue multiplier on action ratings (down to 0.85 at empty).
 
+**Match fingerprint** — Canonical text of every event plus full-precision final state; equal fingerprints mean bit-identical matches. Hashed by `DebugRunner fingerprint` and compared across OSes in CI.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.

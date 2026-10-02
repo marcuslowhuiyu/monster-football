@@ -1,5 +1,7 @@
 # Monster Football
 
+[![CI](https://github.com/marcuslowhuiyu/monster-football/actions/workflows/ci.yml/badge.svg)](https://github.com/marcuslowhuiyu/monster-football/actions/workflows/ci.yml)
+
 A fantasy football management/deckbuilding game built in Godot 4 (.NET / C#).
 
 The core is a headless, deterministic 11v11 match simulation (Milestone 1). Godot is only the presentation layer.
@@ -47,6 +49,21 @@ dotnet build MonsterFootball.slnx
 dotnet test MonsterFootball.slnx
 ```
 
+## Formatting
+
+```sh
+dotnet format MonsterFootball.slnx                       # fix
+dotnet format MonsterFootball.slnx --verify-no-changes   # check (as CI does)
+```
+
+## Checking determinism
+
+```sh
+dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3
+```
+
+Prints a SHA-256 per seed. The same seed must give the same hash on every machine; CI compares Ubuntu, Windows and macOS.
+
 ## Running one match
 
 ```sh
@@ -58,6 +75,12 @@ dotnet run --project src/MonsterFootball.DebugRunner
 ## Running batch simulations
 
 *Not yet implemented — arrives in M1.11.*
+
+## Development workflow
+
+Work on a branch, open a pull request, and merge (rebase-and-merge) once CI is green. CI runs formatting checks, a Release build and the full test suite on Ubuntu, Windows and macOS, then checks that all three produced identical matches. See ADR-017 in `docs/DECISIONS.md`.
+
+The SDK version is pinned in `global.json`; NuGet dependencies are locked in `packages.lock.json`.
 
 ## Documentation
 

@@ -16,12 +16,14 @@ Completed:
 - M1.7 shooting, goalkeeper contest, goals, restarts
 - M1.8: `FatigueModel` (drain multiplier, speed and effectiveness penalties), `StaminaSystem` (distance × intensity + action events), fatigue applied in pass/tackle/shot resolvers, tired players press less
 - ADR-016 (stamina model)
+- CI/CD: GitHub Actions (format, build+test on Ubuntu/Windows/macOS, cross-platform determinism fingerprint), pinned SDK, NuGet lock files, `.editorconfig` enforced in build, Dependabot, PR template, branch/PR workflow (ADR-017)
 
 In progress:
 - nothing
 
 Known issues:
 - `dotnet` is installed at `~/.dotnet` and may not be on `PATH` in every shell
+- History before ADR-017 (28 commits) went directly to `main`
 - Godot editor not installed (not needed until presentation work)
 - Placeholder decisions: ~34 shots, ~2 goals, ~2 000 passes, ~450 tackles per match; only strikers score
 - Players cover 16–18 km per match; strikers finish near-empty stamina
