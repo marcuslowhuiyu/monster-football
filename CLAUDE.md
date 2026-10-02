@@ -23,9 +23,13 @@ Fantasy football management/deckbuilding game. Current focus: headless determini
 
 ## Working procedure
 
-Inspect → Plan → Implement → Test → Review invariants → Update docs → Update `CURRENT_STATE.md` → Commit.
+Inspect → Plan → Implement → Test → Review invariants → Update docs → Update `CURRENT_STATE.md` → Commit → PR.
 
-Commits: small, one system per commit, conventional style (`feat(sim): ...`, `test(pass): ...`, `docs(sim): ...`).
+- **Never commit to `main`.** Start each subtask on a branch: `feat/m1-9-utility-ai`, `fix/…`, `chore/…`, `docs/…`.
+- Commits: small, one system per commit, conventional style (`feat(sim): ...`, `test(pass): ...`, `docs(sim): ...`). **Every commit must build.**
+- Before pushing: `dotnet format MonsterFootball.slnx --verify-no-changes`, `dotnet build`, `dotnet test`.
+- Open a PR (`gh pr create`, fill in the template), wait for CI to pass on all three OSes, then **rebase-and-merge** (ADR-017).
+- Adding a NuGet package updates `packages.lock.json` — commit it.
 
 ## Commands
 
@@ -34,7 +38,8 @@ The .NET SDK is installed at `~/.dotnet` (add it to `PATH` if `dotnet` is not fo
 ```sh
 dotnet build MonsterFootball.slnx
 dotnet test MonsterFootball.slnx
-dotnet run --project src/MonsterFootball.DebugRunner
+dotnet format MonsterFootball.slnx --verify-no-changes
+dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3
 ```
 
 ## Key docs
