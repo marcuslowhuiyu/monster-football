@@ -15,5 +15,9 @@ public enum MatchEventType
     TackleWon,
     TackleLost,
     TackleLooseBall,
+    ShotTaken,
+    ShotSaved,
+    ShotMissed,
+    GoalScored,
     MatchFinished,
 }

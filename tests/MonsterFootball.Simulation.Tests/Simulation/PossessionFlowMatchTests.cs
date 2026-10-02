@@ -58,8 +58,12 @@ public class PossessionFlowMatchTests
     {
         var events = Run().Events;
         TeamSide? team = null;
+        // The opening kickoff establishes possession; every later change must flip the team
+        // (including the conceding side's kickoff after a goal).
         foreach (var e in events.Where(e => e.Type is MatchEventType.Kickoff or MatchEventType.PossessionChanged))
         {
+            if (e.Type == MatchEventType.Kickoff && team is not null)
+                continue;
             if (e.Type == MatchEventType.PossessionChanged)
                 Assert.NotEqual(team, e.Team);
             team = e.Team;
