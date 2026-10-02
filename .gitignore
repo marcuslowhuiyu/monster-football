@@ -1,0 +1,16 @@
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+
+# Godot
+.godot/
+godot/.mono/
+*.translation
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store

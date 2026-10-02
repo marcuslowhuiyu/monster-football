@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/godot/">
+    <Project Path="godot/MonsterFootball.Godot.csproj">
+      <BuildType Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/MonsterFootball.DebugRunner/MonsterFootball.DebugRunner.csproj" />
+    <Project Path="src/MonsterFootball.Simulation/MonsterFootball.Simulation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MonsterFootball.Simulation.Tests/MonsterFootball.Simulation.Tests.csproj" />
+  </Folder>
+</Solution>
