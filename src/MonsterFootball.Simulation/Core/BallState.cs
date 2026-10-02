@@ -1,5 +1,6 @@
 namespace MonsterFootball.Simulation.Core;
 
+using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Players;
 
 /// <summary>
@@ -15,17 +16,35 @@ public sealed class BallState
 
     public Vec2 Position { get; private set; }
     public PlayerId? PossessorId { get; private set; }
-    public bool IsLoose => PossessorId is null;
+
+    /// <summary>The pass currently travelling, if any. A ball in flight has no possessor.</summary>
+    public BallFlight? Flight { get; private set; }
+
+    public bool IsInFlight => Flight is not null;
+
+    /// <summary>Nobody has the ball and it is not travelling: anyone may pick it up.</summary>
+    public bool IsLoose => PossessorId is null && Flight is null;
 
     internal void GiveTo(PlayerId playerId, Vec2 position)
     {
         PossessorId = playerId;
+        Flight = null;
         Position = position;
     }
 
     internal void SetLoose(Vec2 position)
     {
         PossessorId = null;
+        Flight = null;
         Position = position;
     }
+
+    internal void Launch(BallFlight flight)
+    {
+        PossessorId = null;
+        Flight = flight;
+        Position = flight.Pass.StartPosition;
+    }
+
+    internal void MoveInFlight(Vec2 position) => Position = position;
 }

@@ -5,5 +5,10 @@ public enum MatchEventType
 {
     MatchStarted,
     Kickoff,
+    PassAttempted,
+    PassCompleted,
+    PassIntercepted,
+    PassMisplaced,
+    PossessionChanged,
     MatchFinished,
 }

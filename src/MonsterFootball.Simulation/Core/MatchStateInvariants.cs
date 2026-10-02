@@ -34,6 +34,12 @@ public static class MatchStateInvariants
                 violations.Add($"Possessed ball at {state.Ball.Position} is not with its carrier: {carrier}.");
         }
 
+        if (!state.Pitch.Contains(state.Ball.Position))
+            violations.Add($"Ball outside pitch at {state.Ball.Position}.");
+
+        if (state.Ball.IsInFlight && state.Ball.PossessorId is not null)
+            violations.Add($"Ball in flight but possessed by {state.Ball.PossessorId}.");
+
         if (state.Score.Home < 0 || state.Score.Away < 0)
             violations.Add($"Score is negative: {state.Score}.");
 
