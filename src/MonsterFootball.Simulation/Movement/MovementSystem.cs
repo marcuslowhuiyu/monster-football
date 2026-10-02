@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Core;
+using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Players;
 
 namespace MonsterFootball.Simulation.Movement;
@@ -16,14 +17,8 @@ internal sealed class MovementSystem
     /// <summary>Jogging speed as a fraction of top speed.</summary>
     public const double JogFraction = 0.6;
 
-    /// <summary>Speed lost at zero stamina (linear in stamina).</summary>
-    public const double MaxFatigueSpeedPenalty = 0.3;
-
-    public static double FatigueFactor(double stamina) =>
-        1 - MaxFatigueSpeedPenalty * (1 - stamina / PlayerMatchState.MaxStamina);
-
     public static double TopSpeed(PlayerMatchState player) =>
-        (BaseSpeed + SpeedPerPace * player.Definition.Stats.Pace) * FatigueFactor(player.CurrentStamina);
+        (BaseSpeed + SpeedPerPace * player.Definition.Stats.Pace) * FatigueModel.SpeedFactor(player.CurrentStamina);
 
     /// <summary>Carrying speed as a fraction of top speed: 0.55 + 0.03 × Technique (0.58 at 1, 0.85 at 10).</summary>
     public static double CarrySpeedFraction(int technique) => 0.55 + 0.03 * technique;
@@ -42,8 +37,10 @@ internal sealed class MovementSystem
     {
         foreach (var player in state.Players)
         {
+            var previous = player.Position;
             var next = player.Position.MoveTowards(player.MovementTarget, Speed(player) * tickSeconds);
             player.Position = state.Pitch.Clamp(next);
+            player.LastTickDistance = previous.DistanceTo(player.Position);
         }
     }
 }

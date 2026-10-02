@@ -30,6 +30,9 @@ public sealed class PlayerMatchState
     public MovementIntensity MovementIntensity { get; internal set; } = MovementIntensity.Jog;
     public double CurrentStamina { get; internal set; } = MaxStamina;
 
+    /// <summary>Metres moved during the most recent tick (drives stamina drain).</summary>
+    public double LastTickDistance { get; internal set; }
+
     /// <summary>The ongoing action this player is committed to, if any (currently only carries persist).</summary>
     public ActionIntent? CurrentIntent { get; internal set; }
 

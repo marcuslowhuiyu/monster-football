@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Core;
+using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Random;
@@ -68,15 +69,16 @@ internal sealed class ShotResolver
             .Min(p => p.Position.DistanceTo(shooter.Position));
         var pressure = Math.Max(0, PressureRadius - nearestOpponent) * PressurePenaltyPerMetre;
 
-        var ability = stats.Finishing + TechniqueWeight * (stats.Technique - 5) + PowerWeight * (stats.Power - 5);
+        var ability = (stats.Finishing + TechniqueWeight * (stats.Technique - 5) + PowerWeight * (stats.Power - 5))
+            * FatigueModel.EffectivenessFactor(shooter);
         var onTarget = Curves.Sigmoid(OnTargetScale * (ability - DistancePenaltyPerMetre * distance - pressure - anglePenalty) + OnTargetBias);
 
         var keeperStats = keeper.Definition.Stats;
         var ballLocalForKeeper = TeamFrame.Convert(pitch, keeper.Team, shooter.Position);
         var idealLocal = GoalkeeperPositioning.Target(pitch, ballLocalForKeeper, keeperStats.Awareness, inPossession: false);
         var outOfPosition = keeper.Position.DistanceTo(TeamFrame.Convert(pitch, keeper.Team, idealLocal));
-        var keeperRating = keeperStats.Keeping
-            + KeeperAwarenessWeight * (keeperStats.Awareness - 5)
+        var keeperRating = (keeperStats.Keeping + KeeperAwarenessWeight * (keeperStats.Awareness - 5))
+            * FatigueModel.EffectivenessFactor(keeper)
             - OutOfPositionPenaltyPerMetre * Math.Min(outOfPosition, 10);
         var shotPower = 0.5 * stats.Finishing + 0.5 * stats.Power
             + CloseRangePerMetre * Math.Max(0, CloseRangeDistance - distance);

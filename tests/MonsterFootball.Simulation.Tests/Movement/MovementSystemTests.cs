@@ -67,8 +67,8 @@ public class MovementSystemTests
         tired.Slot(TeamSide.Home, PlayingPosition.CM).CurrentStamina = 20;
 
         Assert.True(OneTickDistance(tired) < OneTickDistance(fresh));
-        Assert.Equal(1 - MovementSystem.MaxFatigueSpeedPenalty, MovementSystem.FatigueFactor(0), precision: 9);
-        Assert.Equal(1, MovementSystem.FatigueFactor(PlayerMatchState.MaxStamina), precision: 9);
+        Assert.Equal(1 - MonsterFootball.Simulation.Fitness.FatigueModel.MaxSpeedPenalty, MonsterFootball.Simulation.Fitness.FatigueModel.SpeedFactor(0), precision: 9);
+        Assert.Equal(1, MonsterFootball.Simulation.Fitness.FatigueModel.SpeedFactor(PlayerMatchState.MaxStamina), precision: 9);
     }
 
     [Fact]

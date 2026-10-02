@@ -6,6 +6,7 @@ using MonsterFootball.Simulation.Actions.Tackling;
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
+using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Movement;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
@@ -31,6 +32,7 @@ public sealed class MatchSimulation
     private readonly TeamShapeSystem _shape = new();
     private readonly MovementSystem _movement = new();
     private readonly LooseBallSystem _looseBall = new();
+    private readonly StaminaSystem _stamina = new();
     private readonly RestartSystem _restart = new();
     private bool _started;
 
@@ -119,6 +121,7 @@ public sealed class MatchSimulation
         _movement.Apply(State, _config.TickSeconds);
         State.SyncBallToPossessor();
         _looseBall.Apply(_context);       // collect a loose ball
+        _stamina.Apply(_context);         // drain stamina from movement and this tick's actions
     }
 
     private void Finish()

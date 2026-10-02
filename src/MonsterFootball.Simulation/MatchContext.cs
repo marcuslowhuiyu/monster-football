@@ -16,6 +16,9 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     public MatchState State { get; } = state;
     public IMatchRandom Random { get; } = random;
 
+    /// <summary>Events emitted so far, in order.</summary>
+    public IReadOnlyList<MatchEvent> Events => log.Events;
+
     public void Emit(
         MatchEventType type,
         PlayerId? actor = null,
