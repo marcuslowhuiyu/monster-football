@@ -1,0 +1,116 @@
+# Decision Log
+
+Permanent record of accepted design and architecture decisions.
+
+When a decision changes, do not delete it: mark it `Superseded by ADR-XXX` and add a new entry.
+
+---
+
+## ADR-001 — Simulation Is Authoritative
+
+Status: Accepted
+
+Decision:
+Football outcomes are determined entirely by the headless simulation.
+Godot presentation code only visualises results.
+
+Reason:
+This preserves determinism, testability and separation of concerns.
+
+Rejected alternatives:
+Using Godot physics and collision outcomes to determine football actions.
+
+---
+
+## ADR-002 — Core Player Attributes
+
+Status: Accepted
+
+Decision:
+Players use the following attributes:
+
+Technique, Passing, Finishing, Defending, Pace, Power, Stamina, Awareness, Keeping
+
+Scale: 1–10
+
+Reason:
+The game intentionally uses a compact stat model rather than
+Football Manager-style attribute granularity. Concepts such as vision,
+crossing, strength or composure emerge from combinations of these attributes,
+context, and (later) traits or cards.
+
+Rejected alternatives:
+Separate attributes such as Vision, Crossing, Strength, Composure, Aggression,
+Acceleration, Tackling.
+
+---
+
+## ADR-003 — Simulation Is a Plain .NET Library; Godot Is an Isolated Presentation Project
+
+Status: Accepted
+
+Decision:
+- `src/MonsterFootball.Simulation` is a plain `net10.0` class library with no Godot reference.
+- The Godot project lives in `godot/` (`project.godot` + `MonsterFootball.Godot.csproj`) and references the simulation, never the reverse.
+- Debug runner and tests are ordinary .NET projects that run with `dotnet` alone; the Godot editor is not required for Milestone 1.
+- An architecture test fails the build if the simulation assembly references Godot or presentation assemblies.
+
+Reason:
+Enforces ADR-001 at compile time rather than by convention, keeps tests fast,
+and allows headless batch simulation. The Godot project sits in its own folder
+because the Godot SDK compiles every `.cs` file beneath its project directory;
+placing it at the repository root would pull simulation and test sources into
+the Godot assembly.
+
+Rejected alternatives:
+- Godot project at repository root (the structure suggested in the milestone spec): source globbing conflicts described above.
+- Simulation code inside the Godot project: makes Godot a dependency of every test and of batch runs.
+
+---
+
+## ADR-004 — Repository Is the Agent's Long-Term Memory
+
+Status: Accepted
+
+Decision:
+Project knowledge lives in `CLAUDE.md`, `docs/` and Git history.
+No external memory database (Mem0, Zep, Letta) or RAG system is used in Milestone 1.
+
+Reason:
+Authoritative retrieval beats unverified remembered information. Repository
+documents are versioned, reviewable and travel with the code.
+
+Rejected alternatives:
+External agent memory or vector databases — deferred until documentation size demonstrably wastes agent context.
+
+---
+
+## ADR-005 — Single Deterministic Random Source
+
+Status: Accepted (implementation scheduled for M1.3)
+
+Decision:
+All simulation randomness flows through one seeded service (`IMatchRandom`) owned by the match.
+No simulation system may create its own random generator or read wall-clock time.
+
+Reason:
+Identical setup + identical seed must produce identical event histories (testing, replays, debugging).
+
+Rejected alternatives:
+`System.Random` instances per system; `Random.Shared`; Godot's random functions.
+
+---
+
+## ADR-006 — Toolchain
+
+Status: Accepted
+
+Decision:
+- .NET 10 (LTS), C# latest, nullable enabled, warnings treated as errors (`Directory.Build.props`).
+- xUnit for tests.
+- Godot 4.7 via `Godot.NET.Sdk/4.7.2` for the presentation placeholder.
+- Solution file: `MonsterFootball.slnx`.
+
+Reason:
+.NET 10 is the current LTS release and is supported by Godot 4.7's .NET SDK.
+Warnings-as-errors keeps nullability honest from the start.
