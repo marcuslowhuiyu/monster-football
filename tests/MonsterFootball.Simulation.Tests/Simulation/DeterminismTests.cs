@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Core;
+using MonsterFootball.Simulation.Diagnostics;
 using MonsterFootball.Simulation.Tests.TestSupport;
 
 namespace MonsterFootball.Simulation.Tests.Simulation;
@@ -9,13 +10,7 @@ public class DeterminismTests
         new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), seed)
             .RunToCompletion();
 
-    private static string[] Fingerprint(MatchResult result) =>
-        [
-            .. result.Events.Select(e => e.ToString()),
-            $"score={result.HomeGoals}-{result.AwayGoals}",
-            .. result.FinalState.Players.Select(p => $"{p.PlayerId} {p.Position} {p.CurrentStamina}"),
-            $"ball={result.FinalState.Ball.Position} possessor={result.FinalState.Ball.PossessorId}",
-        ];
+    private static string Fingerprint(MatchResult result) => MatchFingerprint.Create(result);
 
     [Theory]
     [InlineData(123456)]
@@ -29,7 +24,7 @@ public class DeterminismTests
     [Fact]
     public void Different_seeds_can_produce_different_matches()
     {
-        var fingerprints = Enumerable.Range(0, 20).Select(seed => string.Join("\n", Fingerprint(Run(seed))));
+        var fingerprints = Enumerable.Range(0, 20).Select(seed => Fingerprint(Run(seed)));
         Assert.True(fingerprints.Distinct().Count() > 1);
     }
 }
