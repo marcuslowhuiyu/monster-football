@@ -42,7 +42,8 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Players` | `PlayerId`, `PlayerStats`, `PlayerDefinition`, `PlayingPosition`, `TeamDefinition`, `PlayerMatchState` | M1.2 |
 | `Random` | `IMatchRandom`, `MatchRng` | M1.3 |
 | `Events` | `MatchEvent`, `MatchEventType`, `MatchEventLog` | M1.3 |
-| `Positioning` | `Formation433` (kickoff layout) | M1.3 (early M1.4) |
+| `Positioning` | `Formation433`, `TeamFrame`, `TeamShapeSystem`, `GoalkeeperPositioning` | M1.3–M1.4 |
+| `Movement` | `MovementSystem` | M1.4 |
 | root | `MatchSimulation`, `MatchResult` | M1.3 |
 | `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
 | `Actions`, `AI`, `Statistics` | — | planned |
@@ -61,6 +62,10 @@ Given identical starting state, configuration and seed, the simulation must prod
 - No wall-clock time, `System.Random`, `Guid.NewGuid()` or unordered-collection iteration that could affect outcomes. The type-level ban is enforced by `Architecture/DeterminismGuardTests` (ADR-009).
 - The random algorithm is owned by the project (xoshiro256**), not the runtime, so seeds stay valid across .NET upgrades.
 - Simulation advances on a fixed timestep, independent of rendering framerate.
+
+### Systems
+
+Per-tick behaviour lives in small `internal sealed` system classes owned by `MatchSimulation` (e.g. `TeamShapeSystem`, `MovementSystem`), each with an `Apply(state, …)` method. `MatchSimulation` decides the order they run in; systems never call each other. This keeps each behaviour independently testable and makes the tick order explicit in one place.
 
 ## 4. Event architecture
 

@@ -195,3 +195,25 @@ Decision:
 Reason:
 The milestone requires that the simulation "cannot accidentally continue after finish". A silent no-op would
 hide caller bugs (e.g. a presentation loop that keeps stepping); an exception surfaces them immediately.
+
+---
+
+## ADR-011 — Team Shape Is Computed in Team Frame from Ball-Shifted Anchors
+
+Status: Accepted
+
+Decision:
+- Shape logic is written once in a team-relative frame (own goal at X = 0, attacking +X, left flank +Y) and converted to pitch coordinates by a 180° rotation for Away (`TeamFrame`).
+- Each 4-3-3 slot has an in-possession and an out-of-possession anchor (authored on 105 × 68, scaled to the pitch). Each tick the block is shifted toward the ball by a fixed fraction of the ball's offset from the centre spot.
+- Out of possession the back four share one line X, kept goal-side of the ball; midfield sits ahead of the line and is compressed centrally; forwards sit ahead of midfield. The nearest outfield player sprints to the ball.
+- When the ball is loose, both teams use the out-of-possession shape and each sends one presser.
+- Goalkeepers stand on the goal–ball line at a depth that grows with ball distance and is scaled by Awareness; they never leave the penalty area.
+
+Reason:
+Gives a recognisable, mirror-symmetric shape with very little code and no randomness, and
+avoids "22 players chasing the ball". Writing the rules in team frame removes a whole class of
+Home/Away sign bugs; a symmetry test enforces it.
+
+Consequences:
+This is positional scaffolding, not tactical intelligence. Off-ball choices such as support runs,
+forward runs and recovery (M1.9 utility AI) will adjust or override these targets.
