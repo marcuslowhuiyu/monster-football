@@ -31,6 +31,9 @@ internal sealed class TackleSystem(TackleResolver resolver)
             return;
 
         var carrier = state.Player(carrierId);
+        if (carrier.Definition.Position.IsGoalkeeper() && state.Pitch.IsInPenaltyArea(carrier.Position, carrier.Team))
+            return; // a keeper holding the ball in their own area cannot be challenged
+
         var tackler = state.TeamPlayers(carrier.Team.Opponent())
             .Where(p => !p.Definition.Position.IsGoalkeeper()
                         && p.TackleCooldownUntilTick <= tick

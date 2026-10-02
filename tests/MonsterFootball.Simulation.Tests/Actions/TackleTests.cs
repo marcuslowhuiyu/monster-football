@@ -152,6 +152,21 @@ public class TackleTests
     }
 
     [Fact]
+    public void Keeper_holding_the_ball_in_own_area_cannot_be_tackled()
+    {
+        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.0));
+        s.Place(TeamSide.Home, PlayingPosition.GK, 5, 34);
+        s.Place(TeamSide.Away, PlayingPosition.ST, 6, 34);
+        s.GiveBall(TeamSide.Home, PlayingPosition.GK);
+        for (var i = 0; i < 8; i++)
+            s.State.Clock.Advance();
+
+        new TackleSystem(_resolver).Apply(s.Context);
+
+        Assert.Empty(s.EventTypes);
+    }
+
+    [Fact]
     public void Cannot_tackle_a_teammate()
     {
         var s = Duel();

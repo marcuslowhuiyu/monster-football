@@ -17,12 +17,15 @@ internal sealed class CarryResolver
     public const double GoalLineMargin = 3;
     public const double AvoidanceRadius = 12;
 
-    /// <summary>Default destination for a carry: up to one segment forward, steered away from the nearest opponent.</summary>
+    /// <summary>Default destination for a carry: up to one segment forward (toward goal in the final third), steered away from the nearest opponent.</summary>
     public Vec2 ChooseDestination(MatchState state, Players.PlayerMatchState carrier)
     {
         var pitch = state.Pitch;
         var local = TeamFrame.Convert(pitch, carrier.Team, carrier.Position);
-        var forward = new Vec2(1, 0);
+        // Head straight up the pitch, bending toward the goal in the final third.
+        var goalLocal = new Vec2(pitch.Length, pitch.Width / 2);
+        var finalThirdBlend = Math.Clamp((local.X - pitch.Length * 2 / 3) / (pitch.Length / 3), 0, 1);
+        var forward = (new Vec2(1, 0) * (1 - finalThirdBlend) + (goalLocal - local).Normalized() * finalThirdBlend).Normalized();
 
         var nearest = state.TeamPlayers(carrier.Team.Opponent()).MinBy(o => o.Position.DistanceTo(carrier.Position));
         var steer = Vec2.Zero;

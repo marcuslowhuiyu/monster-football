@@ -1,6 +1,7 @@
 using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Actions.Carrying;
 using MonsterFootball.Simulation.Actions.Passing;
+using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.Actions.Tackling;
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
@@ -9,6 +10,7 @@ using MonsterFootball.Simulation.Movement;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Random;
+using MonsterFootball.Simulation.Restarts;
 
 namespace MonsterFootball.Simulation;
 
@@ -29,6 +31,7 @@ public sealed class MatchSimulation
     private readonly TeamShapeSystem _shape = new();
     private readonly MovementSystem _movement = new();
     private readonly LooseBallSystem _looseBall = new();
+    private readonly RestartSystem _restart = new();
     private bool _started;
 
     public MatchSimulation(MatchConfig config, TeamDefinition homeTeam, TeamDefinition awayTeam, int seed)
@@ -46,7 +49,8 @@ public sealed class MatchSimulation
         _context = new MatchContext(config, State, random, _log);
 
         var passResolver = new PassResolver();
-        _onBallDecision = new OnBallDecisionSystem(new PassTargetSelector(passResolver), passResolver, new CarryResolver());
+        _onBallDecision = new OnBallDecisionSystem(
+            new PassTargetSelector(passResolver), passResolver, new CarryResolver(), new ShotResolver());
     }
 
     public int Seed { get; }
@@ -66,13 +70,13 @@ public sealed class MatchSimulation
         switch (State.Phase)
         {
             case MatchPhase.Kickoff:
-                TakeKickoff();
+                _restart.TakeKickoff(_context);
                 break;
             case MatchPhase.OpenPlay:
                 RunOpenPlay();
                 break;
             case MatchPhase.GoalRestart:
-                // Goals arrive in M1.7.
+                _restart.ResetForKickoff(State);
                 break;
         }
 
@@ -98,23 +102,18 @@ public sealed class MatchSimulation
         _context.Emit(MatchEventType.MatchStarted);
     }
 
-    private void TakeKickoff()
-    {
-        var side = State.KickoffTeam;
-        var taker = State.TeamPlayers(side).Single(p => p.Definition.Position == PlayingPosition.ST);
-        taker.Position = State.Pitch.Centre;
-        taker.MovementTarget = taker.Position;
-        _context.GiveBall(taker.PlayerId);
-        _context.Emit(MatchEventType.Kickoff, actor: taker.PlayerId, team: side, position: taker.Position);
-        State.Phase = MatchPhase.OpenPlay;
-    }
-
-    /// <summary>Open-play tick order. Systems never call each other; this method is the only sequencing.</summary>
+    /// <summary>
+    /// Open-play tick order. Systems never call each other; this method is the only sequencing.
+    /// A goal switches the phase to GoalRestart; the rest of that tick is skipped.
+    /// </summary>
     private void RunOpenPlay()
     {
         _ballFlight.Apply(_context);      // advance / land a pass in flight
         _carry.Apply(_context);           // end finished carries
-        _onBallDecision.Apply(_context);  // carrier passes or carries (placeholder until M1.9)
+        _onBallDecision.Apply(_context);  // carrier shoots, passes or carries (placeholder until M1.9)
+        if (State.Phase != MatchPhase.OpenPlay)
+            return;
+
         _tackle.Apply(_context);          // defender in range challenges (placeholder until M1.9)
         _shape.Apply(State);              // assign movement targets
         _movement.Apply(State, _config.TickSeconds);
