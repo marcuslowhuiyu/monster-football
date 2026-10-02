@@ -25,8 +25,14 @@ public static class MatchStateInvariants
         if (state.Players.Select(p => p.PlayerId).Distinct().Count() != state.Players.Count)
             violations.Add("Active player ids are not unique.");
 
-        if (state.Ball.PossessorId is { } possessor && state.Players.All(p => p.PlayerId != possessor))
-            violations.Add($"Ball possessor {possessor} is not an active player.");
+        if (state.Ball.PossessorId is { } possessor)
+        {
+            var carrier = state.Players.FirstOrDefault(p => p.PlayerId == possessor);
+            if (carrier is null)
+                violations.Add($"Ball possessor {possessor} is not an active player.");
+            else if (carrier.Position != state.Ball.Position)
+                violations.Add($"Possessed ball at {state.Ball.Position} is not with its carrier: {carrier}.");
+        }
 
         if (state.Score.Home < 0 || state.Score.Away < 0)
             violations.Add($"Score is negative: {state.Score}.");

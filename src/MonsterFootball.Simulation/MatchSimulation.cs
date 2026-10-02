@@ -1,5 +1,6 @@
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
+using MonsterFootball.Simulation.Movement;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Random;
@@ -15,6 +16,8 @@ public sealed class MatchSimulation
     private readonly MatchConfig _config;
     private readonly IMatchRandom _random;
     private readonly MatchEventLog _log = new();
+    private readonly TeamShapeSystem _shape = new();
+    private readonly MovementSystem _movement = new();
     private bool _started;
 
     public MatchSimulation(MatchConfig config, TeamDefinition homeTeam, TeamDefinition awayTeam, int seed)
@@ -52,7 +55,7 @@ public sealed class MatchSimulation
                 TakeKickoff();
                 break;
             case MatchPhase.OpenPlay:
-                // Player behaviour arrives in M1.4–M1.9.
+                RunOpenPlay();
                 break;
             case MatchPhase.GoalRestart:
                 // Goals arrive in M1.7.
@@ -90,6 +93,14 @@ public sealed class MatchSimulation
         State.GiveBallTo(taker.PlayerId);
         Emit(MatchEventType.Kickoff, actor: taker.PlayerId, team: side, position: taker.Position);
         State.Phase = MatchPhase.OpenPlay;
+    }
+
+    private void RunOpenPlay()
+    {
+        // On-ball decisions (pass/carry/shoot) arrive in M1.5–M1.9.
+        _shape.Apply(State);
+        _movement.Apply(State, _config.TickSeconds);
+        State.SyncBallToPossessor();
     }
 
     private void Finish()

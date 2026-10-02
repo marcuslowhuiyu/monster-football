@@ -103,4 +103,11 @@ public sealed class MatchState
     }
 
     internal void SetBallLoose(Vec2 position) => Ball.SetLoose(position);
+
+    /// <summary>A possessed ball travels with its carrier.</summary>
+    internal void SyncBallToPossessor()
+    {
+        if (Ball.PossessorId is { } id)
+            Ball.GiveTo(id, Player(id).Position);
+    }
 }
