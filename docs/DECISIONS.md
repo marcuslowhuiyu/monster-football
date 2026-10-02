@@ -301,3 +301,25 @@ react while the ball travels. Giving the keeper the ball after a miss avoids inv
 
 Consequences:
 If blocks or rebounds are added, shots should move to the ball-flight model.
+
+---
+
+## ADR-016 — Stamina Drains from Distance and Action Events; One Fatigue Model
+
+Status: Accepted
+
+Decision:
+- `FatigueModel` is the single home for stamina effects: drain multiplier from the Stamina attribute (1.3 − 0.06 × Stamina), speed factor (up to −30 % at empty), effectiveness factor (up to −15 % at empty) and tiredness (0–1).
+- `StaminaSystem` runs last in each open-play tick. It charges (a) metres covered that tick × cost per metre for the movement intensity (jog 0.002, carry 0.003, sprint 0.004), and (b) a fixed cost per action, read from events emitted since its last run (pass 0.05, carry start 0.1, tackle 0.2 for the tackler / 0.1 for the carrier, shot 0.3).
+- The effectiveness factor scales the ability/rating terms in the pass, tackle and shot resolvers (including interceptors and goalkeepers).
+- "Demanding movement utility": presser selection weights distance by (1 + tiredness), so exhausted players are less likely to be sent to press.
+- No recovery yet.
+
+Reason:
+Distance-based drain makes cost proportional to work actually done, independent of tick length. Reading
+action costs from the event log keeps resolvers and executions free of stamina code and gives a single place
+to add future costs (pressing intensity, species physiology). Centralising every fatigue effect makes later
+recovery, substitutions or injuries a change to one class rather than to every resolver.
+
+Consequences:
+Stamina cost now depends on how far players run, so movement tuning (M1.9/M1.11) changes fatigue too.

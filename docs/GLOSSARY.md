@@ -80,6 +80,12 @@
 
 **GoalRestart** — Phase after a goal: players reset to the kickoff layout before the conceding side kicks off.
 
+**Tiredness** — 1 − stamina/100: 0 when fresh, 1 when empty. All fatigue penalties are linear in it.
+
+**Drain multiplier** — How fast a player's stamina falls, from their Stamina attribute (1.24 at 1, 0.7 at 10).
+
+**Effectiveness factor** — Fatigue multiplier on action ratings (down to 0.85 at empty).
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.
