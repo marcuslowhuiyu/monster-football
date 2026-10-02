@@ -1,4 +1,3 @@
-using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Actions.Tackling;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;

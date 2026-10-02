@@ -12,12 +12,12 @@ public class GoalkeeperPositioningTests
     public void Keeper_never_leaves_own_penalty_area()
     {
         foreach (var inPossession in new[] { true, false })
-        for (var x = 0.0; x <= 105; x += 5)
-        for (var y = 0.0; y <= 68; y += 4)
-        {
-            var target = GoalkeeperPositioning.Target(Pitch, new Vec2(x, y), awareness: 10, inPossession);
-            Assert.True(Pitch.IsInPenaltyArea(target, TeamSide.Home), $"ball ({x},{y}) -> {target}");
-        }
+            for (var x = 0.0; x <= 105; x += 5)
+                for (var y = 0.0; y <= 68; y += 4)
+                {
+                    var target = GoalkeeperPositioning.Target(Pitch, new Vec2(x, y), awareness: 10, inPossession);
+                    Assert.True(Pitch.IsInPenaltyArea(target, TeamSide.Home), $"ball ({x},{y}) -> {target}");
+                }
     }
 
     [Fact]
