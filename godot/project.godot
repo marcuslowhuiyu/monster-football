@@ -1,0 +1,13 @@
+; Engine configuration file.
+; Presentation layer only. No football outcomes are decided here.
+
+config_version=5
+
+[application]
+
+config/name="Monster Football"
+config/features=PackedStringArray("4.7", "C#")
+
+[dotnet]
+
+project/assembly_name="MonsterFootball.Godot"

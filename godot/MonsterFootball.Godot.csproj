@@ -1,0 +1,14 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <!-- Presentation layer placeholder. It may depend on the simulation;
+       the simulation must never depend on this project or on Godot. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>MonsterFootball.Presentation</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\MonsterFootball.Simulation\MonsterFootball.Simulation.csproj" />
+  </ItemGroup>
+</Project>
