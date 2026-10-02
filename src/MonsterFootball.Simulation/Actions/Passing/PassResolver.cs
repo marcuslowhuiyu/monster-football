@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Core;
+using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Movement;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Random;
@@ -65,9 +66,9 @@ internal sealed class PassResolver
         var start = passer.Position;
         var target = receiver.Position;
         var stats = passer.Definition.Stats;
-        var ability = stats.Passing
+        var ability = (stats.Passing
             + TechniqueWeight * (stats.Technique - 5)
-            + AwarenessWeight * (stats.Awareness - 5);
+            + AwarenessWeight * (stats.Awareness - 5)) * FatigueModel.EffectivenessFactor(passer);
 
         var distance = start.DistanceTo(target);
         var opponents = state.TeamPlayers(passer.Team.Opponent()).ToList();
@@ -96,7 +97,8 @@ internal sealed class PassResolver
 
             var probability = (1 - laneDistance / reach)
                 * (BaseInterception + InterceptionPerDefending * opponent.Definition.Stats.Defending)
-                * interceptionFactor;
+                * interceptionFactor
+                * FatigueModel.EffectivenessFactor(opponent);
             threats.Add(new InterceptionThreat(opponent.PlayerId, point, t, Math.Clamp(probability, 0, 0.95)));
         }
 

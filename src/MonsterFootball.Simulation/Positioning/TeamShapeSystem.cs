@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Core;
+using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Players;
 
 namespace MonsterFootball.Simulation.Positioning;
@@ -124,13 +125,19 @@ internal sealed class TeamShapeSystem
         return Math.Clamp(followed, MinDefensiveLineX, goalSideLimit);
     }
 
-    /// <summary>The nearest outfield player closes the ball at full intensity; ties go to the earlier player.</summary>
+    /// <summary>Tired players are treated as further from the ball when choosing who presses (fresh → ×1, empty → ×2).</summary>
+    public const double TiredPressDistancePenalty = 1.0;
+
+    /// <summary>
+    /// The outfield player with the lowest fatigue-weighted distance closes the ball at full intensity;
+    /// ties go to the earlier player.
+    /// </summary>
     private static void AssignPresser(MatchState state, TeamSide side)
     {
         var ball = state.Ball.Position;
         var presser = state.TeamPlayers(side)
             .Where(p => !p.Definition.Position.IsGoalkeeper())
-            .MinBy(p => p.Position.DistanceTo(ball));
+            .MinBy(p => p.Position.DistanceTo(ball) * (1 + TiredPressDistancePenalty * FatigueModel.Tiredness(p.CurrentStamina)));
 
         if (presser is null)
             return;

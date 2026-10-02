@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Core;
+using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Random;
 
@@ -32,6 +33,12 @@ internal sealed class TackleResolver
     public double ContactProbability(PlayerStats tackler, PlayerStats carrier) =>
         Curves.Sigmoid(ContactScale * (DefenderRating(tackler) - CarrierRating(carrier)) + ContactBias);
 
+    /// <summary>Contact probability with each player's rating scaled by their fatigue.</summary>
+    public double ContactProbability(PlayerMatchState tackler, PlayerMatchState carrier) =>
+        Curves.Sigmoid(ContactScale * (
+            DefenderRating(tackler.Definition.Stats) * FatigueModel.EffectivenessFactor(tackler)
+            - CarrierRating(carrier.Definition.Stats) * FatigueModel.EffectivenessFactor(carrier)) + ContactBias);
+
     public double CleanProbability(PlayerStats tackler) =>
         Math.Clamp(BaseCleanProbability + CleanPerAwareness * (tackler.Awareness - 5), 0.1, 0.9);
 
@@ -44,7 +51,7 @@ internal sealed class TackleResolver
         if (!state.HasBall(intent.Carrier))
             throw new ArgumentException($"{carrier} does not have the ball.", nameof(intent));
 
-        var contact = ContactProbability(tackler.Definition.Stats, carrier.Definition.Stats);
+        var contact = ContactProbability(tackler, carrier);
         var clean = CleanProbability(tackler.Definition.Stats);
         var position = carrier.Position;
 
