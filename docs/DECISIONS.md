@@ -114,3 +114,45 @@ Decision:
 Reason:
 .NET 10 is the current LTS release and is supported by Godot 4.7's .NET SDK.
 Warnings-as-errors keeps nullability honest from the start.
+
+---
+
+## ADR-007 — The Ball Is the Single Source of Truth for Possession
+
+Status: Accepted
+
+Decision:
+`BallState.PossessorId` is the only stored record of possession.
+`MatchState.HasBall(id)`, `MatchState.PossessionPlayerId` and `MatchState.PossessionTeam` are derived from it.
+`PlayerMatchState` has no stored `HasBall` flag, and `MatchState` has no stored possession team.
+
+Reason:
+The milestone spec lists `HasBall`, `PossessionTeamId` and `PossessionPlayerId` as separate fields.
+Storing the same fact three times allows them to disagree. Deriving them makes
+"at most one player possesses the ball" and "possessing player belongs to possession team"
+true by construction rather than by checking.
+
+Consequences:
+When the ball is loose, `PossessionTeam` is null. If later systems need "last team in possession"
+(e.g. for restarts), add it as a separate, explicitly named field.
+
+Rejected alternatives:
+Separate stored flags kept in sync by convention.
+
+---
+
+## ADR-008 — Milestone 1 Teams Fill Each 4-3-3 Slot Exactly Once
+
+Status: Accepted
+
+Decision:
+- `PlayingPosition` enumerates the 11 slots of the default 4-3-3: GK, LB, LCB, RCB, RB, LCM, CM, RCM, LW, ST, RW.
+- `TeamDefinition` is valid only with 11 players, exactly one goalkeeper, unique ids, unique shirt numbers, and every slot filled exactly once.
+- `PlayerDefinition` includes a `ShirtNumber` (1–99) for readable event output ("Blue #9").
+
+Reason:
+Custom formations are out of scope for Milestone 1. A fixed slot set lets positioning (M1.4)
+map each player to one anchor without ambiguity. Shirt numbers are presentation-friendly identity, not a stat.
+
+Consequences:
+Introducing formations later will replace the "every slot exactly once" rule with formation-specific validation — supersede this ADR when that happens.
