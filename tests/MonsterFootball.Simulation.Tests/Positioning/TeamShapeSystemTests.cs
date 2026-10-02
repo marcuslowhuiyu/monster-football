@@ -205,11 +205,11 @@ public class TeamShapeSystemTests
     public void All_targets_stay_on_the_pitch_for_any_ball_position()
     {
         foreach (var possession in new TeamSide?[] { TeamSide.Home, TeamSide.Away, null })
-        for (var x = 0.0; x <= 105; x += 7.5)
-        for (var y = 0.0; y <= 68; y += 8.5)
-        {
-            var state = Arrange(new Vec2(x, y), possession);
-            Assert.All(state.Players, p => Assert.True(state.Pitch.Contains(p.MovementTarget), $"{p} -> {p.MovementTarget}"));
-        }
+            for (var x = 0.0; x <= 105; x += 7.5)
+                for (var y = 0.0; y <= 68; y += 8.5)
+                {
+                    var state = Arrange(new Vec2(x, y), possession);
+                    Assert.All(state.Players, p => Assert.True(state.Pitch.Contains(p.MovementTarget), $"{p} -> {p.MovementTarget}"));
+                }
     }
 }

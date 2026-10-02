@@ -1,4 +1,7 @@
 <Project>
-  <!-- Intentionally empty: stops the repository-root Directory.Build.props
-       from applying to the Godot project. -->
+  <!-- Stops the repository-root Directory.Build.props from applying to the Godot project,
+       except for reproducible restores. -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
 </Project>
