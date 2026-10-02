@@ -25,8 +25,18 @@ internal sealed class MovementSystem
     public static double TopSpeed(PlayerMatchState player) =>
         (BaseSpeed + SpeedPerPace * player.Definition.Stats.Pace) * FatigueFactor(player.CurrentStamina);
 
-    public static double Speed(PlayerMatchState player) =>
-        TopSpeed(player) * (player.MovementIntensity == MovementIntensity.Sprint ? 1.0 : JogFraction);
+    /// <summary>Carrying speed as a fraction of top speed: 0.55 + 0.03 × Technique (0.58 at 1, 0.85 at 10).</summary>
+    public static double CarrySpeedFraction(int technique) => 0.55 + 0.03 * technique;
+
+    public static double CarrySpeed(PlayerMatchState player) =>
+        TopSpeed(player) * CarrySpeedFraction(player.Definition.Stats.Technique);
+
+    public static double Speed(PlayerMatchState player) => player.MovementIntensity switch
+    {
+        MovementIntensity.Sprint => TopSpeed(player),
+        MovementIntensity.Carry => CarrySpeed(player),
+        _ => TopSpeed(player) * JogFraction,
+    };
 
     public void Apply(MatchState state, double tickSeconds)
     {

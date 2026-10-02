@@ -1,5 +1,7 @@
 using MonsterFootball.Simulation.Actions;
+using MonsterFootball.Simulation.Actions.Carrying;
 using MonsterFootball.Simulation.Actions.Passing;
+using MonsterFootball.Simulation.Actions.Tackling;
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
@@ -21,7 +23,9 @@ public sealed class MatchSimulation
     private readonly MatchContext _context;
 
     private readonly BallFlightSystem _ballFlight = new();
-    private readonly PassDecisionSystem _passDecision;
+    private readonly CarrySystem _carry = new();
+    private readonly OnBallDecisionSystem _onBallDecision;
+    private readonly TackleSystem _tackle = new(new TackleResolver());
     private readonly TeamShapeSystem _shape = new();
     private readonly MovementSystem _movement = new();
     private readonly LooseBallSystem _looseBall = new();
@@ -42,7 +46,7 @@ public sealed class MatchSimulation
         _context = new MatchContext(config, State, random, _log);
 
         var passResolver = new PassResolver();
-        _passDecision = new PassDecisionSystem(new PassTargetSelector(passResolver), passResolver);
+        _onBallDecision = new OnBallDecisionSystem(new PassTargetSelector(passResolver), passResolver, new CarryResolver());
     }
 
     public int Seed { get; }
@@ -109,7 +113,9 @@ public sealed class MatchSimulation
     private void RunOpenPlay()
     {
         _ballFlight.Apply(_context);      // advance / land a pass in flight
-        _passDecision.Apply(_context);    // carrier decides (placeholder until M1.9)
+        _carry.Apply(_context);           // end finished carries
+        _onBallDecision.Apply(_context);  // carrier passes or carries (placeholder until M1.9)
+        _tackle.Apply(_context);          // defender in range challenges (placeholder until M1.9)
         _shape.Apply(State);              // assign movement targets
         _movement.Apply(State, _config.TickSeconds);
         State.SyncBallToPossessor();

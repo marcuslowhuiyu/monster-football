@@ -7,8 +7,8 @@ namespace MonsterFootball.Simulation.Positioning;
 /// Assigns every player's <see cref="PlayerMatchState.MovementTarget"/> and intensity each tick
 /// from the 4-3-3 anchors, shifted with the ball. The attacking team (in possession, or whose pass is
 /// in flight) uses the attacking shape; the other team (and both teams when the ball is loose) defends,
-/// with its nearest outfield player sprinting to close the ball. The ball carrier is left alone
-/// (carrying arrives in M1.6). Whoever a pass in flight will reach sprints to meet it.
+/// with its nearest outfield player sprinting to close the ball. The ball carrier follows their carry,
+/// if any, and otherwise holds position. Whoever a pass in flight will reach sprints to meet it.
 /// </summary>
 internal sealed class TeamShapeSystem
 {
@@ -51,8 +51,17 @@ internal sealed class TeamShapeSystem
         {
             if (state.HasBall(player.PlayerId))
             {
-                player.MovementTarget = player.Position;
-                player.MovementIntensity = MovementIntensity.Jog;
+                if (player.ActiveCarry is { } carry)
+                {
+                    player.MovementTarget = carry.TargetPosition;
+                    player.MovementIntensity = MovementIntensity.Carry;
+                }
+                else
+                {
+                    player.MovementTarget = player.Position;
+                    player.MovementIntensity = MovementIntensity.Jog;
+                }
+
                 continue;
             }
 

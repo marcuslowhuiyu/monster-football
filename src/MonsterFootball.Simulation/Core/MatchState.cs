@@ -111,12 +111,30 @@ public sealed class MatchState
     internal void GiveBallTo(PlayerId id)
     {
         var player = Player(id);
+        ReleaseHolder(except: id);
         Ball.GiveTo(id, player.Position);
         LastPossessionTeam = player.Team;
         PossessionStartTick = Clock.Tick;
     }
 
-    internal void SetBallLoose(Vec2 position) => Ball.SetLoose(position);
+    internal void SetBallLoose(Vec2 position)
+    {
+        ReleaseHolder();
+        Ball.SetLoose(position);
+    }
+
+    internal void LaunchBall(Actions.Passing.BallFlight flight)
+    {
+        ReleaseHolder();
+        Ball.Launch(flight);
+    }
+
+    /// <summary>A player who loses the ball also loses any action that needed it (e.g. a carry).</summary>
+    private void ReleaseHolder(PlayerId? except = null)
+    {
+        if (Ball.PossessorId is { } holder && holder != except)
+            Player(holder).ClearIntent();
+    }
 
     /// <summary>A possessed ball travels with its carrier.</summary>
     internal void SyncBallToPossessor()

@@ -5,8 +5,8 @@ using MonsterFootball.Simulation.Tests.TestSupport;
 
 namespace MonsterFootball.Simulation.Tests.Simulation;
 
-/// <summary>Passing inside a full match: event-stream consistency and possession bookkeeping.</summary>
-public class PassingMatchTests
+/// <summary>On-ball actions inside a full match: event-stream consistency and possession bookkeeping.</summary>
+public class PossessionFlowMatchTests
 {
     private static MatchResult Run(int seed = 123456) =>
         CheckedRun.ToCompletion(new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), seed));
@@ -35,6 +35,7 @@ public class PassingMatchTests
             {
                 case MatchEventType.Kickoff:
                 case MatchEventType.PassIntercepted:
+                case MatchEventType.TackleWon:
                 case MatchEventType.PossessionChanged:
                     holder = e.ActorPlayerId;
                     break;
@@ -42,6 +43,7 @@ public class PassingMatchTests
                     holder = e.TargetPlayerId;
                     break;
                 case MatchEventType.PassMisplaced:
+                case MatchEventType.TackleLooseBall:
                     holder = null; // a teammate may collect without an event
                     break;
                 case MatchEventType.PassAttempted when holder is not null:
