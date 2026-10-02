@@ -1,3 +1,6 @@
+using MonsterFootball.Simulation.Actions;
+using MonsterFootball.Simulation.Actions.Passing;
+using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Movement;
@@ -14,10 +17,14 @@ namespace MonsterFootball.Simulation;
 public sealed class MatchSimulation
 {
     private readonly MatchConfig _config;
-    private readonly IMatchRandom _random;
     private readonly MatchEventLog _log = new();
+    private readonly MatchContext _context;
+
+    private readonly BallFlightSystem _ballFlight = new();
+    private readonly PassDecisionSystem _passDecision;
     private readonly TeamShapeSystem _shape = new();
     private readonly MovementSystem _movement = new();
+    private readonly LooseBallSystem _looseBall = new();
     private bool _started;
 
     public MatchSimulation(MatchConfig config, TeamDefinition homeTeam, TeamDefinition awayTeam, int seed)
@@ -29,10 +36,13 @@ public sealed class MatchSimulation
     {
         ArgumentNullException.ThrowIfNull(config);
         _config = config;
-        _random = random;
         Seed = seed;
         State = MatchState.Create(config, homeTeam, awayTeam,
             (side, player) => Formation433.KickoffPosition(config.Pitch, side, player.Position));
+        _context = new MatchContext(config, State, random, _log);
+
+        var passResolver = new PassResolver();
+        _passDecision = new PassDecisionSystem(new PassTargetSelector(passResolver), passResolver);
     }
 
     public int Seed { get; }
@@ -80,8 +90,8 @@ public sealed class MatchSimulation
     {
         _started = true;
         // Coin toss for the opening kickoff.
-        State.KickoffTeam = _random.Roll(0.5) ? TeamSide.Home : TeamSide.Away;
-        Emit(MatchEventType.MatchStarted);
+        State.KickoffTeam = _context.Random.Roll(0.5) ? TeamSide.Home : TeamSide.Away;
+        _context.Emit(MatchEventType.MatchStarted);
     }
 
     private void TakeKickoff()
@@ -90,25 +100,25 @@ public sealed class MatchSimulation
         var taker = State.TeamPlayers(side).Single(p => p.Definition.Position == PlayingPosition.ST);
         taker.Position = State.Pitch.Centre;
         taker.MovementTarget = taker.Position;
-        State.GiveBallTo(taker.PlayerId);
-        Emit(MatchEventType.Kickoff, actor: taker.PlayerId, team: side, position: taker.Position);
+        _context.GiveBall(taker.PlayerId);
+        _context.Emit(MatchEventType.Kickoff, actor: taker.PlayerId, team: side, position: taker.Position);
         State.Phase = MatchPhase.OpenPlay;
     }
 
+    /// <summary>Open-play tick order. Systems never call each other; this method is the only sequencing.</summary>
     private void RunOpenPlay()
     {
-        // On-ball decisions (pass/carry/shoot) arrive in M1.5–M1.9.
-        _shape.Apply(State);
+        _ballFlight.Apply(_context);      // advance / land a pass in flight
+        _passDecision.Apply(_context);    // carrier decides (placeholder until M1.9)
+        _shape.Apply(State);              // assign movement targets
         _movement.Apply(State, _config.TickSeconds);
         State.SyncBallToPossessor();
+        _looseBall.Apply(_context);       // collect a loose ball
     }
 
     private void Finish()
     {
         State.Phase = MatchPhase.Finished;
-        Emit(MatchEventType.MatchFinished);
+        _context.Emit(MatchEventType.MatchFinished);
     }
-
-    private void Emit(MatchEventType type, PlayerId? actor = null, PlayerId? target = null, TeamSide? team = null, Vec2? position = null) =>
-        _log.Add(new MatchEvent(State.Clock.Now, type, actor, target, team, position));
 }

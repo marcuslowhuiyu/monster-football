@@ -5,9 +5,10 @@ namespace MonsterFootball.Simulation.Positioning;
 
 /// <summary>
 /// Assigns every player's <see cref="PlayerMatchState.MovementTarget"/> and intensity each tick
-/// from the 4-3-3 anchors, shifted with the ball. The team in possession uses the attacking shape;
-/// the other team (and both teams when the ball is loose) defends, with its nearest outfield
-/// player sprinting to close the ball. The ball carrier is left alone (carrying arrives in M1.6).
+/// from the 4-3-3 anchors, shifted with the ball. The attacking team (in possession, or whose pass is
+/// in flight) uses the attacking shape; the other team (and both teams when the ball is loose) defends,
+/// with its nearest outfield player sprinting to close the ball. The ball carrier is left alone
+/// (carrying arrives in M1.6). Whoever a pass in flight will reach sprints to meet it.
 /// </summary>
 internal sealed class TeamShapeSystem
 {
@@ -30,12 +31,19 @@ internal sealed class TeamShapeSystem
     {
         foreach (var side in Enum.GetValues<TeamSide>())
             AssignTeam(state, side);
+
+        if (state.Ball.Flight is { Pass.FinalReceiver: { } receiverId } flight)
+        {
+            var receiver = state.Player(receiverId);
+            receiver.MovementTarget = flight.Pass.TargetPosition;
+            receiver.MovementIntensity = MovementIntensity.Sprint;
+        }
     }
 
     private static void AssignTeam(MatchState state, TeamSide side)
     {
         var pitch = state.Pitch;
-        var inPossession = state.PossessionTeam == side;
+        var inPossession = state.AttackingTeam == side;
         var ballLocal = TeamFrame.Convert(pitch, side, state.Ball.Position);
         var defensiveLineX = DefensiveLineX(pitch, ballLocal);
 
