@@ -4,14 +4,15 @@ Current milestone:
 M1 — Deterministic Match Simulation
 
 Current subtask:
-M1.4 — 11v11 movement and positioning (complete)
+M1.5 — Passing (complete)
 
 Completed:
 - M1.1 bootstrap: solution, Godot placeholder, architecture test, project-memory docs
 - M1.2 domain model: `MatchState`, teams/players/stats with validation, ball, pitch, invariants
 - M1.3 loop: `MatchSimulation`, fixed-timestep clock, `MatchRng`, phases, coin-toss kickoff, event log, determinism guards
-- M1.4: `MovementSystem` (Pace + fatigue, jog/sprint), `TeamShapeSystem` (ball-shifted in/out-of-possession 4-3-3, flat back four, single presser), `GoalkeeperPositioning` (Awareness-scaled), team-frame symmetry, ball follows carrier
-- ADR-011 (team-frame shape)
+- M1.4 movement and 4-3-3 shape, goalkeeper positioning
+- M1.5 passing: `PassIntent`, `PassResolver` (estimate + resolve), `PassTargetSelector`, ball flight, interceptions, misplaced → loose ball, loose-ball collection, `PossessionChanged`, `MatchContext`
+- ADR-012 (resolve at kick, apply on arrival), ADR-013 (no transcendental maths in outcomes)
 
 In progress:
 - nothing
@@ -19,10 +20,12 @@ In progress:
 Known issues:
 - `dotnet` is installed at `~/.dotnet` and may not be on `PATH` in every shell
 - Godot editor not installed (not needed until presentation work)
-- No on-ball actions: kickoff taker holds the ball all match; opposing presser stands on it; every match is 0–0
+- Pass decision is a placeholder (pass every 2.5 s held) → ~1 500 passes/match
+- Interceptions < 1 % of passes: selector avoids risky lanes; no forcing pressure yet
+- Ball never goes out of play (misplaced passes clamp to the pitch)
 
 Next recommended work:
-- M1.5 — passing: `PassIntent`, `PassResolver`, teammate selection, interception, possession transfer, pass events, presentation data on results
+- M1.6 — carrying and tackling: `CarryIntent`, `TackleIntent`, resolvers, possession changes, events, tests
 
 Last verified:
-2026-10-02 — `dotnet build` (0 warnings) and `dotnet test` (133/133 passing).
+2026-10-02 — `dotnet build` (0 warnings) and `dotnet test` (160/160 passing).

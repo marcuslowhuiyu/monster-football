@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4) implemented. Players hold shape and press, but nobody passes, carries, tackles or shoots yet. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5) implemented. Players hold shape, press and pass; nobody carries, tackles or shoots yet. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -32,7 +32,13 @@ Each `Step()`:
 2. First step only: coin toss (`Roll(0.5)`) picks `KickoffTeam`, emit `MatchStarted`.
 3. Run the current phase:
    - `Kickoff` — kicking side's ST is placed on the centre spot and given the ball; emit `Kickoff`; phase → `OpenPlay`.
-   - `OpenPlay` — `TeamShapeSystem` assigns targets → `MovementSystem` moves all players → ball is synced to its carrier. On-ball decisions arrive in M1.5–M1.9.
+   - `OpenPlay` — in this order:
+     1. `BallFlightSystem` — move a ball in flight; on its arrival tick, land the pass.
+     2. `PassDecisionSystem` — carrier may pass (placeholder, see below).
+     3. `TeamShapeSystem` — assign movement targets.
+     4. `MovementSystem` — move all players.
+     5. Sync a possessed ball to its carrier.
+     6. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
    - `GoalRestart` — reserved for goals (M1.7).
 4. Advance the clock one tick.
 5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
@@ -86,6 +92,47 @@ All shape logic runs in **team frame** (`TeamFrame`): own goal at X = 0, attacki
 - In possession — deep support: X = 4 + 0.12 × ball X, small lateral shift.
 - Always clamped inside the penalty area.
 
+## Passing (implemented)
+
+Intent → resolver → result → state update → event (ADR-012):
+
+```text
+PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolver.Resolve ─▶ PassResult
+                                                                     │
+                     PassExecution.Launch (PassAttempted, ball in flight) ◀┘
+                     … BallFlightSystem, N ticks later …
+                     PassExecution.Land (PassCompleted | PassIntercepted + PossessionChanged | PassMisplaced)
+```
+
+**Estimate** (`PassResolver.Estimate`, no randomness; shared with target selection):
+
+- `Ability = Passing + 0.3·(Technique − 5) + 0.3·(Awareness − 5)`
+- `Quality = Ability − 0.1·distance − Pressure`, where `Pressure = 0.4 · max(0, 5 − distance to nearest opponent)`
+- `Accuracy = Sigmoid(0.7 · (Quality + 1))` (ADR-013)
+- **Interception threats** — every opponent whose closest point on the pass lane is ≥ 5 % along it and within reach:
+  `reach = 1 + 0.1·Awareness + 0.5 · topSpeed · t · travelTime` (they can run toward the lane while the ball travels).
+  `P = (1 − laneDistance/reach) · (0.3 + 0.06·Defending) · max(0.2, 1.1 − 0.06·Ability)`, capped at 0.95.
+  Threats are ordered by how early along the lane they meet the ball. An opponent marking the receiver is a late-lane threat, which is how receiver openness enters.
+- `SuccessProbability = Accuracy · Π(1 − P_threat)`
+
+**Resolve**: one `Roll(Accuracy)`; on failure → **Misplaced**, landing 3 to 3 + 0.3·distance m from the target in a random direction (unit-disc rejection sampling), clamped to the pitch. Otherwise one `Roll(P)` per threat, earliest first; first success → **Intercepted** at that lane point. Otherwise **Completed**.
+
+**Result presentation data**: `StartPosition`, `IntendedTarget`, `TargetPosition` (actual landing), `TravelDuration`, `Quality` (= accuracy probability).
+
+**Target selection** (`PassTargetSelector`): for every teammate ≥ 4 m away, `score = 100·SuccessProbability + 0.8·forward progress (m, team frame) − 15 if goalkeeper`; highest wins, ties to the earlier player. No randomness yet.
+
+**Decision placeholder** (`PassDecisionSystem`): the carrier passes once they have held the ball 2.5 s. Replaced by utility AI in M1.9.
+
+**During flight**: the receiver (or interceptor) sprints to the landing point; the passing team keeps its attacking shape; the defending presser chases the ball.
+
+**Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, then `PossessionChanged`), `PassMisplaced` (actor = passer, position = landing).
+
+## Possession bookkeeping (implemented)
+
+- `MatchContext.GiveBall` is the only way systems transfer possession; it emits `PossessionChanged` (actor = new holder, team = new team) when the team differs from `LastPossessionTeam`. The opening kickoff does not emit it.
+- `PossessionStartTick` records when the current holder got the ball.
+- `AttackingTeam` = possessor's team, or the passing team during a flight; null when loose.
+
 ## Movement (implemented)
 
 `MovementSystem.Apply(state, tickSeconds)` moves each player straight toward `MovementTarget`, never overshooting, clamped to the pitch. No collisions or avoidance.
@@ -130,18 +177,19 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 
 ## Invariants (implemented)
 
-`MatchStateInvariants.FindViolations(state)` / `Verify(state)` check: 22 active players, 11 per side, unique ids, possessor is an active player and the ball is at their position, non-negative score, players on the pitch, stamina within bounds. Each message names the offending player. The clock cannot decrease by construction; the test helper `CheckedRun` additionally verifies invariants and clock advancement after every tick of a full match.
+`MatchStateInvariants.FindViolations(state)` / `Verify(state)` check: 22 active players, 11 per side, unique ids, possessor is an active player and the ball is at their position, ball on the pitch, a ball in flight has no possessor, non-negative score, players on the pitch, stamina within bounds. Each message names the offending player. The clock cannot decrease by construction; the test helper `CheckedRun` additionally verifies invariants and clock advancement after every tick of a full match.
 
 ## Design targets
 
 | Topic | Target design | Subtask |
 |---|---|---|
-| Action pattern | Intent → Resolver → Result → state update → event. | M1.5–M1.7 |
+| Action pattern | Carry, tackle, shot follow the pass pattern. | M1.6–M1.7 |
 | Utility AI | Score each valid action; choose high-utility with controlled deterministic randomness. | M1.9 |
-| Presentation data | Action results carry start/target position, travel duration, quality. | M1.5+ |
 
 ## Current limitations
 
-- No on-ball actions: after kickoff the striker holds the ball at the centre spot and the opposing presser stands on it for 90 minutes; every match is 0–0.
+- Only on-ball action is passing, every 2.5 s; no carrying, tackling or shooting; every match is 0–0.
+- ~1 500 passes per match (placeholder cadence) with ~92 % completion; interceptions are rare (< 1 %) because target selection avoids risky lanes and nothing forces risk yet. Revisit in M1.6/M1.9/M1.11.
+- The ball never goes out of play; misplaced passes are clamped to the pitch.
 - No off-ball decision-making (support runs, forward runs) — players only follow shape anchors.
 - No statistics in `MatchResult` yet.
