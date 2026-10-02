@@ -8,7 +8,8 @@ Fantasy football management/deckbuilding game. Current focus: headless determini
 - Presentation never determines football outcomes.
 - Core simulation must run headlessly.
 - `src/MonsterFootball.Simulation` must never reference Godot or `godot/` (enforced by tests).
-- All simulation randomness must use MatchRng (`IMatchRandom`). Never use `System.Random`, `Guid.NewGuid`, or wall-clock time in simulation code.
+- All simulation randomness must use MatchRng (`IMatchRandom`). Never use `System.Random`, `Guid.NewGuid`, or wall-clock time in simulation code (enforced by tests).
+- Changing the order of random draws changes every seeded match — do it deliberately.
 - The simulation must remain deterministic by seed.
 - Use the approved player stat model only (ADR-002).
 - Do not implement systems belonging to future milestones.

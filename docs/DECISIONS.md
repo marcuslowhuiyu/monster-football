@@ -87,7 +87,7 @@ External agent memory or vector databases — deferred until documentation size 
 
 ## ADR-005 — Single Deterministic Random Source
 
-Status: Accepted (implementation scheduled for M1.3)
+Status: Accepted (implemented in M1.3 — see ADR-009)
 
 Decision:
 All simulation randomness flows through one seeded service (`IMatchRandom`) owned by the match.
@@ -156,3 +156,42 @@ map each player to one anchor without ambiguity. Shirt numbers are presentation-
 
 Consequences:
 Introducing formations later will replace the "every slot exactly once" rule with formation-specific validation — supersede this ADR when that happens.
+
+---
+
+## ADR-009 — MatchRng Uses an In-House xoshiro256** Implementation
+
+Status: Accepted
+
+Decision:
+- `IMatchRandom` exposes `NextDouble()`, `NextInt(min, maxExclusive)` and `Roll(probability)`.
+- `MatchRng` implements it with xoshiro256**, state seeded from the `int` match seed via SplitMix64.
+- `NextInt` uses rejection sampling (no modulo bias). `Roll` always consumes exactly one draw, even for 0 or 1.
+- A test pins the first outputs for seed 123456; the values were cross-checked against an independent reference implementation.
+- An architecture test scans the compiled simulation for references to `System.Random`, `DateTime`, `DateTimeOffset`, `Guid`, `Stopwatch` and `Parallel`, and fails if any appear.
+
+Reason:
+`System.Random`'s algorithm is an implementation detail of .NET and may change between runtime versions,
+which would silently change every seeded match. Owning a small, well-known algorithm makes seeds permanent.
+Constant draw consumption in `Roll` keeps the random stream aligned regardless of probability values.
+
+Consequences:
+Changing the algorithm, seeding, or the order in which systems draw numbers changes the outcome for every seed.
+Treat such changes as deliberate and update pinned tests consciously.
+
+Rejected alternatives:
+`new System.Random(seed)`; `Random.Shared`; per-system generators.
+
+---
+
+## ADR-010 — Stepping a Finished Match Throws
+
+Status: Accepted
+
+Decision:
+`MatchSimulation.Step()` throws `InvalidOperationException` once `Phase == Finished`.
+`RunToCompletion()` is idempotent: calling it again returns the same result without new events.
+
+Reason:
+The milestone requires that the simulation "cannot accidentally continue after finish". A silent no-op would
+hide caller bugs (e.g. a presentation loop that keeps stepping); an exception surfaces them immediately.
