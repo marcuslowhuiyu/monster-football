@@ -2,9 +2,19 @@
 
 **MatchState** — The complete authoritative state of an active football match.
 
+**TeamSide** — `Home` or `Away`; identifies a team within a match. Home attacks toward increasing X.
+
+**PlayingPosition** — One of the 11 4-3-3 slots (GK, LB, LCB, RCB, RB, LCM, CM, RCM, LW, ST, RW). Grouped into Goalkeeper / Defender / Midfielder / Forward.
+
+**TeamDefinition** — A validated starting eleven with a name.
+
 **PlayerDefinition** — Persistent player data: identity, name, position, stats. Does not change during a match.
 
-**PlayerMatchState** — Mutable per-match player data: position, movement target, stamina, ball possession, current intent.
+**PlayerMatchState** — Mutable per-match player data: position, movement target, stamina (and later current intent). Possession is not stored here.
+
+**BallState** — Ball position and possessor. The only stored record of possession (ADR-007).
+
+**Possessor** — The player currently holding the ball; none when the ball is loose.
 
 **Intent** — An action a player or system wishes to attempt (e.g. `PassIntent`).
 

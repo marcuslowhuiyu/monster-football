@@ -34,8 +34,19 @@ MonsterFootball.Simulation.Tests ─┘         (no outward dependencies)
 Dependencies point **inward** to the simulation only. The simulation knows nothing about its consumers.
 This rule is enforced by `Architecture/DependencyRulesTests` (ADR-003).
 
-Planned namespaces inside the simulation (created as subtasks need them, not ahead of time):
-`Core`, `Players`, `Actions`, `AI`, `Events`, `Random`, `Statistics`.
+Namespaces inside the simulation are created as subtasks need them, not ahead of time:
+
+| Namespace | Contents | Status |
+|---|---|---|
+| `Core` | `MatchState`, `BallState`, `Score`, `MatchPhase`, `PitchGeometry`, `Vec2`, `TeamSide`, `MatchStateInvariants` | M1.2 |
+| `Players` | `PlayerId`, `PlayerStats`, `PlayerDefinition`, `PlayingPosition`, `TeamDefinition`, `PlayerMatchState` | M1.2 |
+| `Actions`, `AI`, `Events`, `Random`, `Statistics` | — | planned |
+
+### State ownership and mutation
+
+- Definitions (`PlayerDefinition`, `TeamDefinition`, `PlayerStats`) are immutable and validated on construction. Invalid teams cannot exist.
+- Match state (`MatchState`, `PlayerMatchState`, `BallState`, `Score`) is publicly readable but **mutated only through `internal` members**. Outside code (presentation, runner) can observe the match but cannot change it. Tests reach internals via `InternalsVisibleTo`.
+- Facts are stored once and derived elsewhere — e.g. possession lives only on the ball (ADR-007).
 
 ## 3. Determinism requirements
 
