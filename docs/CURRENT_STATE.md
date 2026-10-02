@@ -24,6 +24,7 @@ In progress:
 Known issues:
 - `dotnet` is installed at `~/.dotnet` and may not be on `PATH` in every shell
 - History before ADR-017 (28 commits) went directly to `main`
+- Branch protection unavailable on the current GitHub plan for this private repo; PR workflow enforced by convention (ADR-017)
 - Godot editor not installed (not needed until presentation work)
 - Placeholder decisions: ~34 shots, ~2 goals, ~2 000 passes, ~450 tackles per match; only strikers score
 - Players cover 16–18 km per match; strikers finish near-empty stamina

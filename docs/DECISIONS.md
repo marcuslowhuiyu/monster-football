@@ -345,6 +345,17 @@ ADR-013 promises identical results on every platform; only a multi-OS comparison
 existing test discipline into a gate that a change cannot skip, and the PR flow gives each subtask a
 reviewable unit with its CI result attached.
 
+Enforcement:
+GitHub rulesets/branch protection are unavailable for this private repository on the current plan (API returns 403:
+"Upgrade to GitHub Pro or make this repository public"). Until that changes, the repository allows **rebase-merge only**
+and auto-deletes merged branches, and the workflow is enforced by discipline (`CLAUDE.md`, the personal
+`shipping-changes-via-pr-and-ci` skill). If the repo goes public or the plan is upgraded, add a ruleset requiring a PR and
+the five CI checks (`Format`, `Build & test (ubuntu-latest|windows-latest|macos-latest)`, `Cross-platform determinism`).
+
+Lessons:
+Run CI's exact commands locally, including coverage collection: coverlet instruments the test-output copy of the
+simulation assembly, which first broke the determinism guard only in CI (fixed by scanning the original build output).
+
 Rejected alternatives:
 Single-OS CI (cannot detect cross-platform divergence); squash merges (would collapse the small commits the
 milestone asks for); floating action tags such as `@v7` (mutable, supply-chain risk).
