@@ -217,3 +217,45 @@ Home/Away sign bugs; a symmetry test enforces it.
 Consequences:
 This is positional scaffolding, not tactical intelligence. Off-ball choices such as support runs,
 forward runs and recovery (M1.9 utility AI) will adjust or override these targets.
+
+---
+
+## ADR-012 — Passes Are Resolved at the Kick and Applied on Arrival
+
+Status: Accepted
+
+Decision:
+- `PassResolver.Resolve` decides the outcome (Completed / Intercepted / Misplaced) and the landing point when the ball is struck, using `IMatchRandom`.
+- The ball then travels as a `BallFlight` for the resolved duration (ball speed 12 + 0.25 × distance m/s, capped at 25). During flight nobody possesses it; `MatchState.AttackingTeam` stays with the passing team.
+- On the arrival tick the outcome is applied: receiver or interceptor gains possession, or the ball is left loose at the misplaced landing point.
+- A loose ball is collected by the nearest player within 1.5 m.
+- Every possession transfer goes through `MatchContext.GiveBall`, which emits `PossessionChanged` whenever control passes to the other team. `MatchState.LastPossessionTeam` records who last had control (the field anticipated by ADR-007).
+
+Reason:
+Deciding at the kick keeps resolution a single, testable function and gives the presentation layer the
+authoritative result (start, target, duration, quality) before the animation starts. Holding the ball in
+flight stops possession teleporting and means nobody can act on a ball that hasn't arrived.
+
+Consequences:
+Players can move during the flight, so a receiver may be a little off the landing point; the ball snaps to
+the player who gains it. Misplaced passes are clamped to the pitch — there are no throw-ins or goal kicks yet.
+
+Rejected alternatives:
+Instant resolution with possession transferred immediately (simpler, but possession changes before the ball
+visibly arrives); continuous ball physics with interception checks per tick (more complex, harder to test).
+
+---
+
+## ADR-013 — No Transcendental Maths Functions in Outcome Calculations
+
+Status: Accepted
+
+Decision:
+Outcome-affecting code uses only +, −, ×, ÷, `Math.Sqrt`, `Math.Abs`, `Math.Min/Max/Clamp`. Probabilities come
+from `Curves.Sigmoid(x) = 0.5 + 0.5·x/√(1+x²)` rather than a logistic `1/(1+e^−x)`. Random directions are
+produced by rejection sampling the unit disc, not with `sin`/`cos`.
+
+Reason:
+IEEE 754 requires basic arithmetic and square root to be correctly rounded, so they give identical results on
+every platform. `Math.Exp`, `Math.Sin` etc. delegate to platform maths libraries that can differ in the last bit,
+which would let the same seed play a different match on another OS or CPU.

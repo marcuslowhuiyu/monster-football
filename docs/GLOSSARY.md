@@ -54,6 +54,18 @@
 
 **Utility score** — A number rating how desirable a candidate action is for a player; the AI picks among high-scoring candidates.
 
+**PassEstimate** — RNG-free assessment of a pass: ability, accuracy probability, interception threats, overall success probability.
+
+**Interception threat** — An opponent close enough to the pass lane to cut it out, with a probability and position along the lane.
+
+**BallFlight** — A pass in the air: its resolved result plus launch and arrival ticks.
+
+**Loose ball** — Nobody possesses the ball and it is not in flight; the nearest player within 1.5 m collects it.
+
+**AttackingTeam** — The possessor's team, or the passing team while a pass is in flight.
+
+**MatchContext** — What a system needs to act: state, config, random source, event output; owns possession transfer.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.

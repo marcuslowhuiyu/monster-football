@@ -46,7 +46,11 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Movement` | `MovementSystem` | M1.4 |
 | root | `MatchSimulation`, `MatchResult` | M1.3 |
 | `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
-| `Actions`, `AI`, `Statistics` | — | planned |
+| `Actions` | `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassResult`, `BallFlight`, `PassTargetSelector`, `PassExecution` | M1.5 |
+| `AI` | `PassDecisionSystem` (placeholder) | M1.5 |
+| root | `MatchContext` | M1.5 |
+| `Core` additions | `Curves` | M1.5 |
+| `Statistics` | — | planned |
 
 ### State ownership and mutation
 
@@ -65,7 +69,7 @@ Given identical starting state, configuration and seed, the simulation must prod
 
 ### Systems
 
-Per-tick behaviour lives in small `internal sealed` system classes owned by `MatchSimulation` (e.g. `TeamShapeSystem`, `MovementSystem`), each with an `Apply(state, …)` method. `MatchSimulation` decides the order they run in; systems never call each other. This keeps each behaviour independently testable and makes the tick order explicit in one place.
+Per-tick behaviour lives in small `internal sealed` system classes owned by `MatchSimulation` (e.g. `TeamShapeSystem`, `MovementSystem`, `BallFlightSystem`), each with an `Apply(…)` method. Systems that use randomness or emit events take a `MatchContext` (state + config + `IMatchRandom` + event output); purely positional systems take `MatchState`. `MatchSimulation` decides the order they run in; systems never call each other. This keeps each behaviour independently testable and makes the tick order explicit in one place.
 
 ## 4. Event architecture
 
@@ -78,6 +82,11 @@ Events carry the simulated timestamp, never wall-clock time. Metadata is a sorte
 
 Player AI → Intent → Resolver → Result → MatchState update → MatchEvent.
 Each action type (pass, carry, tackle, shot) follows this pattern so future modifiers (roles, traits, cards) can hook in at the intent-scoring and resolution stages.
+
+- **Resolvers are read-only**: they take state + intent (+ `IMatchRandom`) and return a result record. They never mutate state, so they can be unit-tested and called speculatively.
+- **Estimates are shared**: a resolver exposes an RNG-free `Estimate` that both resolution and AI target selection use, so the AI judges options with the same maths that decides outcomes.
+- **Execution is separate**: a small execution step applies the result to state and emits events.
+- **Determinism-safe maths** only in outcome code (ADR-013).
 
 ## 6. Testing philosophy
 
