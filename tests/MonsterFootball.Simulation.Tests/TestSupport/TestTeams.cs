@@ -18,10 +18,14 @@ internal static class TestTeams
                 stats ?? PlayerStats.Uniform(5)))
             .ToList();
 
-    public static TeamDefinition Team(string name = "Blue", int firstId = 1) => new(name, Players(name, firstId));
+    public static TeamDefinition Team(string name = "Blue", int firstId = 1, PlayerStats? stats = null) =>
+        new(name, Players(name, firstId, stats));
 
-    public static MatchState Match() =>
-        MatchState.Create(MatchConfig.Default, Team("Blue", 1), Team("Red", 101), KickoffLayout);
+    public static MatchState Match(PlayerStats? homeStats = null, PlayerStats? awayStats = null) =>
+        MatchState.Create(MatchConfig.Default, Team("Blue", 1, homeStats), Team("Red", 101, awayStats), KickoffLayout);
+
+    public static PlayerMatchState Slot(this MatchState state, TeamSide side, PlayingPosition position) =>
+        state.TeamPlayers(side).Single(p => p.Definition.Position == position);
 
     public static Vec2 KickoffLayout(TeamSide side, PlayerDefinition player) =>
         Formation433.KickoffPosition(PitchGeometry.Standard, side, player.Position);

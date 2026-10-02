@@ -25,6 +25,7 @@ public sealed class PlayerMatchState
 
     public Vec2 Position { get; internal set; }
     public Vec2 MovementTarget { get; internal set; }
+    public MovementIntensity MovementIntensity { get; internal set; } = MovementIntensity.Jog;
     public double CurrentStamina { get; internal set; } = MaxStamina;
 
     public override string ToString() =>
