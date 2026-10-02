@@ -1,0 +1,9 @@
+namespace MonsterFootball.Simulation.Events;
+
+/// <summary>Event types are appended as each subtask implements the behaviour that emits them.</summary>
+public enum MatchEventType
+{
+    MatchStarted,
+    Kickoff,
+    MatchFinished,
+}
