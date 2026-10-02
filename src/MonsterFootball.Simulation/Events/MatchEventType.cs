@@ -10,5 +10,10 @@ public enum MatchEventType
     PassIntercepted,
     PassMisplaced,
     PossessionChanged,
+    CarryStarted,
+    TackleAttempted,
+    TackleWon,
+    TackleLost,
+    TackleLooseBall,
     MatchFinished,
 }

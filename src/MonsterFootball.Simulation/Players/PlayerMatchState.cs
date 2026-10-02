@@ -1,5 +1,7 @@
 namespace MonsterFootball.Simulation.Players;
 
+using MonsterFootball.Simulation.Actions;
+using MonsterFootball.Simulation.Actions.Carrying;
 using MonsterFootball.Simulation.Core;
 
 /// <summary>
@@ -27,6 +29,21 @@ public sealed class PlayerMatchState
     public Vec2 MovementTarget { get; internal set; }
     public MovementIntensity MovementIntensity { get; internal set; } = MovementIntensity.Jog;
     public double CurrentStamina { get; internal set; } = MaxStamina;
+
+    /// <summary>The ongoing action this player is committed to, if any (currently only carries persist).</summary>
+    public ActionIntent? CurrentIntent { get; internal set; }
+
+    /// <summary>The carry in progress; only ever set on the ball carrier.</summary>
+    public CarryResult? ActiveCarry { get; internal set; }
+
+    /// <summary>The player may not attempt a tackle before this tick.</summary>
+    public long TackleCooldownUntilTick { get; internal set; }
+
+    internal void ClearIntent()
+    {
+        CurrentIntent = null;
+        ActiveCarry = null;
+    }
 
     public override string ToString() =>
         $"{Team} #{Definition.ShirtNumber} {Definition.Name} ({PlayerId}, {Definition.Position}) at {Position}";

@@ -12,7 +12,7 @@ internal static class PassExecution
         var state = context.State;
         var tick = state.Clock.Tick;
         var travelTicks = Math.Max(1, (long)Math.Ceiling(result.TravelDuration / context.Config.TickSeconds - 1e-9));
-        state.Ball.Launch(new BallFlight(result, tick, tick + travelTicks));
+        state.LaunchBall(new BallFlight(result, tick, tick + travelTicks));
 
         context.Emit(MatchEventType.PassAttempted,
             actor: result.Passer,

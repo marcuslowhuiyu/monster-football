@@ -48,6 +48,9 @@ public static class MatchStateInvariants
             if (!state.Pitch.Contains(player.Position))
                 violations.Add($"Player outside pitch: {player}.");
 
+            if (player.ActiveCarry is not null && !state.HasBall(player.PlayerId))
+                violations.Add($"Player has an active carry without the ball: {player}.");
+
             if (player.CurrentStamina is < PlayerMatchState.MinStamina or > PlayerMatchState.MaxStamina)
                 violations.Add($"Stamina {player.CurrentStamina} out of range [{PlayerMatchState.MinStamina}, {PlayerMatchState.MaxStamina}]: {player}.");
         }
