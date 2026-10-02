@@ -40,6 +40,18 @@ public sealed class MatchState
     public Score Score { get; } = new();
     public MatchPhase Phase { get; internal set; } = MatchPhase.Kickoff;
 
+    /// <summary>The team that most recently had the ball under control; null before the kickoff.</summary>
+    public TeamSide? LastPossessionTeam { get; private set; }
+
+    /// <summary>Tick at which the current possessor gained the ball.</summary>
+    public long PossessionStartTick { get; private set; }
+
+    /// <summary>
+    /// The team currently attacking: the possessor's team, or the passing team while a pass is in flight.
+    /// Null when the ball is loose.
+    /// </summary>
+    public TeamSide? AttackingTeam => PossessionTeam ?? Ball.Flight?.Pass.Team;
+
     /// <summary>The side that takes the next kickoff.</summary>
     public TeamSide KickoffTeam { get; internal set; } = TeamSide.Home;
 
@@ -100,6 +112,8 @@ public sealed class MatchState
     {
         var player = Player(id);
         Ball.GiveTo(id, player.Position);
+        LastPossessionTeam = player.Team;
+        PossessionStartTick = Clock.Tick;
     }
 
     internal void SetBallLoose(Vec2 position) => Ball.SetLoose(position);

@@ -19,6 +19,20 @@ public readonly record struct Vec2(double X, double Y)
 
     public double DistanceTo(Vec2 other) => (other - this).Length;
 
+    public static double Dot(Vec2 a, Vec2 b) => a.X * b.X + a.Y * b.Y;
+
+    /// <summary>
+    /// Closest point to <paramref name="point"/> on segment <paramref name="start"/>–<paramref name="end"/>;
+    /// <paramref name="t"/> is its fraction along the segment (0 at start, 1 at end).
+    /// </summary>
+    public static Vec2 ClosestPointOnSegment(Vec2 start, Vec2 end, Vec2 point, out double t)
+    {
+        var segment = end - start;
+        var lengthSquared = segment.LengthSquared;
+        t = lengthSquared < Epsilon ? 0 : Math.Clamp(Dot(point - start, segment) / lengthSquared, 0, 1);
+        return start + segment * t;
+    }
+
     public Vec2 Normalized()
     {
         var length = Length;
