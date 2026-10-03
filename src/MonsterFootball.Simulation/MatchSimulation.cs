@@ -12,6 +12,7 @@ using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Random;
 using MonsterFootball.Simulation.Restarts;
+using MonsterFootball.Simulation.Statistics;
 
 namespace MonsterFootball.Simulation;
 
@@ -103,7 +104,7 @@ public sealed class MatchSimulation
         while (!IsFinished)
             Step();
 
-        return new MatchResult(State.Score.Home, State.Score.Away, Events, State, Seed);
+        return new MatchResult(State.Score.Home, State.Score.Away, Events, State, MatchStatistics.FromEvents(Events), Seed);
     }
 
     private void Start()
