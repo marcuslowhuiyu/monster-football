@@ -2,6 +2,7 @@ namespace MonsterFootball.Simulation.Players;
 
 using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Actions.Carrying;
+using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 
 /// <summary>
@@ -38,6 +39,9 @@ public sealed class PlayerMatchState
 
     /// <summary>The carry in progress; only ever set on the ball carrier.</summary>
     public CarryResult? ActiveCarry { get; internal set; }
+
+    /// <summary>The off-ball behaviour this player is committed to, if any.</summary>
+    public OffBallPlan? OffBallPlan { get; internal set; }
 
     /// <summary>The player may not attempt a tackle before this tick.</summary>
     public long TackleCooldownUntilTick { get; internal set; }

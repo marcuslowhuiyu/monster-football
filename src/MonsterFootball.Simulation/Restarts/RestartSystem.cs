@@ -19,6 +19,7 @@ internal sealed class RestartSystem
             player.MovementIntensity = MovementIntensity.Jog;
             player.TackleCooldownUntilTick = 0;
             player.ClearIntent();
+            player.OffBallPlan = null;
         }
 
         state.Phase = MatchPhase.Kickoff;

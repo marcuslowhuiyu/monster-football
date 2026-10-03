@@ -5,16 +5,17 @@ using MonsterFootball.Simulation.Players;
 namespace MonsterFootball.Simulation.Actions.Tackling;
 
 /// <summary>
-/// Placeholder challenge decision until utility AI (M1.9): the nearest eligible outfield opponent
-/// within <see cref="ChallengeRange"/> of the carrier commits to a tackle with probability
-/// <see cref="AttemptRatePerSecond"/> × tick length. At most one tackle per tick.
-/// Cooldowns stop the same players challenging repeatedly.
+/// Challenge decision for the defending team's CloseDownOpponent behaviour: the nearest eligible outfield
+/// opponent within <see cref="ChallengeRange"/> of the carrier commits to a tackle with probability
+/// rate × tick length, where rate = <see cref="AI.OffBallWeights.TackleBaseRatePerSecond"/> × (contact chance ÷ an even duel's)
+/// × (1 + <see cref="AI.OffBallWeights.TackleDangerBonus"/> when the carrier is in the defender's own third). Defenders who are likely
+/// to win the ball, or who are close to their own goal, commit sooner. At most one tackle per tick; cooldowns
+/// stop the same players challenging repeatedly.
 /// </summary>
-internal sealed class TackleSystem(TackleResolver resolver)
+internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights weights)
 {
     public const double ChallengeRange = 1.8;
     public const double FirstTouchProtectionSeconds = 0.75;
-    public const double AttemptRatePerSecond = 1.0;
     public const double AttemptCooldownSeconds = 1.5;
     public const double BeatenCooldownSeconds = 3.0;
     public const double DispossessedCooldownSeconds = 2.0;
@@ -40,11 +41,21 @@ internal sealed class TackleSystem(TackleResolver resolver)
                         && p.Position.DistanceTo(carrier.Position) <= ChallengeRange)
             .MinBy(p => p.Position.DistanceTo(carrier.Position));
 
-        if (tackler is null || !context.Random.Roll(Math.Min(1, AttemptRatePerSecond * tickSeconds)))
+        if (tackler is null || !context.Random.Roll(AttemptProbability(state, tackler, carrier, tickSeconds)))
             return;
 
         var result = resolver.Resolve(state, new TackleIntent(tackler.PlayerId, carrierId), context.Random);
         Execute(context, result, tackler, carrier);
+    }
+
+    private double AttemptProbability(MatchState state, PlayerMatchState tackler, PlayerMatchState carrier, double tickSeconds)
+    {
+        var evenDuel = resolver.ContactProbability(PlayerStats.Uniform(5), PlayerStats.Uniform(5));
+        var confidence = resolver.ContactProbability(tackler, carrier) / evenDuel;
+        var ownGoal = state.Pitch.OwnGoalCentre(tackler.Team);
+        var inOwnThird = carrier.Position.DistanceTo(ownGoal) < state.Pitch.Length / 3;
+        var rate = weights.TackleBaseRatePerSecond * confidence * (inOwnThird ? 1 + weights.TackleDangerBonus : 1);
+        return Math.Min(1, rate * tickSeconds);
     }
 
     private static void Execute(MatchContext context, TackleResult result, PlayerMatchState tackler, PlayerMatchState carrier)

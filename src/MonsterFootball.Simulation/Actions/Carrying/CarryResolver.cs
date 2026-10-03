@@ -63,7 +63,7 @@ internal sealed class CarryResolver
         var ticks = Math.Max(1, (long)Math.Ceiling(duration / state.Clock.TickSeconds - 1e-9));
         var quality = MovementSystem.CarrySpeedFraction(carrier.Definition.Stats.Technique);
 
-        return new CarryResult(intent.Carrier, start, target, speed, duration, state.Clock.Tick + ticks, quality);
+        return new CarryResult(intent.Carrier, start, target, speed, duration, state.Clock.Tick, state.Clock.Tick + ticks, quality);
     }
 
     private static Vec2 ClampLocal(PitchGeometry pitch, Vec2 local) =>

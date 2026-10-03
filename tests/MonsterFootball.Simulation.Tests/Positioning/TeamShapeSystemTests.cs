@@ -81,12 +81,26 @@ public class TeamShapeSystemTests
 
         var presser = Assert.Single(state.TeamPlayers(TeamSide.Home), p => p.MovementIntensity == MovementIntensity.Sprint);
         Assert.False(presser.Definition.Position.IsGoalkeeper());
-        Assert.Equal(ball, presser.MovementTarget);
+
+        // Closes down to a jockeying spot goal-side of the carrier, inside challenge range.
+        Assert.Equal(TeamShapeSystem.JockeyDistance, presser.MovementTarget.DistanceTo(ball), precision: 9);
+        Assert.True(presser.MovementTarget.X < ball.X, "presser should be goal-side (Home defends X = 0)");
+        Assert.True(TeamShapeSystem.JockeyDistance < MonsterFootball.Simulation.Actions.Tackling.TackleSystem.ChallengeRange);
 
         var nearest = state.TeamPlayers(TeamSide.Home)
             .Where(p => !p.Definition.Position.IsGoalkeeper())
             .MinBy(p => p.Position.DistanceTo(ball));
         Assert.Same(nearest, presser);
+    }
+
+    [Fact]
+    public void Loose_ball_presser_chases_the_ball_itself()
+    {
+        var ball = new Vec2(40, 30);
+        var state = Arrange(ball, possession: null);
+
+        var presser = Assert.Single(state.TeamPlayers(TeamSide.Home), p => p.MovementIntensity == MovementIntensity.Sprint);
+        Assert.Equal(ball, presser.MovementTarget);
     }
 
     [Fact]
