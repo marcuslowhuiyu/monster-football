@@ -4,7 +4,7 @@ Current milestone:
 M1 — Deterministic Match Simulation
 
 Current subtask:
-M1.9 — Utility AI (complete)
+M1.10 — Full match (complete)
 
 Completed:
 - M1.1 bootstrap: solution, Godot placeholder, architecture test, project-memory docs
@@ -16,7 +16,8 @@ Completed:
 - M1.7 shooting, goalkeeper contest, goals, restarts
 - M1.8: `FatigueModel`, `StaminaSystem`, fatigue in resolvers
 - M1.9: utility AI — `UtilitySelector` (bounded deterministic randomness, `IUtilityModifier` hook), on-ball candidates (hold/pass/carry/shoot), off-ball behaviours (support, forward runs, goal-side marking, recovery) with commitment and team limits, presser jockeying, judgement-based tackle commitment, shot blocking, attacking shape capped at opponents' last line, weights as data (`AiTuning`)
-- ADR-016 (stamina model), ADR-018 (utility AI)
+- M1.10: `MatchResult.Statistics` derived from events (goals, shots, on target, passes, possessions won, possession time), `Diagnostics.MatchReport`, DebugRunner `match [seed] [--all]`
+- ADR-016 (stamina model), ADR-018 (utility AI), ADR-019 (statistics from events)
 - CI/CD: GitHub Actions (format, build+test on Ubuntu/Windows/macOS, cross-platform determinism fingerprint), pinned SDK, NuGet lock files, `.editorconfig` enforced in build, Dependabot, PR template, branch/PR workflow (ADR-017)
 
 In progress:
@@ -33,7 +34,7 @@ Known issues:
 - Ball never goes out of play; misses go to the keeper
 
 Next recommended work:
-- M1.10 — full match: `MatchResult.Statistics` (goals, shots, on target, passes completed/attempted, possession changes, possession time), debug runner single-match readable log
+- M1.11 — batch simulation: DebugRunner `batch` running 1,000 matches with aggregate statistics (averages, pass completion, home/draw/away %), pathological-behaviour checks; use it to tune the known issues (shots on target, pass volume, distance covered, striker share)
 
 Last verified:
-2026-10-03 — format clean, Release build 0 warnings, `dotnet test` 244/244 passing.
+2026-10-03 — format clean, Release build 0 warnings, `dotnet test` 256/256 passing.

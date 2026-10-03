@@ -100,6 +100,10 @@
 
 **AiTuning** — All AI utility weights as data, on `MatchConfig.Ai`.
 
+**MatchStatistics** — Per-team goals, shots, shots on target, passes, possessions won and possession time, derived from the event log.
+
+**Possession time** — Seconds credited to the team last in control of the ball, including while its pass is in flight or the ball is loose.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.

@@ -54,7 +54,8 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
 | root | `MatchContext` | M1.5 |
 | `Core` additions | `Curves` | M1.5 |
-| `Statistics` | — | planned |
+| `Statistics` | `MatchStatistics`, `TeamStatistics` (derived from events) | M1.10 |
+| `Diagnostics` | `MatchFingerprint` (determinism), `MatchReport` (debug log + statistics table) | M1.9–M1.10 |
 
 ### State ownership and mutation
 
@@ -80,7 +81,7 @@ Per-tick behaviour lives in small `internal sealed` system classes owned by `Mat
 The simulation emits immutable, structured `MatchEvent` records into an ordered log exposed by `MatchSimulation`.
 Future consumers (commentary, statistics, replays, Opportunity detection) read the log; they do not alter outcomes.
 
-Events carry the simulated timestamp, never wall-clock time. Metadata is a sorted map so an event's canonical string form is deterministic. Details: `MATCH_SIMULATION.md`.
+Events carry the simulated timestamp, never wall-clock time. Statistics are the first external consumer: `MatchStatistics.FromEvents` derives every figure from the log (ADR-019). Metadata is a sorted map so an event's canonical string form is deterministic. Details: `MATCH_SIMULATION.md`.
 
 ## 5. Action pattern
 
