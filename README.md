@@ -8,11 +8,11 @@ The core is a headless, deterministic 11v11 match simulation (Milestone 1). Godo
 
 ## Status
 
-Milestone 1 (deterministic 11v11 simulation) — subtasks M1.1–M1.9 complete:
+Milestone 1 (deterministic 11v11 simulation) — subtasks M1.1–M1.10 complete:
 project setup, domain model, seeded clock/RNG/events, 4-3-3 movement and shape, passing,
-carrying, tackling, shooting/goalkeeping/restarts, stamina, utility AI. 244 automated tests passing.
+carrying, tackling, shooting/goalkeeping/restarts, stamina, utility AI, match statistics and a readable debug log. 256 automated tests passing.
 
-Next: full-match results/statistics (M1.10), 1,000-match batch runs (M1.11)
+Next: 1,000-match batch runs and tuning (M1.11)
 and the final review (M1.12). See `docs/CURRENT_STATE.md` for details and known issues.
 
 ## Prerequisites
@@ -67,10 +67,11 @@ Prints a SHA-256 per seed. The same seed must give the same hash on every machin
 ## Running one match
 
 ```sh
-dotnet run --project src/MonsterFootball.DebugRunner
+dotnet run --project src/MonsterFootball.DebugRunner -- match 7          # highlights + statistics
+dotnet run --project src/MonsterFootball.DebugRunner -- match 7 --all    # every event
 ```
 
-*Not yet implemented — arrives in M1.10.*
+Prints a readable log (`04:31 Blue #6 passes to Blue #9`, `27:51 GOAL — Blue #10 (1–0)`), the final score and a statistics table.
 
 ## Running batch simulations
 

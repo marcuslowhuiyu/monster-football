@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -13,7 +13,7 @@ MatchResult result = simulation.RunToCompletion();
 ```
 
 - `State` (read-only `MatchState`), `Events` (ordered log), `IsFinished`, `Seed`.
-- `MatchResult`: `HomeGoals`, `AwayGoals`, `Events`, `FinalState`, `Seed`. Statistics are added in M1.10.
+- `MatchResult`: `HomeGoals`, `AwayGoals`, `Events`, `FinalState`, `Statistics`, `Seed`.
 - `Step()` after full time throws; `RunToCompletion()` is idempotent (ADR-010).
 - An `internal` constructor accepts any `IMatchRandom`, so tests can script outcomes (`ScriptedRandom`).
 
@@ -211,6 +211,30 @@ Commitment: forward runs 3 s, support and marking 1.5 s, others 1 s. Team limits
 
 **CloseDownOpponent** is the presser chosen by `TeamShapeSystem` (fatigue-weighted nearest outfield player). Against a carrier the presser jockeys 1.5 m goal-side (inside the 1.8 m challenge range); a loose or flying ball is chased directly.
 
+## Statistics (implemented)
+
+ADR-019. `MatchStatistics.FromEvents` derives everything from the event log:
+
+| Statistic | Source |
+|---|---|
+| Goals | `GoalScored` (team = scorer) |
+| Shots | `ShotTaken` |
+| Shots on target | `GoalScored` + `ShotSaved` (event team is the saving side; credited to the shooting side) |
+| Passes attempted / completed | `PassAttempted` / `PassCompleted` |
+| Possessions won, possession changes | `PossessionChanged` |
+| Possession seconds | opening `Kickoff` → each `PossessionChanged` → `MatchFinished`; loose and in-flight time counts for the last team in control |
+
+Full-match tests check the statistics against the score, the event log and a 5 400 s possession total.
+
+## Debug runner (implemented)
+
+```sh
+dotnet run --project src/MonsterFootball.DebugRunner -- match 7          # highlights + statistics
+dotnet run --project src/MonsterFootball.DebugRunner -- match 7 --all    # every event
+```
+
+`Diagnostics.MatchReport` prints one line per event (`04:31 Blue #6 passes to Blue #9`, `09:14 Saved by Red GK`, `27:51 GOAL — Blue #10 (1–0)`), `FULL TIME`, the score and a statistics table. Highlights mode keeps kickoffs, shots, saves, misses and goals.
+
 ## Stamina and fatigue (implemented)
 
 ADR-016. `CurrentStamina` runs 0–100 and starts at 100.
@@ -297,4 +321,3 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 - Players cover 16–21 km per match (real ≈ 10–12 km): they jog toward constantly moving targets and never walk. Address in M1.11.
 - No blocks as events, rebounds, posts, corners or goal kicks.
 - The ball never goes out of play; misplaced passes are clamped to the pitch.
-- No statistics in `MatchResult` yet.

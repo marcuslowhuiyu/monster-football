@@ -39,6 +39,7 @@ The .NET SDK is installed at `~/.dotnet` (add it to `PATH` if `dotnet` is not fo
 dotnet build MonsterFootball.slnx
 dotnet test MonsterFootball.slnx
 dotnet format MonsterFootball.slnx --verify-no-changes
+dotnet run --project src/MonsterFootball.DebugRunner -- match 7 [--all]
 dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3
 ```
 

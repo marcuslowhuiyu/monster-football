@@ -398,3 +398,22 @@ Tune with batch runs, not single matches.
 Rejected alternatives:
 Argmax only (identical choices in identical situations; predictable); softmax with `Math.Exp` (ADR-013);
 per-system ad-hoc thresholds (the M1.5–M1.8 placeholders).
+
+---
+
+## ADR-019 — Statistics Are Derived from the Event Log
+
+Status: Accepted
+
+Decision:
+- `MatchStatistics.FromEvents(events)` computes all statistics; the simulation keeps no separate counters. `MatchResult.Statistics` is filled from it.
+- Per team: goals, shots, shots on target (goals + saves), passes attempted/completed, possessions won, possession seconds. Match: possession changes.
+- Possession time is credited to the team that last had the ball under control — including while its pass is in flight or the ball is loose — from the opening kickoff, switching at each `PossessionChanged`, until `MatchFinished`. Later kickoffs do not reset tracking (a post-goal kickoff already emits `PossessionChanged`).
+- `Diagnostics.MatchReport` renders a terse text log and statistics table for the debug runner; it is not commentary.
+
+Reason:
+The milestone lists statistics as an event-log consumer. Deriving them keeps one source of truth (events), makes
+statistics automatically deterministic and replayable, and lets them be recomputed for any recorded match.
+
+Consequences:
+Any statistic needs the events that carry it; a new statistic may require a new event type or metadata.
