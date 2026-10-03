@@ -50,7 +50,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotResolver`, `ShotExecution` | M1.7 |
 | `Restarts` | `RestartSystem` (goal reset, kickoff) | M1.7 |
-| `AI` | `OnBallDecisionSystem` (placeholder shoot/pass/carry choice) | M1.5–M1.7 |
+| `AI` | `ActionCandidate`/`ActionKind`, `UtilitySelector`, `IUtilityModifier`, `AiTuning` (weights), `OnBallCandidateGenerator` + `OnBallDecisionSystem`, `OffBallCandidateGenerator` + `OffBallDecisionSystem` + `OffBallPlan` | M1.9 |
 | `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
 | root | `MatchContext` | M1.5 |
 | `Core` additions | `Curves` | M1.5 |
@@ -110,6 +110,7 @@ Every change reaches `main` through a pull request gated by CI (ADR-017): format
 
 ## 8. Extension points (documented, not implemented)
 
-- Utility-score modifiers from roles, traits, tactics, manager instructions, species and cards.
+- Utility-score modifiers from roles, traits, tactics, manager instructions, species and cards: implement `IUtilityModifier` and pass it to `UtilitySelector` (ADR-018). The hook exists; no modifiers do.
+- AI weights per team or per match: `MatchConfig.Ai` (`AiTuning`) is data and can be varied without code changes.
 - Opportunity detection as an event-log consumer.
 - Presentation playback driven by `Step()` and event presentation data (start/target position, duration, quality).

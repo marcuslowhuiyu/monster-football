@@ -359,3 +359,42 @@ simulation assembly, which first broke the determinism guard only in CI (fixed b
 Rejected alternatives:
 Single-OS CI (cannot detect cross-platform divergence); squash merges (would collapse the small commits the
 milestone asks for); floating action tags such as `@v7` (mutable, supply-chain risk).
+
+---
+
+## ADR-018 — Utility AI: Scored Candidates, Bounded Randomness, Weights as Data
+
+Status: Accepted
+
+Decision:
+- Every decision is a list of `ActionCandidate`s with utilities, chosen by one `UtilitySelector`:
+  candidates within `Tolerance` (8) of the best are plausible; one plausible option is taken without a random draw,
+  several are chosen with probability proportional to how far each clears the cut-off (one `IMatchRandom` draw).
+  The best option is always most likely; anything more than 8 below it is never picked.
+- **On the ball** (`OnBallCandidateGenerator`): Hold, Pass (one per teammate ≥ 4 m away), Carry, Shoot (offered from xG 0.03).
+  Utilities reuse resolver estimates (pass success, shot xG), so the AI judges options with the outcome maths.
+- **Off the ball** (`OffBallCandidateGenerator` + `OffBallDecisionSystem`): MoveIntoPosition (team-shape target),
+  SupportBallCarrier, MakeForwardRun, DefendGoalSide, RecoverPosition. Players commit to a choice (`OffBallPlan`)
+  for 1–3 s; team limits: 2 supporters, 2 runners, each opponent marked once.
+  CloseDownOpponent stays a team-level assignment in `TeamShapeSystem` (one fatigue-weighted presser, now jockeying
+  1.5 m goal-side of a carrier rather than standing on the ball); its tackle commitment rate scales with contact
+  chance and danger (own third).
+- **Weights are data**: `AiTuning` (`OnBallWeights`, `OffBallWeights`) on `MatchConfig.Ai`. Defaults came from a
+  random search scored against plausibility bands; batch tuning (M1.11) can override them without code changes.
+- **Extension point**: `IUtilityModifier` adjusts candidate utilities before selection — the hook for roles, traits,
+  tactics, manager instructions, species and cards. No modifiers exist in Milestone 1.
+- Attackers' shape targets stop at the opponents' last outfield line (positional discipline, not an offside rule).
+- Shots are penalised 0.5 per outfield defender within 1.5 m of the shooting lane (blocking pressure).
+
+Reason:
+A single selector gives one place for determinism, randomness and future modifiers. Continuous utilities remove
+the threshold cliffs of the placeholder rules (e.g. shooting jumping from 6 to 34 shots per match). Commitment
+stops off-ball targets jittering every tick. Weights as data make tuning measurable and repeatable.
+
+Consequences:
+Behaviour emerges from interacting weights; changing one (e.g. pressure) shifts several match statistics at once.
+Tune with batch runs, not single matches.
+
+Rejected alternatives:
+Argmax only (identical choices in identical situations; predictable); softmax with `Math.Exp` (ADR-013);
+per-system ad-hoc thresholds (the M1.5–M1.8 placeholders).
