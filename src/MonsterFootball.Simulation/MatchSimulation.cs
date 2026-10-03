@@ -28,8 +28,9 @@ public sealed class MatchSimulation
     private readonly BallFlightSystem _ballFlight = new();
     private readonly CarrySystem _carry = new();
     private readonly OnBallDecisionSystem _onBallDecision;
-    private readonly TackleSystem _tackle = new(new TackleResolver());
+    private readonly TackleSystem _tackle;
     private readonly TeamShapeSystem _shape = new();
+    private readonly OffBallDecisionSystem _offBall;
     private readonly MovementSystem _movement = new();
     private readonly LooseBallSystem _looseBall = new();
     private readonly StaminaSystem _stamina = new();
@@ -51,8 +52,17 @@ public sealed class MatchSimulation
         _context = new MatchContext(config, State, random, _log);
 
         var passResolver = new PassResolver();
+        var selector = new UtilitySelector();
+        _tackle = new TackleSystem(new TackleResolver(), config.Ai.OffBall);
+        _offBall = new OffBallDecisionSystem(new OffBallCandidateGenerator(config.Ai.OffBall), selector);
+        var carryResolver = new CarryResolver();
+        var shotResolver = new ShotResolver();
         _onBallDecision = new OnBallDecisionSystem(
-            new PassTargetSelector(passResolver), passResolver, new CarryResolver(), new ShotResolver());
+            new OnBallCandidateGenerator(config.Ai.OnBall, passResolver, carryResolver, shotResolver),
+            selector,
+            passResolver,
+            carryResolver,
+            shotResolver);
     }
 
     public int Seed { get; }
@@ -112,12 +122,13 @@ public sealed class MatchSimulation
     {
         _ballFlight.Apply(_context);      // advance / land a pass in flight
         _carry.Apply(_context);           // end finished carries
-        _onBallDecision.Apply(_context);  // carrier shoots, passes or carries (placeholder until M1.9)
+        _onBallDecision.Apply(_context);  // carrier holds, passes, carries or shoots (utility AI)
         if (State.Phase != MatchPhase.OpenPlay)
             return;
 
         _tackle.Apply(_context);          // defender in range challenges (placeholder until M1.9)
-        _shape.Apply(State);              // assign movement targets
+        _shape.Apply(State);              // default targets: shape, presser, pass receiver
+        _offBall.Apply(_context);         // off-ball utility AI: support, runs, marking, recovery
         _movement.Apply(State, _config.TickSeconds);
         State.SyncBallToPossessor();
         _looseBall.Apply(_context);       // collect a loose ball

@@ -7,8 +7,8 @@ namespace MonsterFootball.Simulation.Positioning;
 /// <summary>
 /// Assigns every player's <see cref="PlayerMatchState.MovementTarget"/> and intensity each tick
 /// from the 4-3-3 anchors, shifted with the ball. The attacking team (in possession, or whose pass is
-/// in flight) uses the attacking shape; the other team (and both teams when the ball is loose) defends,
-/// with its nearest outfield player sprinting to close the ball. The ball carrier follows their carry,
+/// in flight) uses the attacking shape, never pushing beyond the opponents' last outfield line; the other team (and both teams when the ball is loose) defends,
+/// with its nearest outfield player sprinting to close the ball (to a jockeying spot goal-side of a carrier). The ball carrier follows their carry,
 /// if any, and otherwise holds position. Whoever a pass in flight will reach sprints to meet it.
 /// </summary>
 internal sealed class TeamShapeSystem
@@ -47,6 +47,7 @@ internal sealed class TeamShapeSystem
         var inPossession = state.AttackingTeam == side;
         var ballLocal = TeamFrame.Convert(pitch, side, state.Ball.Position);
         var defensiveLineX = DefensiveLineX(pitch, ballLocal);
+        var opponentLastLineX = OpponentLastLineX(state, side);
 
         foreach (var player in state.TeamPlayers(side))
         {
@@ -70,7 +71,7 @@ internal sealed class TeamShapeSystem
             var local = slot.IsGoalkeeper()
                 ? GoalkeeperPositioning.Target(pitch, ballLocal, player.Definition.Stats.Awareness, inPossession)
                 : inPossession
-                    ? AttackingTarget(pitch, slot, ballLocal)
+                    ? AttackingTarget(pitch, slot, ballLocal, opponentLastLineX)
                     : DefendingTarget(pitch, slot, ballLocal, defensiveLineX);
 
             player.MovementTarget = TeamFrame.Convert(pitch, side, local);
@@ -81,7 +82,7 @@ internal sealed class TeamShapeSystem
             AssignPresser(state, side);
     }
 
-    private static Vec2 AttackingTarget(PitchGeometry pitch, PlayingPosition slot, Vec2 ballLocal)
+    private static Vec2 AttackingTarget(PitchGeometry pitch, PlayingPosition slot, Vec2 ballLocal, double opponentLastLineX)
     {
         var anchor = Formation433.InPossession(pitch, slot);
         var x = anchor.X + AttackShiftX * (ballLocal.X - pitch.HalfwayX);
@@ -91,6 +92,9 @@ internal sealed class TeamShapeSystem
             x = Math.Min(x, ballLocal.X - CentreBackCoverBehindBall);
         if (slot.Group() == PositionGroup.Forward)
             x = Math.Min(x, pitch.Length - ForwardMaxDepthFromGoalLine);
+
+        // Positional discipline (not an offside rule): stay level with the opponents' last outfield line.
+        x = Math.Min(x, Math.Max(opponentLastLineX, ballLocal.X));
 
         return ClampOutfield(pitch, new Vec2(x, y));
     }
@@ -116,6 +120,12 @@ internal sealed class TeamShapeSystem
         return ClampOutfield(pitch, target);
     }
 
+    /// <summary>The opponents' deepest outfield player, in <paramref name="side"/>'s team frame (their largest X).</summary>
+    internal static double OpponentLastLineX(MatchState state, TeamSide side) =>
+        state.TeamPlayers(side.Opponent())
+            .Where(p => !p.Definition.Position.IsGoalkeeper())
+            .Max(p => TeamFrame.Convert(state.Pitch, side, p.Position).X);
+
     /// <summary>One shared X for the back four: follows the ball but stays goal-side of it.</summary>
     private static double DefensiveLineX(PitchGeometry pitch, Vec2 ballLocal)
     {
@@ -124,6 +134,9 @@ internal sealed class TeamShapeSystem
         var goalSideLimit = Math.Max(MinDefensiveLineX, ballLocal.X - DefensiveLineGoalSideOfBall);
         return Math.Clamp(followed, MinDefensiveLineX, goalSideLimit);
     }
+
+    /// <summary>How far goal-side of a ball carrier the presser stands (inside the 1.8 m challenge range).</summary>
+    public const double JockeyDistance = 1.5;
 
     /// <summary>Tired players are treated as further from the ball when choosing who presses (fresh → ×1, empty → ×2).</summary>
     public const double TiredPressDistancePenalty = 1.0;
@@ -142,7 +155,17 @@ internal sealed class TeamShapeSystem
         if (presser is null)
             return;
 
-        presser.MovementTarget = ball;
+        // Against a carrier, close down to a jockeying spot goal-side of them (inside tackle range);
+        // a loose ball or a ball in flight is chased directly.
+        var target = ball;
+        if (state.PossessionPlayerId is { } carrierId)
+        {
+            var carrier = state.Player(carrierId);
+            var ownGoal = state.Pitch.OwnGoalCentre(side);
+            target = state.Pitch.Clamp(carrier.Position + (ownGoal - carrier.Position).Normalized() * JockeyDistance);
+        }
+
+        presser.MovementTarget = target;
         presser.MovementIntensity = MovementIntensity.Sprint;
     }
 

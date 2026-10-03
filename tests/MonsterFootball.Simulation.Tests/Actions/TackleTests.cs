@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Actions.Tackling;
+using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
@@ -66,7 +67,7 @@ public class TackleTests
         var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0));
         var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.True(s.State.HasBall(tackler.PlayerId));
         Assert.Equal(TeamSide.Away, s.State.PossessionTeam);
@@ -82,7 +83,7 @@ public class TackleTests
         var carrier = s.State.Slot(TeamSide.Home, PlayingPosition.CM);
         var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.True(s.State.HasBall(carrier.PlayerId));
         Assert.Equal([MatchEventType.TackleAttempted, MatchEventType.TackleLost], s.EventTypes);
@@ -94,7 +95,7 @@ public class TackleTests
     {
         var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.75, 0.5, 0.5));
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.True(s.State.Ball.IsLoose);
         Assert.Null(s.State.PossessionPlayerId);
@@ -109,7 +110,7 @@ public class TackleTests
         var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0));
         s.Place(TeamSide.Away, PlayingPosition.CM, 40 + TackleSystem.ChallengeRange + 0.2, 34);
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.Empty(s.EventTypes);
     }
@@ -121,7 +122,7 @@ public class TackleTests
         s.Place(TeamSide.Away, PlayingPosition.CM, 80, 34);
         s.Place(TeamSide.Away, PlayingPosition.GK, 41, 34);
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.Empty(s.EventTypes);
     }
@@ -134,7 +135,7 @@ public class TackleTests
         s.Place(TeamSide.Away, PlayingPosition.CM, 41, 34);
         s.GiveBall(TeamSide.Home, PlayingPosition.CM);
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.Empty(s.EventTypes);
     }
@@ -145,7 +146,7 @@ public class TackleTests
         var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0));
         s.State.Slot(TeamSide.Away, PlayingPosition.CM).TackleCooldownUntilTick = s.State.Clock.Tick + 10;
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.Empty(s.EventTypes);
     }
@@ -160,7 +161,7 @@ public class TackleTests
         for (var i = 0; i < 8; i++)
             s.State.Clock.Advance();
 
-        new TackleSystem(_resolver).Apply(s.Context);
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
         Assert.Empty(s.EventTypes);
     }
