@@ -88,6 +88,18 @@
 
 **Match fingerprint** — Canonical text of every event plus full-precision final state; equal fingerprints mean bit-identical matches. Hashed by `DebugRunner fingerprint` and compared across OSes in CI.
 
+**Utility** — A score for how good a candidate action is right now; higher is better.
+
+**ActionCandidate** — One option for a player (kind, utility, and the intent or movement target to carry it out).
+
+**Plausible options** — Candidates within 8 utility of the best; the only ones the selector may choose.
+
+**OffBallPlan** — An off-ball behaviour a player has committed to for a short time (support, run, mark, recover, hold position).
+
+**Jockeying** — The presser holding a spot 1.5 m goal-side of the carrier instead of standing on the ball.
+
+**AiTuning** — All AI utility weights as data, on `MatchConfig.Ai`.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.

@@ -8,11 +8,11 @@ The core is a headless, deterministic 11v11 match simulation (Milestone 1). Godo
 
 ## Status
 
-Milestone 1 (deterministic 11v11 simulation) — subtasks M1.1–M1.8 complete:
+Milestone 1 (deterministic 11v11 simulation) — subtasks M1.1–M1.9 complete:
 project setup, domain model, seeded clock/RNG/events, 4-3-3 movement and shape, passing,
-carrying, tackling, shooting/goalkeeping/restarts, stamina. 220 automated tests passing.
+carrying, tackling, shooting/goalkeeping/restarts, stamina, utility AI. 244 automated tests passing.
 
-Next: M1.9 utility AI, then full-match results/statistics (M1.10), 1,000-match batch runs (M1.11)
+Next: full-match results/statistics (M1.10), 1,000-match batch runs (M1.11)
 and the final review (M1.12). See `docs/CURRENT_STATE.md` for details and known issues.
 
 ## Prerequisites
