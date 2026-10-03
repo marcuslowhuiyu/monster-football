@@ -13,5 +13,6 @@ public sealed record CarryResult(
     Vec2 TargetPosition,
     double Speed,
     double Duration,
+    long StartTick,
     long EndTick,
     double Quality);
