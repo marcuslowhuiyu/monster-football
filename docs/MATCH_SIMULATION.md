@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -35,13 +35,14 @@ Each `Step()`:
    - `OpenPlay` — in this order:
      1. `BallFlightSystem` — move a ball in flight; on its arrival tick, land the pass.
      2. `CarrySystem` — end carries whose time is up, whose target is reached, or whose carrier lost the ball.
-     3. `OnBallDecisionSystem` — carrier shoots, passes or starts a carry (placeholder, see below). If a goal was scored, the rest of the tick is skipped.
-     4. `TackleSystem` — an opponent in range may challenge (placeholder, see below).
-     5. `TeamShapeSystem` — assign movement targets (carrier follows their carry).
-     6. `MovementSystem` — move all players.
-     7. Sync a possessed ball to its carrier.
-     8. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
-     9. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
+     3. `OnBallDecisionSystem` — utility AI: carrier holds, passes, carries or shoots. If a goal was scored, the rest of the tick is skipped.
+     4. `TackleSystem` — the presser (or another opponent in range) may challenge.
+     5. `TeamShapeSystem` — default targets: team shape, the presser, a pass receiver; the carrier follows their carry.
+     6. `OffBallDecisionSystem` — utility AI for everyone else: support, forward runs, marking, recovery.
+     7. `MovementSystem` — move all players.
+     8. Sync a possessed ball to its carrier.
+     9. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
+     10. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
    - `GoalRestart` — `RestartSystem.ResetForKickoff`: all players back to the kickoff layout, intents and cooldowns cleared, ball loose on the centre spot; phase → `Kickoff`.
 4. Advance the clock one tick.
 5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
@@ -147,7 +148,7 @@ PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolv
 - Roll clean `clamp(0.6 + 0.03·(tackler Awareness − 5), 0.1, 0.9)` → **Won**, otherwise **LooseBall** (ball 2–5 m away, random direction).
 - Pace matters indirectly: faster defenders reach challenge range sooner.
 
-`TackleSystem` (placeholder decision): the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability 1.0/s × tick length. Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
+`TackleSystem`: the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability rate × tick length, rate = `TackleBaseRatePerSecond` (0.17) × (contact chance ÷ an even duel's) × 2 if the carrier is in the defender's own third. Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
 
 Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
 
@@ -158,7 +159,7 @@ Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `Tackl
 **Estimate** (no randomness; shared with the shooting decision):
 
 - Ability = Finishing + 0.3·(Technique − 5) + 0.2·(Power − 5).
-- Distance to goal centre; angle penalty = min(4, 1.5 × lateral offset ÷ distance to goal line); pressure = 0.5 × max(0, 3 − nearest outfield opponent distance).
+- Distance to goal centre; angle penalty = min(4, 1.5 × lateral offset ÷ distance to goal line); pressure = 0.5 × max(0, 3 − nearest outfield opponent distance) + 0.5 per outfield defender within 1.5 m of the shooting lane (blocking).
 - On target = `Sigmoid(0.35·(Ability − 0.15·distance − pressure − angle) − 1)`.
 - Keeper rating = Keeping + 0.3·(Awareness − 5) − 0.3·min(10, distance from the keeper's ideal spot). The ideal spot is `GoalkeeperPositioning`, so Awareness counts twice: positioning and rating.
 - Shot power = 0.5·Finishing + 0.5·Power + 0.2·max(0, 20 − distance) (close shots are harder to save).
@@ -175,15 +176,40 @@ Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `Tackl
 
 **Goalkeepers in possession**: cannot be tackled inside their own penalty area; never shoot or carry; distribute by passing.
 
-## On-ball decisions (placeholder until M1.9)
+## Utility AI (implemented)
 
-`OnBallDecisionSystem`, once the carrier has held the ball 0.5 s:
+ADR-018. Every decision: generate `ActionCandidate`s → `UtilitySelector.Choose` → execute.
 
-1. Outfield player within 35 m of goal with xG ≥ 0.05 → shoot (may interrupt a carry).
-2. Mid-carry → continue.
-3. Pressed (opponent within 3 m) → pass immediately.
-4. Outfield player with space ahead (no opponent within 7 m level with or ahead of them, and not at the goal line) → start a carry. In the final third, carries bend toward goal.
-5. Otherwise, held ≥ 2.5 s → pass.
+**Selector**: apply `IUtilityModifier`s (none in M1) → plausible = utility > best − 8 → one plausible: take it (no random draw); several: pick with probability ∝ (utility − (best − 8)) using one `IMatchRandom` draw.
+
+**Weights** live in `MatchConfig.Ai` (`AiTuning`: `OnBallWeights`, `OffBallWeights`). Defaults below came from a random search over 84 configurations scored against plausibility bands.
+
+### On the ball (`OnBallCandidateGenerator`, every tick after the 0.5 s first touch)
+
+| Candidate | Utility |
+|---|---|
+| Hold | 81 − 12 × seconds held − 30 × pressure. While carrying: 62 − 10 × seconds carrying − 30 × pressure. Pressure = 1 − (nearest opponent ÷ 3 m), 0 beyond 3 m. |
+| Pass (each teammate ≥ 4 m) | 50 × success probability + 0.75 × forward progress (m) + 18 × goal proximity of receiver (1 on the goal line, 0 at ≥ 35 m) − 15 if goalkeeper |
+| Carry (outfield, not mid-carry) | 36 + 0.8 × forward gain + 2 × space ahead (≤ 12 m) − 30 × pressure × (1 − 0.05 × (Technique − 5)) |
+| Shoot (outfield, ≤ 35 m, xG ≥ 0.03) | 32 + 318 × xG |
+
+Goalkeepers only hold or pass.
+
+### Off the ball (`OffBallDecisionSystem`, after `TeamShapeSystem`)
+
+Skipped: goalkeepers, the carrier, the presser and a pass receiver (they keep the shape system's assignment). Everyone else follows their `OffBallPlan` until it expires or the attacking team changes, then re-decides:
+
+| Candidate | When | Target / intensity | Utility |
+|---|---|---|---|
+| MoveIntoPosition | always | team-shape target, jog | 40 |
+| RecoverPosition | defending, > 10 m from shape target | shape target, sprint | 40 + 1.5 × (distance − 10) (+10 if ahead of the ball) |
+| SupportBallCarrier | attacking, not a defender, ≤ 30 m from carrier | best of 8 spots 12 m around the carrier, jog | 28 + 2.5 × openness (≤ 10) + 2 × lane clearance (≤ 5) − 0.4 × travel (+4 if forward) |
+| MakeForwardRun | attacking, ST/LW/RW/LCM/RCM, ball beyond 35 m | 1 m beyond the opponents' last outfield line (≤ 16 m from goal), in the player's lane, sprint | 31 + 0.8 × Pace + space behind the line (≤ 20) + role bonus (ST 8, wingers 5) |
+| DefendGoalSide | defending, defender/midfielder | 2 m goal-side of the nearest unmarked attacker within 15 m of the shape target; sprint if > 8 m away | 36 + 18 × threat − 0.5 × travel |
+
+Commitment: forward runs 3 s, support and marking 1.5 s, others 1 s. Team limits: 2 supporters, 2 runners, one marker per opponent.
+
+**CloseDownOpponent** is the presser chosen by `TeamShapeSystem` (fatigue-weighted nearest outfield player). Against a carrier the presser jockeys 1.5 m goal-side (inside the 1.8 m challenge range); a loose or flying ball is chased directly.
 
 ## Stamina and fatigue (implemented)
 
@@ -264,18 +290,11 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 
 `MatchStateInvariants.FindViolations(state)` / `Verify(state)` check: an active carry exists only on the ball carrier; 22 active players, 11 per side, unique ids, possessor is an active player and the ball is at their position, ball on the pitch, a ball in flight has no possessor, non-negative score, players on the pitch, stamina within bounds. Each message names the offending player. The clock cannot decrease by construction; the test helper `CheckedRun` additionally verifies invariants and clock advancement after every tick of a full match.
 
-## Design targets
-
-| Topic | Target design | Subtask |
-|---|---|---|
-| Utility AI | Score each valid action; choose high-utility with controlled deterministic randomness. | M1.9 |
-
 ## Current limitations
 
-- Placeholder decisions (40 matches, all-5 teams): ~2.0 goals, ~34 shots (27 % on target), ~2 000 passes, ~790 carries, ~450 tackles, ~320 possession changes per match. Too busy, too many shots.
-- **Only strikers score.** Nearly all shots come from the ST at 15–25 m; wingers and midfielders rarely reach shooting positions. The shot threshold sits on a cliff (0.06 → ~6 shots, 0.05 → ~34) because the ST spends most of the match about 20–25 m out, where xG ≈ 0.05. Fix with off-ball forward runs and utility selection (M1.9) and tune in M1.11.
-- No blocks, rebounds, posts, corners or goal kicks.
-- Players cover 16–18 km per match (real ≈ 10–12 km) because shape targets move with the ball every tick and pressers sprint a lot; strikers carry most of the pressing and finish nearly empty. Tune with M1.9/M1.11.
+- Utility AI defaults (40 matches, all-5 teams): ~2.3 goals, ~43 shots (19 % on target), ~2 000 passes, ~220 carries, ~170 tackles, ~370 possession changes per match. Remember play is 90 continuous minutes (real matches have ~55–60 min ball-in-play).
+- Shots are too many and too rarely on target; the striker still scores ~80 % of goals. Tune in M1.11 (shot model and weights).
+- Players cover 16–21 km per match (real ≈ 10–12 km): they jog toward constantly moving targets and never walk. Address in M1.11.
+- No blocks as events, rebounds, posts, corners or goal kicks.
 - The ball never goes out of play; misplaced passes are clamped to the pitch.
-- No off-ball decision-making (support runs, forward runs) — players only follow shape anchors.
 - No statistics in `MatchResult` yet.
