@@ -21,7 +21,8 @@ internal sealed record ShotEstimate(
 
 /// <summary>
 /// Resolves a <see cref="ShotIntent"/> in two rolls:
-/// 1. on target — shooter ability vs distance, angle and pressure → Missed on failure;
+/// 1. on target — shooter ability vs distance, angle and pressure (close opponents and outfield
+///    defenders in the shooting lane) → Missed on failure;
 /// 2. save — goalkeeper rating vs shot power and closeness → Saved, otherwise Goal.
 /// Reads state; never mutates it.
 /// </summary>
@@ -33,6 +34,8 @@ internal sealed class ShotResolver
     public const double DistancePenaltyPerMetre = 0.15;
     public const double PressureRadius = 3;
     public const double PressurePenaltyPerMetre = 0.5;
+    public const double BlockLaneWidth = 1.5;
+    public const double BlockPenaltyPerDefender = 0.5;
     public const double AnglePenaltyScale = 1.5;
     public const double MaxAnglePenalty = 4;
     public const double OnTargetScale = 0.35;
@@ -64,10 +67,17 @@ internal sealed class ShotResolver
         var lateral = Math.Abs(local.Y - pitch.Width / 2);
         var anglePenalty = Math.Min(MaxAnglePenalty, AnglePenaltyScale * lateral / toGoalLine);
 
-        var nearestOpponent = state.TeamPlayers(shooter.Team.Opponent())
+        var outfieldOpponents = state.TeamPlayers(shooter.Team.Opponent())
             .Where(p => !p.Definition.Position.IsGoalkeeper())
-            .Min(p => p.Position.DistanceTo(shooter.Position));
-        var pressure = Math.Max(0, PressureRadius - nearestOpponent) * PressurePenaltyPerMetre;
+            .ToList();
+        var nearestOpponent = outfieldOpponents.Min(p => p.Position.DistanceTo(shooter.Position));
+        var blockers = outfieldOpponents.Count(p =>
+        {
+            var point = Vec2.ClosestPointOnSegment(shooter.Position, goal, p.Position, out var t);
+            return t is > 0.05 and < 0.95 && p.Position.DistanceTo(point) < BlockLaneWidth;
+        });
+        var pressure = Math.Max(0, PressureRadius - nearestOpponent) * PressurePenaltyPerMetre
+            + blockers * BlockPenaltyPerDefender;
 
         var ability = (stats.Finishing + TechniqueWeight * (stats.Technique - 5) + PowerWeight * (stats.Power - 5))
             * FatigueModel.EffectivenessFactor(shooter);
