@@ -17,7 +17,7 @@ public sealed record AiTuning
 public sealed record OnBallWeights
 {
     // Hold: keep the ball for now. High just after receiving, decays quickly, collapses under pressure.
-    public double HoldBase { get; init; } = 81;
+    public double HoldBase { get; init; } = 88;
     public double HoldDecayPerSecond { get; init; } = 12;
     public double ContinueCarryBase { get; init; } = 62;
     public double ContinueCarryDecayPerSecond { get; init; } = 10;
@@ -25,7 +25,7 @@ public sealed record OnBallWeights
     public double PressurePenalty { get; init; } = 30;
 
     // Shoot: any reasonable chance is worth taking; better chances are worth much more.
-    public double ShotBase { get; init; } = 32;
+    public double ShotBase { get; init; } = 22;
     public double ShotUtilityPerXg { get; init; } = 318;
     public double MinShotXg { get; init; } = 0.03;
     public double MaxShootingDistance { get; init; } = 35;
@@ -39,7 +39,7 @@ public sealed record OnBallWeights
     public double MinPassDistance { get; init; } = 4;
 
     // Carry.
-    public double CarryBase { get; init; } = 36;
+    public double CarryBase { get; init; } = 42;
     public double CarryProgressionWeight { get; init; } = 0.8;
     public double CarrySpaceWeight { get; init; } = 2;
     public double CarrySpaceCap { get; init; } = 12;

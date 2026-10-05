@@ -39,7 +39,7 @@ internal sealed class ShotResolver
     public const double AnglePenaltyScale = 1.5;
     public const double MaxAnglePenalty = 4;
     public const double OnTargetScale = 0.35;
-    public const double OnTargetBias = -1.0;
+    public const double OnTargetBias = -0.7;
 
     // Goalkeeper.
     public const double KeeperAwarenessWeight = 0.3;

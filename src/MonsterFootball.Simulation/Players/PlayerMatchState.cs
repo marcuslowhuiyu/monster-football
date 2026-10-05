@@ -34,6 +34,9 @@ public sealed class PlayerMatchState
     /// <summary>Metres moved during the most recent tick (drives stamina drain).</summary>
     public double LastTickDistance { get; internal set; }
 
+    /// <summary>Total metres moved this match.</summary>
+    public double DistanceCovered { get; internal set; }
+
     /// <summary>The ongoing action this player is committed to, if any (currently only carries persist).</summary>
     public ActionIntent? CurrentIntent { get; internal set; }
 
