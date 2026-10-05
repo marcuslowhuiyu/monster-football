@@ -28,8 +28,20 @@ internal sealed class TeamShapeSystem
     private const double TouchlineMargin = 2;
     private const double GoalLineMargin = 3;
 
-    public void Apply(MatchState state)
+    /// <summary>
+    /// Moves each team's <see cref="MatchState.ShapeFocus"/> toward the ball — by <paramref name="attackingSmoothing"/>
+    /// per tick for the attacking team and <paramref name="defendingSmoothing"/> for the other (1 = snap to the ball,
+    /// as tests use) — then assigns targets around it.
+    /// </summary>
+    public void Apply(MatchState state, double attackingSmoothing = 1.0, double defendingSmoothing = 1.0)
     {
+        foreach (var side in Enum.GetValues<TeamSide>())
+        {
+            var smoothing = Math.Clamp(state.AttackingTeam == side ? attackingSmoothing : defendingSmoothing, 0, 1);
+            var focus = state.ShapeFocus(side);
+            state.SetShapeFocus(side, focus + (state.Ball.Position - focus) * smoothing);
+        }
+
         foreach (var side in Enum.GetValues<TeamSide>())
             AssignTeam(state, side);
 
@@ -45,7 +57,7 @@ internal sealed class TeamShapeSystem
     {
         var pitch = state.Pitch;
         var inPossession = state.AttackingTeam == side;
-        var ballLocal = TeamFrame.Convert(pitch, side, state.Ball.Position);
+        var ballLocal = TeamFrame.Convert(pitch, side, state.ShapeFocus(side));
         var defensiveLineX = DefensiveLineX(pitch, ballLocal);
         var opponentLastLineX = OpponentLastLineX(state, side);
 
@@ -75,7 +87,7 @@ internal sealed class TeamShapeSystem
                     : DefendingTarget(pitch, slot, ballLocal, defensiveLineX);
 
             player.MovementTarget = TeamFrame.Convert(pitch, side, local);
-            player.MovementIntensity = MovementIntensity.Jog;
+            player.MovementIntensity = inPossession ? MovementIntensity.Easy : MovementIntensity.Jog;
         }
 
         if (!inPossession)

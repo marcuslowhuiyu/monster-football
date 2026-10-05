@@ -26,6 +26,8 @@ public sealed class MatchState
         Players = players;
         _playersById = players.ToDictionary(p => p.PlayerId);
         Ball = new BallState(pitch.Centre);
+        _homeShapeFocus = pitch.Centre;
+        _awayShapeFocus = pitch.Centre;
     }
 
     public PitchGeometry Pitch { get; }
@@ -51,6 +53,23 @@ public sealed class MatchState
     /// Null when the ball is loose.
     /// </summary>
     public TeamSide? AttackingTeam => PossessionTeam ?? Ball.Flight?.Pass.Team;
+
+    private Vec2 _homeShapeFocus;
+    private Vec2 _awayShapeFocus;
+
+    /// <summary>
+    /// Smoothed ball position a team's shape is built around (a moving average of the ball), so blocks shift with
+    /// the flow of play rather than with every square pass. Pressing and marking use the real ball.
+    /// </summary>
+    public Vec2 ShapeFocus(TeamSide side) => side == TeamSide.Home ? _homeShapeFocus : _awayShapeFocus;
+
+    internal void SetShapeFocus(TeamSide side, Vec2 focus)
+    {
+        if (side == TeamSide.Home)
+            _homeShapeFocus = focus;
+        else
+            _awayShapeFocus = focus;
+    }
 
     /// <summary>The side that takes the next kickoff.</summary>
     public TeamSide KickoffTeam { get; internal set; } = TeamSide.Home;
