@@ -10,7 +10,7 @@ namespace MonsterFootball.Simulation.AI;
 /// <summary>
 /// Scores every option for the ball carrier (ADR-018). Utilities use resolver estimates, so the AI
 /// judges options with the same maths that decides outcomes. Rough scale: a safe square pass ≈ 45,
-/// a progressive pass ≈ 55–70, an open carry ≈ 55–60, a shot ≈ 40 + 300 × xG (offered from xG 0.03).
+/// a progressive pass ≈ 55–70, an open carry ≈ 55–60, a shot ≈ 22 + 318 × xG (offered from xG 0.03). Values live in OnBallWeights.
 /// </summary>
 internal sealed class OnBallCandidateGenerator(
     OnBallWeights weights,

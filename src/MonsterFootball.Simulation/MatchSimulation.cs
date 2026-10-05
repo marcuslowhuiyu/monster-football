@@ -133,7 +133,7 @@ public sealed class MatchSimulation
         if (State.Phase != MatchPhase.OpenPlay)
             return;
 
-        _tackle.Apply(_context);          // defender in range challenges (placeholder until M1.9)
+        _tackle.Apply(_context);          // presser (or another defender) in range may challenge
         _shape.Apply(State,                                  // default targets: shape, presser, pass receiver
             _config.TickSeconds / AttackingShapeFocusSeconds,
             _config.TickSeconds / DefendingShapeFocusSeconds);
