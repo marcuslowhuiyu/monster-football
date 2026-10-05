@@ -1,15 +1,16 @@
 # Current Development State
 
 Current milestone:
-M1 — Deterministic Match Simulation — **complete** (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
+M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **specified, not started** (`milestones/MILESTONE_2.md`, revision 2)
+M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-none — awaiting the Milestone 2 specification
+M2 specification review; next: M2.1–M2.12 implementation plan, then M2.1
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, goals and restarts, stamina/fatigue, utility AI on and off the ball
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 265 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- 269 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
 - Decisions ADR-001 – ADR-020
 
 In progress:
@@ -29,9 +30,14 @@ Environment notes:
 - Branch protection unavailable on the current GitHub plan for this private repo; PR workflow enforced by convention (ADR-017)
 - Open Dependabot PRs: test tooling updates (#4, #5, #7)
 
+Decisions taken for M2 (to be recorded as ADRs when implemented):
+- Tactical analysis, the viewer and debug tools read immutable per-tick `MatchFrame`s, never the live `MatchState` (accepted 2026-10-05)
+- Periods end only at a stoppage after added time (replaces "match ends at exactly 90:00")
+
 Next recommended work:
-- Write the Milestone 2 specification (candidates from the game design: Opportunity detection, cards/Playbook, squad-as-deck, presentation)
-- Optionally address the calibration issues above with batch-driven tuning
+- Review `milestones/MILESTONE_2.md` revision 2 and its open decisions (§54)
+- Write the M2 implementation plan; install Godot 4.7.2 .NET (needed from M2.1)
+- Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
-2026-10-05 — fresh clone following README: build 0 warnings, 265/265 tests, format clean, `match`, `fingerprint` and `batch` (HEALTHY) all working.
+2026-10-05 — M2 baseline on `main` @ `6e4e799`: Release build 0 warnings, 269/269 tests, format clean, `match 7`, `fingerprint 1 2 3` and `batch 1000` (HEALTHY, figures identical to M1 acceptance).
