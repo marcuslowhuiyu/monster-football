@@ -18,6 +18,11 @@ internal static class ShotExecution
             metadata: ImmutableSortedDictionary.CreateRange(
             [
                 new KeyValuePair<string, string>("xg", Format(result.GoalProbability)),
+                new KeyValuePair<string, string>("onTarget", Format(result.Quality)),
+                new KeyValuePair<string, string>("save", Format(result.SaveProbability)),
+                new KeyValuePair<string, string>("distance", Format(result.Distance)),
+                new KeyValuePair<string, string>("stamina", Format(state.Player(result.Shooter).CurrentStamina)),
+                new KeyValuePair<string, string>("keeperStamina", Format(state.Player(result.Goalkeeper).CurrentStamina)),
                 new KeyValuePair<string, string>("travel", Format(result.TravelDuration)),
             ]));
 

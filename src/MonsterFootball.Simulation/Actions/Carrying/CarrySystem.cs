@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Globalization;
 using MonsterFootball.Simulation.Events;
 
 namespace MonsterFootball.Simulation.Actions.Carrying;
@@ -10,7 +12,13 @@ internal sealed class CarrySystem
         var carrier = context.State.Player(intent.Carrier);
         carrier.CurrentIntent = intent;
         carrier.ActiveCarry = result;
-        context.Emit(MatchEventType.CarryStarted, actor: intent.Carrier, team: carrier.Team, position: result.StartPosition);
+        context.Emit(MatchEventType.CarryStarted, actor: intent.Carrier, team: carrier.Team, position: result.StartPosition,
+            metadata: ImmutableSortedDictionary.CreateRange(
+            [
+                new KeyValuePair<string, string>("distance", result.StartPosition.DistanceTo(result.TargetPosition).ToString("0.###", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("speed", result.Speed.ToString("0.###", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("stamina", carrier.CurrentStamina.ToString("0.###", CultureInfo.InvariantCulture)),
+            ]));
     }
 
     /// <summary>Clears finished or invalid carries.</summary>

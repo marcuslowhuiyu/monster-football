@@ -23,4 +23,11 @@ public sealed record ShotResult(
     Vec2 TargetPosition,
     double TravelDuration,
     double Quality,
-    double GoalProbability);
+    double GoalProbability)
+{
+    /// <summary>The goalkeeper's chance of saving if the shot was on target.</summary>
+    public double SaveProbability { get; init; }
+
+    /// <summary>Distance from shooter to goal centre, in metres.</summary>
+    public double Distance { get; init; }
+}

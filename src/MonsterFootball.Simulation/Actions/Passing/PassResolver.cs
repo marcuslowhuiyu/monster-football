@@ -113,12 +113,18 @@ internal sealed class PassResolver
         var passer = state.Player(intent.Passer);
         var start = passer.Position;
         var intendedTarget = state.Player(intent.Receiver).Position;
+        PassResult WithOdds(PassResult r) => r with
+        {
+            SuccessProbability = estimate.SuccessProbability,
+            Distance = estimate.Distance,
+            InterceptionThreats = estimate.Threats.Count,
+        };
 
         if (!random.Roll(estimate.AccuracyProbability))
         {
             var landing = MisplacedLanding(state.Pitch, intendedTarget, estimate.Distance, random);
-            return new PassResult(PassOutcome.Misplaced, passer.Team, intent.Passer, intent.Receiver, null,
-                start, intendedTarget, landing, TravelDuration(start.DistanceTo(landing)), estimate.AccuracyProbability);
+            return WithOdds(new PassResult(PassOutcome.Misplaced, passer.Team, intent.Passer, intent.Receiver, null,
+                start, intendedTarget, landing, TravelDuration(start.DistanceTo(landing)), estimate.AccuracyProbability));
         }
 
         foreach (var threat in estimate.Threats)
@@ -126,12 +132,14 @@ internal sealed class PassResolver
             if (!random.Roll(threat.Probability))
                 continue;
 
-            return new PassResult(PassOutcome.Intercepted, passer.Team, intent.Passer, intent.Receiver, threat.Opponent,
-                start, intendedTarget, threat.Point, estimate.TravelDuration * threat.AlongLane, estimate.AccuracyProbability);
+            return WithOdds(new PassResult(PassOutcome.Intercepted, passer.Team, intent.Passer, intent.Receiver, threat.Opponent,
+                start, intendedTarget, threat.Point, estimate.TravelDuration * threat.AlongLane, estimate.AccuracyProbability))
+                with
+            { InterceptionProbability = threat.Probability };
         }
 
-        return new PassResult(PassOutcome.Completed, passer.Team, intent.Passer, intent.Receiver, null,
-            start, intendedTarget, intendedTarget, estimate.TravelDuration, estimate.AccuracyProbability);
+        return WithOdds(new PassResult(PassOutcome.Completed, passer.Team, intent.Passer, intent.Receiver, null,
+            start, intendedTarget, intendedTarget, estimate.TravelDuration, estimate.AccuracyProbability));
     }
 
     public static double TravelDuration(double distance)
