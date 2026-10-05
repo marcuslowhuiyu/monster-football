@@ -104,6 +104,16 @@
 
 **Possession time** — Seconds credited to the team last in control of the ball, including while its pass is in flight or the ball is loose.
 
+**Shape focus** — The smoothed ball position a team's shape is built around (3 s average when attacking, 0.75 s when defending).
+
+**Easy** — Movement intensity for the team in possession holding position: a jog that slows over the last 12 m to the target.
+
+**Arrival** — Slowing in proportion to the remaining distance when close to a movement target.
+
+**Batch** — Many headless matches aggregated into a `BatchSummary`.
+
+**Health band** — A wide min–max range a batch figure must fall within; failing one flags pathological behaviour.
+
 **Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.
