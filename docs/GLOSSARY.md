@@ -10,7 +10,7 @@
 
 **PlayerDefinition** — Persistent player data: identity, name, position, stats. Does not change during a match.
 
-**PlayerMatchState** — Mutable per-match player data: position, movement target, stamina (and later current intent). Possession is not stored here.
+**PlayerMatchState** — Mutable per-match player data: position, movement target and intensity, stamina, distance covered, current intent, active carry, off-ball plan. Possession is not stored here.
 
 **Team frame** — Coordinates relative to a team: own goal at X = 0, attacking +X, left flank +Y. Shape rules are written in team frame.
 
@@ -18,9 +18,9 @@
 
 **Defensive line** — The single X shared by the back four out of possession; always goal-side of the ball.
 
-**Presser** — The nearest outfield player of a team without the ball, sent to close it down at sprint intensity.
+**Presser** — The outfield player of a team without the ball with the lowest fatigue-weighted distance to it, sent at sprint intensity to jockey goal-side of the carrier (or to a loose ball). The CloseDownOpponent behaviour.
 
-**MovementIntensity** — `Jog` (60 % of top speed) or `Sprint` (100 %).
+**MovementIntensity** — `Easy` (jog that slows over the last 12 m), `Jog` (60 % of top speed, slows over the last 4 m), `Sprint` (100 %), `Carry` (0.55 + 0.03 × Technique).
 
 **BallState** — Ball position and possessor. The only stored record of possession (ADR-007).
 
