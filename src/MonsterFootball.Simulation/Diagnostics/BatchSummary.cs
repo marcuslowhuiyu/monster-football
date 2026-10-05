@@ -1,0 +1,60 @@
+using MonsterFootball.Simulation.Core;
+
+namespace MonsterFootball.Simulation.Diagnostics;
+
+/// <summary>
+/// Aggregate figures over many matches. Built from summaries in seed order, so the result is identical
+/// however the matches were scheduled (e.g. in parallel).
+/// </summary>
+public sealed record BatchSummary(
+    int Matches,
+    double AverageGoals,
+    double AverageShots,
+    double AverageShotsOnTarget,
+    double AveragePasses,
+    double PassCompletion,
+    double HomeWinShare,
+    double DrawShare,
+    double AwayWinShare,
+    double AverageHomePossession,
+    double AverageTackles,
+    double AverageCarries,
+    double AveragePossessionChanges,
+    double StrikerGoalShare,
+    double TeamMatchesWithoutShotShare,
+    int MaxGoalsInMatch,
+    double AverageOutfieldDistanceKm,
+    double AverageOutfieldStaminaAtFullTime)
+{
+    public static BatchSummary From(IReadOnlyList<MatchSummary> summaries)
+    {
+        if (summaries.Count == 0)
+            throw new ArgumentException("At least one match is required.", nameof(summaries));
+
+        var ordered = summaries.OrderBy(s => s.Seed).ToList();
+        var n = (double)ordered.Count;
+        var goals = ordered.Sum(s => s.HomeGoals + s.AwayGoals);
+        var attempted = ordered.Sum(s => s.Statistics.Home.PassesAttempted + s.Statistics.Away.PassesAttempted);
+        var completed = ordered.Sum(s => s.Statistics.Home.PassesCompleted + s.Statistics.Away.PassesCompleted);
+
+        return new BatchSummary(
+            ordered.Count,
+            goals / n,
+            ordered.Average(s => s.Statistics.Home.Shots + s.Statistics.Away.Shots),
+            ordered.Average(s => s.Statistics.Home.ShotsOnTarget + s.Statistics.Away.ShotsOnTarget),
+            attempted / n,
+            attempted == 0 ? 0 : (double)completed / attempted,
+            ordered.Count(s => s.HomeGoals > s.AwayGoals) / n,
+            ordered.Count(s => s.HomeGoals == s.AwayGoals) / n,
+            ordered.Count(s => s.HomeGoals < s.AwayGoals) / n,
+            ordered.Average(s => s.Statistics.PossessionShare(TeamSide.Home)),
+            ordered.Average(s => s.Tackles),
+            ordered.Average(s => s.Carries),
+            ordered.Average(s => s.Statistics.PossessionChanges),
+            goals == 0 ? 0 : (double)ordered.Sum(s => s.StrikerGoals) / goals,
+            ordered.Sum(s => (s.Statistics.Home.Shots == 0 ? 1 : 0) + (s.Statistics.Away.Shots == 0 ? 1 : 0)) / (2 * n),
+            ordered.Max(s => s.HomeGoals + s.AwayGoals),
+            ordered.Average(s => s.OutfieldDistanceKm),
+            ordered.Average(s => s.OutfieldStaminaAtFullTime));
+    }
+}
