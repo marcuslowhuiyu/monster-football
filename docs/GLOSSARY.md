@@ -114,6 +114,34 @@
 
 **Health band** — A wide min–max range a batch figure must fall within; failing one flags pathological behaviour.
 
-**Opportunity** — Future system representing a tactically significant moment where manager intervention may become available.
+**Opportunity** — A tactically significant open-play situation recognised by tactical analysis (M2: six types); an episode with a start and an end. Future: where manager intervention may become available.
+
+*Milestone 2 terms (specified, not yet implemented):*
+
+**Ball in play / play stopped** — The ball is either live (open play) or dead (a stoppage) until a restart.
+
+**Stoppage** — Play stopped, with its reason, restart type, awarded team, restart location and any offending/fouled player and disciplinary outcome.
+
+**Restart** — How play resumes: kickoff, throw-in, goal kick, corner, direct free kick, indirect free kick, penalty.
+
+**Ball-in-play time** — Time the ball was live; the match clock keeps running through stoppages.
+
+**Added time (stoppage time)** — Minutes added to a period for time lost to goals, cards, penalties and dismissals; the period then ends at the next stoppage. Not to be confused with *extra time* (30-minute knockout periods, out of scope).
+
+**Last touch** — The player who last played the ball; decides throw-in, goal kick or corner when it goes out.
+
+**Offside position** — In the opponents' half, ahead of the ball and of the second-last opponent when a teammate plays the ball; an offence only on becoming involved.
+
+**Second-last opponent** — The offside line: normally the last outfield defender, the keeper being last.
+
+**DOGSO** — Denying an obvious goal-scoring opportunity; a foul that usually means a red card.
+
+**Dismissal** — A player sent off (straight red or second yellow); removed from active play for the rest of the match.
+
+**MatchFrame** — Immutable copy of observable match state at the end of a tick; what analysis and the viewer read.
+
+**Tactical zone** — One of 20 team-frame regions: a longitudinal band (Defensive, OwnMidfield, OppositionMidfield, Attacking) × a vertical channel (LeftWide, LeftHalfSpace, Centre, RightHalfSpace, RightWide).
+
+**Tactical snapshot** — Immutable derived interpretation of one frame: zones, lines, pressure, numbers, lanes, play phase.
 
 **Playbook** — Future term for the cards/actions available to the manager during a match.
