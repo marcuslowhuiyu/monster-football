@@ -128,7 +128,7 @@ OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassInten
 
 **During flight**: the receiver (or interceptor) sprints to the landing point; the passing team keeps its attacking shape; the defending presser chases the ball.
 
-**Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, then `PossessionChanged`), `PassMisplaced` (actor = passer, target = intended receiver, position = landing).
+**Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality` (accuracy), `success`, `distance`, `threats`, `stamina`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, metadata `chance`, then `PossessionChanged`), `PassMisplaced` (actor = passer, target = intended receiver, position = landing).
 
 ## Carrying (implemented)
 
@@ -136,7 +136,7 @@ OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassInten
 
 - `ChooseDestination`: up to 10 m forward in team frame (bending toward goal in the final third), steered sideways away from the nearest opponent within 12 m (steer strength ∝ Awareness and closeness), with a small drift toward the centre; kept 3 m inside touchlines and goal lines.
 - Speed = top speed × (0.55 + 0.03 × Technique) — `MovementIntensity.Carry`.
-- `CarrySystem.Start` sets `CurrentIntent` / `ActiveCarry` and emits `CarryStarted`. The carry ends at `EndTick`, on reaching the target, or when the ball leaves the carrier.
+- `CarrySystem.Start` sets `CurrentIntent` / `ActiveCarry` and emits `CarryStarted` (metadata `distance`, `speed`, `stamina`). The carry ends at `EndTick`, on reaching the target, or when the ball leaves the carrier.
 
 ## Tackling (implemented)
 
@@ -149,7 +149,7 @@ OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassInten
 
 `TackleSystem`: the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability rate × tick length, rate = `TackleBaseRatePerSecond` (0.17) × (contact chance ÷ an even duel's) × (1 + `TackleDangerBonus`, default 1) when the carrier is within Length/3 of the defender's goal centre. Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
 
-Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
+Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`, `clean`, `stamina`, `carrierStamina`) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
 
 ## Shooting and goalkeeping (implemented)
 
@@ -167,7 +167,7 @@ Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `Tackl
 
 **Resolve**: `Roll(onTarget)` → fail = **Missed**: `Roll(0.5)` picks a side, target 0.5–4 m wide of a post on the goal line. Otherwise the target is a random point inside the goal mouth, then `Roll(save)` → **Saved** or **Goal**. Travel duration = distance ÷ (18 + 1.2·Power) m/s.
 
-**Apply**: emit `ShotTaken` (metadata `xg`, `travel`), then:
+**Apply**: emit `ShotTaken` (metadata `xg`, `onTarget`, `save`, `distance`, `stamina`, `keeperStamina`, `travel`), then:
 
 - **Goal** — ball loose at the target, score +1, `KickoffTeam` = conceding side, phase `GoalRestart`, emit `GoalScored` (metadata `score`).
 - **Saved** — emit `ShotSaved` (actor = keeper, target = shooter), keeper gets the ball (`PossessionChanged`).
@@ -254,6 +254,15 @@ dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3   # SH
 ```
 
 `Diagnostics.MatchReport` prints one line per event (`04:31 Blue #6 passes to Blue #9`, `09:14 Saved by Red GK`, `27:51 GOAL — Blue #10 (1–0)`), `FULL TIME`, the score and a statistics table. Highlights mode keeps kickoffs, shots, saves, misses and goals.
+
+Each action is followed by an indented **odds line** (omit with `--brief`) showing the ratings used, the player's stamina at that moment and the probabilities rolled against, read from the event's metadata:
+
+```text
+00:18 Blue #6 passes to Blue #10
+      Passing 5 · Technique 5 · Awareness 5 · stamina 100 · 32 m · accuracy 85% · success 34% · 2 in lane
+00:20 Blue #10 shoots
+      Finishing 5 · Technique 5 · Power 5 · stamina 100 · 17 m · on target 39% · save 68% · xG 0.12
+```
 
 ## Stamina and fatigue (implemented)
 
