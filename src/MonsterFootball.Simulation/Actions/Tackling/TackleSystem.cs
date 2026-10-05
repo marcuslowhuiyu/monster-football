@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Globalization;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
@@ -65,7 +67,14 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
         var tick = state.Clock.Tick;
 
         context.Emit(MatchEventType.TackleAttempted, actor: tackler.PlayerId, target: carrier.PlayerId,
-            team: tackler.Team, position: result.Position);
+            team: tackler.Team, position: result.Position,
+            metadata: ImmutableSortedDictionary.CreateRange(
+            [
+                new KeyValuePair<string, string>("contact", result.ContactProbability.ToString("0.###", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("clean", result.CleanProbability.ToString("0.###", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("stamina", tackler.CurrentStamina.ToString("0.###", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("carrierStamina", carrier.CurrentStamina.ToString("0.###", CultureInfo.InvariantCulture)),
+            ]));
         tackler.TackleCooldownUntilTick = tick + Ticks(AttemptCooldownSeconds);
 
         switch (result.Outcome)

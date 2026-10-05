@@ -26,6 +26,18 @@ public sealed record PassResult(
     double TravelDuration,
     double Quality)
 {
+    /// <summary>Chance the pass was accurate and not intercepted, as estimated when it was struck.</summary>
+    public double SuccessProbability { get; init; }
+
+    /// <summary>Distance from passer to intended receiver, in metres.</summary>
+    public double Distance { get; init; }
+
+    /// <summary>Opponents close enough to the lane to have an interception roll.</summary>
+    public int InterceptionThreats { get; init; }
+
+    /// <summary>For an interception: the interceptor's chance on their roll; otherwise 0.</summary>
+    public double InterceptionProbability { get; init; }
+
     /// <summary>The player who ends up with the ball, or null if it is left loose.</summary>
     public PlayerId? FinalReceiver => Outcome switch
     {

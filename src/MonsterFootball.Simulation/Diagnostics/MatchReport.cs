@@ -10,6 +10,8 @@ namespace MonsterFootball.Simulation.Diagnostics;
 /// <summary>
 /// Plain-text match log for the debug runner and debugging. Not commentary: one terse line per event,
 /// e.g. <c>04:31 Blue #6 passes to Blue #9</c>. Highlights mode keeps kickoffs, shots, saves, misses and goals.
+/// With details on (the default), actions get an indented line showing the ratings the simulation used, the
+/// player's stamina at that moment and the probabilities it rolled against.
 /// </summary>
 public static class MatchReport
 {
@@ -24,7 +26,7 @@ public static class MatchReport
         MatchEventType.MatchFinished,
     ];
 
-    public static string Create(MatchResult result, bool allEvents = false)
+    public static string Create(MatchResult result, bool allEvents = false, bool details = true)
     {
         var state = result.FinalState;
         var sb = new StringBuilder();
@@ -42,6 +44,9 @@ public static class MatchReport
                 sb.Append(line).Append('\n');
             else
                 sb.Append(e.Timestamp).Append(' ').Append(line).Append('\n');
+
+            if (details && Details(state, e) is { } detail)
+                sb.Append("      ").Append(detail).Append('\n');
         }
 
         sb.Append(state.HomeTeam.Name).Append(' ').Append(result.HomeGoals).Append('–')
@@ -76,6 +81,44 @@ public static class MatchReport
             MatchEventType.GoalScored => $"GOAL — {P(e.ActorPlayerId)} ({e.Metadata.GetValueOrDefault("score", "")})",
             _ => null,
         };
+    }
+
+    /// <summary>The ratings and odds behind an action, or null for events without any.</summary>
+    public static string? Details(MatchState state, MatchEvent e)
+    {
+        PlayerStats? Stats(PlayerId? id) => id is { } x ? state.Player(x).Definition.Stats : null;
+        string? Meta(string key) => e.Metadata.TryGetValue(key, out var v) ? v : null;
+        string Pct(string key) => Meta(key) is { } v ? (double.Parse(v, CultureInfo.InvariantCulture) * 100).ToString("0", CultureInfo.InvariantCulture) + "%" : "?";
+        string Num(string key, string format = "0") => Meta(key) is { } v ? double.Parse(v, CultureInfo.InvariantCulture).ToString(format, CultureInfo.InvariantCulture) : "?";
+
+        switch (e.Type)
+        {
+            case MatchEventType.PassAttempted when Stats(e.ActorPlayerId) is { } s:
+                var threats = Meta("threats") ?? "0";
+                return $"Passing {s.Passing} · Technique {s.Technique} · Awareness {s.Awareness} · stamina {Num("stamina")} · {Num("distance")} m"
+                    + $" · accuracy {Pct("quality")} · success {Pct("success")} · {threats} in lane";
+
+            case MatchEventType.PassIntercepted when Stats(e.ActorPlayerId) is { } s:
+                return $"Defending {s.Defending} · Awareness {s.Awareness} · Pace {s.Pace} · interception chance {Pct("chance")}";
+
+            case MatchEventType.CarryStarted when Stats(e.ActorPlayerId) is { } s:
+                return $"Technique {s.Technique} · Pace {s.Pace} · Awareness {s.Awareness} · stamina {Num("stamina")} · {Num("distance", "0.0")} m at {Num("speed", "0.0")} m/s";
+
+            case MatchEventType.TackleAttempted when Stats(e.ActorPlayerId) is { } d && Stats(e.TargetPlayerId) is { } c:
+                return $"Defending {d.Defending} · Power {d.Power} · Awareness {d.Awareness} (stamina {Num("stamina")})"
+                    + $" vs Technique {c.Technique} · Power {c.Power} · Awareness {c.Awareness} (stamina {Num("carrierStamina")})"
+                    + $" · contact {Pct("contact")} · clean {Pct("clean")}";
+
+            case MatchEventType.ShotTaken when Stats(e.ActorPlayerId) is { } s:
+                return $"Finishing {s.Finishing} · Technique {s.Technique} · Power {s.Power} · stamina {Num("stamina")} · {Num("distance")} m"
+                    + $" · on target {Pct("onTarget")} · save {Pct("save")} · xG {Num("xg", "0.00")}";
+
+            case MatchEventType.ShotSaved when Stats(e.ActorPlayerId) is { } k:
+                return $"Keeping {k.Keeping} · Awareness {k.Awareness}";
+
+            default:
+                return null;
+        }
     }
 
     public static string StatisticsTable(MatchState state, MatchStatistics stats)

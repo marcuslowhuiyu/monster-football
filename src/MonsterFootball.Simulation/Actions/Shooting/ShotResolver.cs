@@ -113,7 +113,11 @@ internal sealed class ShotResolver
 
         ShotResult Result(ShotOutcome outcome, Vec2 target) => new(
             outcome, shooter.Team, intent.Shooter, keeper.PlayerId, shooter.Position, target,
-            shooter.Position.DistanceTo(target) / speed, estimate.OnTargetProbability, estimate.GoalProbability);
+            shooter.Position.DistanceTo(target) / speed, estimate.OnTargetProbability, estimate.GoalProbability)
+        {
+            SaveProbability = estimate.SaveProbability,
+            Distance = estimate.Distance,
+        };
 
         if (!random.Roll(estimate.OnTargetProbability))
         {
