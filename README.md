@@ -9,6 +9,7 @@ The core is a headless, deterministic 11v11 match simulation (Milestone 1). Godo
 ## Status
 
 **Milestone 1 (deterministic 11v11 simulation) is complete** — see `docs/milestones/MILESTONE_1_ACCEPTANCE.md`.
+Milestone 2 (match flow, tactical understanding, developer viewer) is specified in `docs/milestones/MILESTONE_2.md`.
 Headless 4-3-3 football with passing, carrying, tackling, shooting, goalkeeping, restarts, stamina and utility AI;
 match statistics and a readable debug log; 265 automated tests; CI on three operating systems with a
 cross-platform determinism check and a 1,000-match health-checked batch.

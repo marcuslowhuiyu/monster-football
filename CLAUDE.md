@@ -1,6 +1,6 @@
 # Monster Football — Agent Instructions
 
-Fantasy football management/deckbuilding game. Current focus: headless deterministic match simulation (Milestone 1).
+Fantasy football management/deckbuilding game. Current focus: Milestone 2 — match flow (laws, stoppages, restarts), tactical understanding and a Godot developer viewer, on top of the headless deterministic simulation from Milestone 1.
 
 ## Core Project Rules
 
@@ -47,5 +47,5 @@ dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3
 
 ## Key docs
 
-- `docs/milestones/MILESTONE_1.md` — current milestone spec
+- `docs/milestones/MILESTONE_2.md` — current milestone spec (Milestone 1: `MILESTONE_1.md`, complete)
 - `docs/ARCHITECTURE.md`, `docs/MATCH_SIMULATION.md`, `docs/DECISIONS.md`, `docs/GLOSSARY.md`
