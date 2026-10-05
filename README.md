@@ -69,7 +69,7 @@ dotnet run --project src/MonsterFootball.DebugRunner -- match 7          # highl
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7 --all    # every event
 ```
 
-Prints a readable log (`04:31 Blue #6 passes to Blue #9`, `27:51 GOAL — Blue #10 (1–0)`), the final score and a statistics table.
+Prints a readable log (`04:31 Blue #6 passes to Blue #9`, `27:51 GOAL — Blue #10 (1–0)`), the final score and a statistics table. Under each pass, carry, tackle and shot an indented line shows the ratings and odds the simulation used (e.g. `accuracy 85% · success 34%`, `on target 39% · save 68% · xG 0.12`); add `--brief` to hide them.
 
 ## Running batch simulations
 
