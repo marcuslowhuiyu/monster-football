@@ -8,12 +8,11 @@ The core is a headless, deterministic 11v11 match simulation (Milestone 1). Godo
 
 ## Status
 
-Milestone 1 (deterministic 11v11 simulation) — subtasks M1.1–M1.10 complete:
+Milestone 1 (deterministic 11v11 simulation) — subtasks M1.1–M1.11 complete:
 project setup, domain model, seeded clock/RNG/events, 4-3-3 movement and shape, passing,
-carrying, tackling, shooting/goalkeeping/restarts, stamina, utility AI, match statistics and a readable debug log. 256 automated tests passing.
+carrying, tackling, shooting/goalkeeping/restarts, stamina, utility AI, match statistics, a readable debug log and 1,000-match batch health checks. 265 automated tests passing.
 
-Next: 1,000-match batch runs and tuning (M1.11)
-and the final review (M1.12). See `docs/CURRENT_STATE.md` for details and known issues.
+Next: the final documentation and architecture review (M1.12). See `docs/CURRENT_STATE.md` for details and known issues.
 
 ## Prerequisites
 
@@ -75,11 +74,16 @@ Prints a readable log (`04:31 Blue #6 passes to Blue #9`, `27:51 GOAL — Blue #
 
 ## Running batch simulations
 
-*Not yet implemented — arrives in M1.11.*
+```sh
+dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 1000          # seeds 1–1000
+dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 200 --from 5000
+```
+
+Plays the matches in parallel, prints averages (goals, shots, passes, pass completion, home/draw/away %, possession, tackles, distance…) and pathology health checks. Exits 1 if any check fails; CI runs `batch 1000` on every pull request.
 
 ## Development workflow
 
-Work on a branch, open a pull request, and merge (rebase-and-merge) once CI is green. CI runs formatting checks, a Release build and the full test suite on Ubuntu, Windows and macOS, then checks that all three produced identical matches. See ADR-017 in `docs/DECISIONS.md`.
+Work on a branch, open a pull request, and merge (rebase-and-merge) once CI is green. CI runs formatting checks, a Release build and the full test suite on Ubuntu, Windows and macOS, then checks that all three produced identical matches and that a 1,000-match batch is healthy. See ADR-017 in `docs/DECISIONS.md`.
 
 The SDK version is pinned in `global.json`; NuGet dependencies are locked in `packages.lock.json`.
 

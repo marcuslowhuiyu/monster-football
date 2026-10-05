@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -80,10 +80,10 @@ All shape logic runs in **team frame** (`TeamFrame`): own goal at X = 0, attacki
 | In possession | CBs split, fullbacks pushed on, CM deeper than LCM/RCM, wingers wide, ST highest. |
 | Out of possession | Flat back four, compact midfield, forwards screening. |
 
-`TeamShapeSystem.Apply(state)` sets every player's `MovementTarget` and `MovementIntensity` each tick:
+`TeamShapeSystem.Apply(state, attackingSmoothing, defendingSmoothing)` sets every player's `MovementTarget` and `MovementIntensity` each tick. Each team's shape is built around its **shape focus** (`MatchState.ShapeFocus(side)`), a moving average of the ball: time constant 3 s for the attacking team, 0.75 s for the defending team. Attackers drift with the flow of play instead of shifting for every square pass; defenders track the ball closely. Pressers, markers and pass receivers use the real ball. Tests call `Apply(state)`, which snaps the focus to the ball.
 
 - **Ball carrier** — target = current position (carrying arrives in M1.6).
-- **In possession** — anchor + 0.5 × ball X offset, 0.25 × ball Y offset from centre. CBs capped 6 m behind the ball; forwards capped 6 m from the goal line.
+- **In possession** (intensity `Easy`) — anchor + 0.5 × ball X offset, 0.25 × ball Y offset from centre. CBs capped 6 m behind the ball; forwards capped 6 m from the goal line.
 - **Out of possession / loose ball** — anchor + 0.55 × X offset, 0.35 × Y offset.
   - Back four share one line X: follows the ball, clamped to ≥ 6 m and ≥ 4 m goal-side of the ball.
   - Midfield ≥ 8 m ahead of the line, Y compressed 20 % toward centre. Forwards ≥ 16 m ahead of the line.
@@ -160,11 +160,11 @@ Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `Tackl
 
 - Ability = Finishing + 0.3·(Technique − 5) + 0.2·(Power − 5).
 - Distance to goal centre; angle penalty = min(4, 1.5 × lateral offset ÷ distance to goal line); pressure = 0.5 × max(0, 3 − nearest outfield opponent distance) + 0.5 per outfield defender within 1.5 m of the shooting lane (blocking).
-- On target = `Sigmoid(0.35·(Ability − 0.15·distance − pressure − angle) − 1)`.
+- On target = `Sigmoid(0.35·(Ability − 0.15·distance − pressure − angle) − 0.7)`.
 - Keeper rating = Keeping + 0.3·(Awareness − 5) − 0.3·min(10, distance from the keeper's ideal spot). The ideal spot is `GoalkeeperPositioning`, so Awareness counts twice: positioning and rating.
 - Shot power = 0.5·Finishing + 0.5·Power + 0.2·max(0, 20 − distance) (close shots are harder to save).
 - Save = `Sigmoid(0.35·(keeper rating − shot power) + 0.74)`.
-- `GoalProbability` (xG) = on target × (1 − save). All-5s, central, unpressed: ≈ 0.50 at 6 m, 0.09 at 15 m, 0.07 at 20 m, 0.05 at 25 m.
+- `GoalProbability` (xG) = on target × (1 − save). All-5s, central, unpressed, keeper on their spot: ≈ 0.49 at 6 m, 0.20 at 15 m, 0.10 at 20 m, 0.08 at 25 m.
 
 **Resolve**: `Roll(onTarget)` → fail = **Missed**: `Roll(0.5)` picks a side, target 0.5–4 m wide of a post on the goal line. Otherwise the target is a random point inside the goal mouth, then `Roll(save)` → **Saved** or **Goal**. Travel duration = distance ÷ (18 + 1.2·Power) m/s.
 
@@ -182,16 +182,16 @@ ADR-018. Every decision: generate `ActionCandidate`s → `UtilitySelector.Choose
 
 **Selector**: apply `IUtilityModifier`s (none in M1) → plausible = utility > best − 8 → one plausible: take it (no random draw); several: pick with probability ∝ (utility − (best − 8)) using one `IMatchRandom` draw.
 
-**Weights** live in `MatchConfig.Ai` (`AiTuning`: `OnBallWeights`, `OffBallWeights`). Defaults below came from a random search over 84 configurations scored against plausibility bands.
+**Weights** live in `MatchConfig.Ai` (`AiTuning`: `OnBallWeights`, `OffBallWeights`). Defaults came from a random search over 84 configurations (M1.9) refined with 1 000-match batches (M1.11).
 
 ### On the ball (`OnBallCandidateGenerator`, every tick after the 0.5 s first touch)
 
 | Candidate | Utility |
 |---|---|
-| Hold | 81 − 12 × seconds held − 30 × pressure. While carrying: 62 − 10 × seconds carrying − 30 × pressure. Pressure = 1 − (nearest opponent ÷ 3 m), 0 beyond 3 m. |
+| Hold | 88 − 12 × seconds held − 30 × pressure. While carrying: 62 − 10 × seconds carrying − 30 × pressure. Pressure = 1 − (nearest opponent ÷ 3 m), 0 beyond 3 m. |
 | Pass (each teammate ≥ 4 m) | 50 × success probability + 0.75 × forward progress (m) + 18 × goal proximity of receiver (1 on the goal line, 0 at ≥ 35 m) − 15 if goalkeeper |
-| Carry (outfield, not mid-carry) | 36 + 0.8 × forward gain + 2 × space ahead (≤ 12 m) − 30 × pressure × (1 − 0.05 × (Technique − 5)) |
-| Shoot (outfield, ≤ 35 m, xG ≥ 0.03) | 32 + 318 × xG |
+| Carry (outfield, not mid-carry) | 42 + 0.8 × forward gain + 2 × space ahead (≤ 12 m) − 30 × pressure × (1 − 0.05 × (Technique − 5)) |
+| Shoot (outfield, ≤ 35 m, xG ≥ 0.03) | 22 + 318 × xG |
 
 Goalkeepers only hold or pass.
 
@@ -226,11 +226,31 @@ ADR-019. `MatchStatistics.FromEvents` derives everything from the event log:
 
 Full-match tests check the statistics against the score, the event log and a 5 400 s possession total.
 
+## Batch simulation (implemented)
+
+ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every PR.
+
+Current defaults, 1 000 matches between all-5 teams:
+
+| Figure | Value |
+|---|---|
+| Goals per match | 2.91 (max 9) |
+| Shots / on target per match | 27.8 / 9.0 (32 %) |
+| Passes per match, completion | 1 667, 82 % |
+| Home win / draw / away win | 39.3 % / 22.9 % / 37.8 % |
+| Home possession | 50.0 % |
+| Tackles / carries / possession changes | 295 / 211 / 397 |
+| Striker share of goals | 82 % |
+| Outfield distance, stamina at full time | 15.3 km, 48.5 |
+
+Matches are 90 continuous minutes (no stoppages); real football has ~55–60 minutes of ball-in-play, so per-match volumes (passes, tackles) read high against real totals.
+
 ## Debug runner (implemented)
 
 ```sh
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7          # highlights + statistics
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7 --all    # every event
+dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 1000
 ```
 
 `Diagnostics.MatchReport` prints one line per event (`04:31 Blue #6 passes to Blue #9`, `09:14 Saved by Red GK`, `27:51 GOAL — Blue #10 (1–0)`), `FULL TIME`, the score and a statistics table. Highlights mode keeps kickoffs, shots, saves, misses and goals.
@@ -274,6 +294,7 @@ Typical full-time stamina (all-5 teams): GK ≈ 86, defenders ≈ 63–67, midfi
 
 - Top speed (m/s) = (5.0 + 0.4 × Pace) × `FatigueModel.SpeedFactor`. Pace 1 → 5.4, Pace 5 → 7.0, Pace 10 → 9.0 when fresh.
 - `Jog` = 60 % of top speed; `Sprint` = 100 %; `Carry` = 0.55 + 0.03 × Technique.
+- **Arrival**: jogging slows in proportion to the remaining distance, down to 25 % of jog speed — within 12 m of the target for `Easy` (team in possession holding position) and within 4 m for `Jog`. Sprints and carries never slow.
 - Each player's `LastTickDistance` is recorded for stamina drain.
 
 A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`); an invariant checks that a possessed ball is always at its carrier's position.
@@ -316,8 +337,9 @@ Ball-in-flight and presentation data (start/target/duration/quality) arrive with
 
 ## Current limitations
 
-- Utility AI defaults (40 matches, all-5 teams): ~2.3 goals, ~43 shots (19 % on target), ~2 000 passes, ~220 carries, ~170 tackles, ~370 possession changes per match. Remember play is 90 continuous minutes (real matches have ~55–60 min ball-in-play).
-- Shots are too many and too rarely on target; the striker still scores ~80 % of goals. Tune in M1.11 (shot model and weights).
-- Players cover 16–21 km per match (real ≈ 10–12 km): they jog toward constantly moving targets and never walk. Address in M1.11.
-- No blocks as events, rebounds, posts, corners or goal kicks.
-- The ball never goes out of play; misplaced passes are clamped to the pitch.
+- **Striker dominance**: strikers score ~82 % of goals; wingers and midfielders rarely finish moves.
+- **Volume**: ~1 670 passes, ~295 tackles and ~400 possession changes per match (90 continuous minutes) — busy compared with real football.
+- **Distance**: 15.3 km per outfield player (real ≈ 10–12 km); just inside the 16 km band.
+- **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
+- The ball never goes out of play (no throw-ins, corners or goal kicks); misses go to the keeper.
+- No blocks as events, rebounds or posts.

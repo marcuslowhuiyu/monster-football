@@ -55,7 +55,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | root | `MatchContext` | M1.5 |
 | `Core` additions | `Curves` | M1.5 |
 | `Statistics` | `MatchStatistics`, `TeamStatistics` (derived from events) | M1.10 |
-| `Diagnostics` | `MatchFingerprint` (determinism), `MatchReport` (debug log + statistics table) | M1.9–M1.10 |
+| `Diagnostics` | `MatchFingerprint` (determinism), `MatchReport` (debug log + statistics table), `MatchSummary`, `BatchSummary`, `BatchHealth` (batch figures and pathology bands) | M1.9–M1.11 |
 
 ### State ownership and mutation
 
@@ -107,7 +107,7 @@ Systems may read the event log as well as write it: `StaminaSystem` charges acti
 
 ## 7. Delivery pipeline
 
-Every change reaches `main` through a pull request gated by CI (ADR-017): formatting, a Release build with warnings as errors, and the full test suite on Ubuntu, Windows and macOS, followed by a cross-platform determinism comparison of match fingerprints (`Diagnostics.MatchFingerprint`). Builds are reproducible: pinned SDK (`global.json`) and locked NuGet restores.
+Every change reaches `main` through a pull request gated by CI (ADR-017): formatting, a Release build with warnings as errors, and the full test suite on Ubuntu, Windows and macOS, followed by a cross-platform determinism comparison of match fingerprints (`Diagnostics.MatchFingerprint`), plus a 1 000-match batch whose health bands must all pass (ADR-020). Builds are reproducible: pinned SDK (`global.json`) and locked NuGet restores.
 
 ## 8. Extension points (documented, not implemented)
 
