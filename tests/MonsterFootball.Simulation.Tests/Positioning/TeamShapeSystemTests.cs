@@ -104,6 +104,35 @@ public class TeamShapeSystemTests
     }
 
     [Fact]
+    public void Shape_focus_snaps_to_the_ball_by_default_and_lags_when_smoothed()
+    {
+        var state = TestTeams.Match();
+        var carrier = state.Slot(TeamSide.Home, PlayingPosition.CM);
+        carrier.Position = new Vec2(80, 20);
+        state.GiveBallTo(carrier.PlayerId);
+        var shape = new TeamShapeSystem();
+
+        shape.Apply(state, attackingSmoothing: 0.1, defendingSmoothing: 0.5);
+        var homeFocus = state.ShapeFocus(TeamSide.Home);
+        var awayFocus = state.ShapeFocus(TeamSide.Away);
+
+        // From the centre spot (52.5, 34) toward the ball (80, 20).
+        Assert.Equal(new Vec2(52.5 + 0.1 * 27.5, 34 - 0.1 * 14), homeFocus);
+        Assert.Equal(new Vec2(52.5 + 0.5 * 27.5, 34 - 0.5 * 14), awayFocus);
+
+        shape.Apply(state);
+        Assert.Equal(state.Ball.Position, state.ShapeFocus(TeamSide.Home));
+    }
+
+    [Fact]
+    public void Team_in_possession_holds_position_at_easy_pace()
+    {
+        var state = Arrange(new Vec2(52.5, 34), TeamSide.Home);
+        Assert.Equal(MovementIntensity.Easy, state.Slot(TeamSide.Home, PlayingPosition.LB).MovementIntensity);
+        Assert.Equal(MovementIntensity.Jog, state.Slot(TeamSide.Away, PlayingPosition.LB).MovementIntensity);
+    }
+
+    [Fact]
     public void Team_in_possession_does_not_press()
     {
         var state = Arrange(new Vec2(40, 30), TeamSide.Away);

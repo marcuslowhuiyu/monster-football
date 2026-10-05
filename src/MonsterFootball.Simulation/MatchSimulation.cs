@@ -38,6 +38,12 @@ public sealed class MatchSimulation
     private readonly RestartSystem _restart = new();
     private bool _started;
 
+    /// <summary>Time constants of the ball average each team's shape follows (see <see cref="MatchState.ShapeFocus"/>):
+    /// attackers drift with the flow of play, defenders track the ball closely.</summary>
+    public const double AttackingShapeFocusSeconds = 3.0;
+
+    public const double DefendingShapeFocusSeconds = 0.75;
+
     public MatchSimulation(MatchConfig config, TeamDefinition homeTeam, TeamDefinition awayTeam, int seed)
         : this(config, homeTeam, awayTeam, new MatchRng(seed), seed)
     {
@@ -128,7 +134,9 @@ public sealed class MatchSimulation
             return;
 
         _tackle.Apply(_context);          // defender in range challenges (placeholder until M1.9)
-        _shape.Apply(State);              // default targets: shape, presser, pass receiver
+        _shape.Apply(State,                                  // default targets: shape, presser, pass receiver
+            _config.TickSeconds / AttackingShapeFocusSeconds,
+            _config.TickSeconds / DefendingShapeFocusSeconds);
         _offBall.Apply(_context);         // off-ball utility AI: support, runs, marking, recovery
         _movement.Apply(State, _config.TickSeconds);
         State.SyncBallToPossessor();

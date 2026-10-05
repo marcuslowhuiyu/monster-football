@@ -38,9 +38,40 @@ public class MovementSystemTests
     {
         var state = TestTeams.Match();
         var player = state.Slot(TeamSide.Home, PlayingPosition.CM);
+        player.MovementTarget = player.Position + new Vec2(20, 0);
         var expected = MovementSystem.Speed(player) * Tick;
+        var start = player.Position;
 
-        Assert.Equal(expected, OneTickDistance(state), precision: 9);
+        new MovementSystem().Apply(state, Tick);
+
+        Assert.Equal(expected, start.DistanceTo(player.Position), precision: 9);
+    }
+
+    [Fact]
+    public void Jogging_slows_on_arrival_but_sprinting_does_not()
+    {
+        var state = TestTeams.Match();
+        var player = state.Slot(TeamSide.Home, PlayingPosition.CM);
+
+        player.MovementTarget = player.Position + new Vec2(1, 0);
+        player.MovementIntensity = MovementIntensity.Jog;
+        var nearJog = MovementSystem.Speed(player);
+        player.MovementIntensity = MovementIntensity.Easy;
+        var nearEasy = MovementSystem.Speed(player);
+        player.MovementIntensity = MovementIntensity.Sprint;
+        var nearSprint = MovementSystem.Speed(player);
+
+        player.MovementTarget = player.Position + new Vec2(30, 0);
+        player.MovementIntensity = MovementIntensity.Jog;
+        var farJog = MovementSystem.Speed(player);
+        player.MovementIntensity = MovementIntensity.Easy;
+        var farEasy = MovementSystem.Speed(player);
+
+        Assert.True(nearJog < farJog);
+        Assert.True(nearEasy < farEasy);
+        Assert.Equal(farJog, farEasy, precision: 9);           // both full jog when far away
+        Assert.Equal(MovementSystem.TopSpeed(player), nearSprint, precision: 9);
+        Assert.True(nearEasy <= nearJog, "the team in possession ambles more than defenders");
     }
 
     [Fact]

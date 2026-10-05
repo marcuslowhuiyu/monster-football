@@ -12,6 +12,8 @@ internal sealed class RestartSystem
     public void ResetForKickoff(MatchState state)
     {
         state.SetBallLoose(state.Pitch.Centre);
+        state.SetShapeFocus(TeamSide.Home, state.Pitch.Centre);
+        state.SetShapeFocus(TeamSide.Away, state.Pitch.Centre);
         foreach (var player in state.Players)
         {
             player.Position = Formation433.KickoffPosition(state.Pitch, player.Team, player.Definition.Position);

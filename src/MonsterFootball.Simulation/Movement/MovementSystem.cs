@@ -17,6 +17,19 @@ internal sealed class MovementSystem
     /// <summary>Jogging speed as a fraction of top speed.</summary>
     public const double JogFraction = 0.6;
 
+    /// <summary>
+    /// Arrival for <see cref="MovementIntensity.Easy"/>: within this distance of their target the player slows in
+    /// proportion to the remaining distance, down to <see cref="MinArrivalFraction"/> of jogging speed, so players
+    /// near their spot amble instead of jogging constantly after a target that shifts with the ball.
+    /// </summary>
+    public const double ArrivalRadius = 12;
+
+    /// <summary>Smaller arrival radius for <see cref="MovementIntensity.Jog"/>: removes tick-to-tick shuffling while
+    /// keeping defenders quick to cover larger shifts.</summary>
+    public const double JogArrivalRadius = 4;
+
+    public const double MinArrivalFraction = 0.25;
+
     public static double TopSpeed(PlayerMatchState player) =>
         (BaseSpeed + SpeedPerPace * player.Definition.Stats.Pace) * FatigueModel.SpeedFactor(player.CurrentStamina);
 
@@ -30,8 +43,12 @@ internal sealed class MovementSystem
     {
         MovementIntensity.Sprint => TopSpeed(player),
         MovementIntensity.Carry => CarrySpeed(player),
-        _ => TopSpeed(player) * JogFraction,
+        MovementIntensity.Easy => TopSpeed(player) * JogFraction * ArrivalFactor(player.Position.DistanceTo(player.MovementTarget), ArrivalRadius),
+        _ => TopSpeed(player) * JogFraction * ArrivalFactor(player.Position.DistanceTo(player.MovementTarget), JogArrivalRadius),
     };
+
+    public static double ArrivalFactor(double distanceToTarget, double radius) =>
+        Math.Clamp(distanceToTarget / radius, MinArrivalFraction, 1);
 
     public void Apply(MatchState state, double tickSeconds)
     {
@@ -41,6 +58,7 @@ internal sealed class MovementSystem
             var next = player.Position.MoveTowards(player.MovementTarget, Speed(player) * tickSeconds);
             player.Position = state.Pitch.Clamp(next);
             player.LastTickDistance = previous.DistanceTo(player.Position);
+            player.DistanceCovered += player.LastTickDistance;
         }
     }
 }
