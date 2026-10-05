@@ -10,6 +10,7 @@ Fantasy football management/deckbuilding game. Current focus: headless determini
 - `src/MonsterFootball.Simulation` must never reference Godot or `godot/` (enforced by tests).
 - All simulation randomness must use MatchRng (`IMatchRandom`). Never use `System.Random`, `Guid.NewGuid`, or wall-clock time in simulation code (enforced by tests).
 - Changing the order of random draws changes every seeded match — do it deliberately.
+- Tune behaviour with `batch` runs, never single matches; a failing health band is a failing build (ADR-020).
 - The simulation must remain deterministic by seed.
 - Use the approved player stat model only (ADR-002).
 - Do not implement systems belonging to future milestones.
@@ -40,6 +41,7 @@ dotnet build MonsterFootball.slnx
 dotnet test MonsterFootball.slnx
 dotnet format MonsterFootball.slnx --verify-no-changes
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7 [--all]
+dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 1000   # must print HEALTHY
 dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3
 ```
 

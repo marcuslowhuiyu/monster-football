@@ -417,3 +417,24 @@ statistics automatically deterministic and replayable, and lets them be recomput
 
 Consequences:
 Any statistic needs the events that carry it; a new statistic may require a new event type or metadata.
+
+---
+
+## ADR-020 — Batch Simulation with Health Bands Gates Every Change
+
+Status: Accepted
+
+Decision:
+- `DebugRunner batch [count] [--from SEED]` plays matches in parallel (parallelism stays in the runner, ADR-005), reduces each to a `MatchSummary`, and aggregates a `BatchSummary` in seed order (identical however matches were scheduled).
+- `BatchHealth` checks the aggregate against wide **pathology bands** (not realism targets): goals 0.5–6, shots 6–60, on-target share 0.2–0.6, pass completion 0.6–0.97, home possession 0.45–0.55 and |home win − away win| ≤ 0.1 between equal teams, draws 0.05–0.6, team-matches without a shot ≤ 10 %, ≤ 14 goals in any match, striker share of goals ≤ 85 %, tackles 10–600, outfield distance 5–16 km, outfield stamina at full time 10–95. The command exits non-zero if any band fails.
+- CI runs `batch 1000` on every PR and push to `main` (≈ 2.5 min) and uploads the report.
+- Tuning in M1.11 used batches, not single matches: arrival slowdown for jogging (`Easy` for the team in possession, a small radius for `Jog`), per-team **shape focus** (the shape follows a moving average of the ball — 3 s for the attacking team, 0.75 s for the defending team), AI weights (`HoldBase` 88, `CarryBase` 42, `ShotBase` 22) and the shot model's on-target bias (−0.7).
+
+Reason:
+The milestone's acceptance criteria require ≥ 1 000 automated headless matches and the identification of pathological
+behaviour. Making the batch a CI gate means a change that breaks the football (e.g. teams stop shooting, home bias,
+20 km per player) fails review like a failing test.
+
+Consequences:
+Bands can be tightened as the simulation matures. A legitimate behaviour change that moves a figure outside a band
+needs the band revisited deliberately, with the reason recorded here.
