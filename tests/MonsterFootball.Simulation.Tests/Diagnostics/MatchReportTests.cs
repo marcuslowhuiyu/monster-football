@@ -52,4 +52,52 @@ public class MatchReportTests
         var lines = MatchReport.Create(Play(), allEvents: true).Split('\n');
         Assert.Contains(lines, l => System.Text.RegularExpressions.Regex.IsMatch(l, @"^\d\d:\d\d Blue #\d+ passes to Blue #\d+$"));
     }
+
+    [Fact]
+    public void Actions_carry_the_odds_they_were_resolved_with()
+    {
+        var events = Play().Events;
+
+        Assert.All(events.Where(e => e.Type == MatchEventType.PassAttempted),
+            e => Assert.True(new[] { "quality", "success", "distance", "threats", "stamina" }.All(e.Metadata.ContainsKey)));
+        Assert.All(events.Where(e => e.Type == MatchEventType.ShotTaken),
+            e => Assert.True(new[] { "onTarget", "save", "xg", "distance", "stamina", "keeperStamina" }.All(e.Metadata.ContainsKey)));
+        Assert.All(events.Where(e => e.Type == MatchEventType.TackleAttempted),
+            e => Assert.True(new[] { "contact", "clean", "stamina", "carrierStamina" }.All(e.Metadata.ContainsKey)));
+        Assert.All(events.Where(e => e.Type == MatchEventType.PassIntercepted),
+            e => Assert.True(e.Metadata.ContainsKey("chance")));
+    }
+
+    [Fact]
+    public void Shot_odds_are_consistent_with_expected_goals()
+    {
+        foreach (var e in Play().Events.Where(e => e.Type == MatchEventType.ShotTaken))
+        {
+            double M(string key) => double.Parse(e.Metadata[key], System.Globalization.CultureInfo.InvariantCulture);
+            // Metadata is rounded to 3 decimals, so allow a little slack.
+            Assert.InRange(Math.Abs(M("onTarget") * (1 - M("save")) - M("xg")), 0, 0.002);
+        }
+    }
+
+    [Fact]
+    public void Details_show_ratings_and_odds_under_each_action()
+    {
+        var lines = MatchReport.Create(Play(), allEvents: true).Split('\n');
+
+        Assert.Contains(lines, l => System.Text.RegularExpressions.Regex.IsMatch(l,
+            @"^ {6}Passing \d+ · Technique \d+ · Awareness \d+ · stamina \d+ · \d+ m · accuracy \d+% · success \d+% · \d+ in lane$"));
+        Assert.Contains(lines, l => System.Text.RegularExpressions.Regex.IsMatch(l,
+            @"^ {6}Finishing \d+ · Technique \d+ · Power \d+ · stamina \d+ · \d+ m · on target \d+% · save \d+% · xG \d\.\d\d$"));
+        Assert.Contains(lines, l => l.StartsWith("      Defending", StringComparison.Ordinal) && l.Contains(" vs Technique", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Brief_mode_omits_details()
+    {
+        var report = MatchReport.Create(Play(), allEvents: true, details: false);
+
+        Assert.DoesNotContain("accuracy", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("· on target", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("· contact", report, StringComparison.Ordinal);
+    }
 }

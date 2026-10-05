@@ -22,6 +22,10 @@ internal static class PassExecution
             metadata: ImmutableSortedDictionary.CreateRange(
             [
                 new KeyValuePair<string, string>("quality", Format(result.Quality)),
+                new KeyValuePair<string, string>("success", Format(result.SuccessProbability)),
+                new KeyValuePair<string, string>("stamina", Format(state.Player(result.Passer).CurrentStamina)),
+                new KeyValuePair<string, string>("distance", Format(result.Distance)),
+                new KeyValuePair<string, string>("threats", result.InterceptionThreats.ToString(CultureInfo.InvariantCulture)),
                 new KeyValuePair<string, string>("travel", Format(result.TravelDuration)),
             ]));
     }
@@ -40,7 +44,11 @@ internal static class PassExecution
             case PassOutcome.Intercepted:
                 var interceptor = pass.Interceptor!.Value;
                 context.Emit(MatchEventType.PassIntercepted, actor: interceptor, target: pass.IntendedReceiver,
-                    team: context.State.Player(interceptor).Team, position: pass.TargetPosition);
+                    team: context.State.Player(interceptor).Team, position: pass.TargetPosition,
+                    metadata: ImmutableSortedDictionary.CreateRange(
+                    [
+                        new KeyValuePair<string, string>("chance", Format(pass.InterceptionProbability)),
+                    ]));
                 context.GiveBall(interceptor);
                 break;
 

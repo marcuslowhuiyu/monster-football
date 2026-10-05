@@ -1,6 +1,7 @@
 // Debug runner for the headless match simulation.
 //
-//   match [seed] [--all]            play one match and print a readable log (highlights by default) and statistics
+//   match [seed] [--all] [--brief]  play one match and print a readable log (highlights by default) and statistics;
+//                                   each action shows the ratings and odds behind it unless --brief
 //   batch [count] [--from SEED]     play many matches in parallel, print aggregate figures and health checks;
 //                                   exits 1 if any health check fails (used by CI)
 //   fingerprint [seed ...]          SHA-256 of each seed's match fingerprint (default seeds 1–5);
@@ -25,7 +26,7 @@ switch (command)
         {
             var seed = values.Length > 0 ? int.Parse(values[0], CultureInfo.InvariantCulture) : 123456;
             Console.WriteLine($"Seed {seed}");
-            Console.Write(MatchReport.Create(Play(seed), allEvents: options.Contains("--all")));
+            Console.Write(MatchReport.Create(Play(seed), allEvents: options.Contains("--all"), details: !options.Contains("--brief")));
             return 0;
         }
 
@@ -69,7 +70,7 @@ switch (command)
 
     default:
         Console.WriteLine("Monster Football debug runner");
-        Console.WriteLine("  match [seed] [--all]          play one match and print the log and statistics");
+        Console.WriteLine("  match [seed] [--all] [--brief] play one match and print the log and statistics");
         Console.WriteLine("  batch [count] [--from SEED]   play many matches and print aggregate figures and health checks");
         Console.WriteLine("  fingerprint [seed ...]        print a determinism hash per seed");
         return command == "help" ? 0 : 1;
