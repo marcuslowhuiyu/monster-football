@@ -66,7 +66,7 @@ Events emitted during a step carry the timestamp from **before** the clock advan
 - `MatchEvent` (immutable record): `Timestamp`, `Type`, optional `ActorPlayerId`, `TargetPlayerId`, `Team`, `Position`, and `Metadata` (sorted string map, empty by default).
 - `ToString()` gives a canonical one-line form used by determinism tests.
 - `MatchEventLog` is append-only; `MatchSimulation.Events` exposes it read-only.
-- `MatchEventType` currently: `MatchStarted`, `Kickoff`, `MatchFinished`. New types are appended as their behaviour is implemented.
+- `MatchEventType` (17 values): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`). New types are appended.
 
 ## Positioning and shape (implemented)
 
@@ -82,12 +82,12 @@ All shape logic runs in **team frame** (`TeamFrame`): own goal at X = 0, attacki
 
 `TeamShapeSystem.Apply(state, attackingSmoothing, defendingSmoothing)` sets every player's `MovementTarget` and `MovementIntensity` each tick. Each team's shape is built around its **shape focus** (`MatchState.ShapeFocus(side)`), a moving average of the ball: time constant 3 s for the attacking team, 0.75 s for the defending team. Attackers drift with the flow of play instead of shifting for every square pass; defenders track the ball closely. Pressers, markers and pass receivers use the real ball. Tests call `Apply(state)`, which snaps the focus to the ball.
 
-- **Ball carrier** — target = current position (carrying arrives in M1.6).
-- **In possession** (intensity `Easy`) — anchor + 0.5 × ball X offset, 0.25 × ball Y offset from centre. CBs capped 6 m behind the ball; forwards capped 6 m from the goal line.
+- **Ball carrier** — follows their active carry (intensity `Carry`); otherwise target = current position.
+- **In possession** (intensity `Easy`) — anchor + 0.5 × ball X offset, 0.25 × ball Y offset from centre. CBs capped 6 m behind the ball; forwards capped 6 m from the goal line; no attacker pushes beyond max(opponents' last outfield line, ball X).
 - **Out of possession / loose ball** — anchor + 0.55 × X offset, 0.35 × Y offset.
   - Back four share one line X: follows the ball, clamped to ≥ 6 m and ≥ 4 m goal-side of the ball.
   - Midfield ≥ 8 m ahead of the line, Y compressed 20 % toward centre. Forwards ≥ 16 m ahead of the line.
-  - The nearest outfield player (ties → earlier in `Players`) gets target = ball, intensity `Sprint`.
+  - The presser — the outfield player with the lowest distance × (1 + tiredness), ties → earlier in `Players` — sprints to a jockeying spot 1.5 m goal-side of a carrier, or to the ball itself when it is loose or in flight (see *CloseDownOpponent*).
 - Outfield targets are kept 3 m from goal lines and 2 m from touchlines.
 
 `GoalkeeperPositioning.Target`:
@@ -101,7 +101,7 @@ All shape logic runs in **team frame** (`TeamFrame`): own goal at X = 0, attacki
 Intent → resolver → result → state update → event (ADR-012):
 
 ```text
-PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolver.Resolve ─▶ PassResult
+OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassIntent ─▶ PassResolver.Resolve ─▶ PassResult
                                                                      │
                      PassExecution.Launch (PassAttempted, ball in flight) ◀┘
                      … BallFlightSystem, N ticks later …
@@ -123,19 +123,18 @@ PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolv
 
 **Result presentation data**: `StartPosition`, `IntendedTarget`, `TargetPosition` (actual landing), `TravelDuration`, `Quality` (= accuracy probability).
 
-**Target selection** (`PassTargetSelector`): for every teammate ≥ 4 m away, `score = 100·SuccessProbability + 0.8·forward progress (m, team frame) − 15 if goalkeeper`; highest wins, ties to the earlier player. No randomness yet.
+**Target selection**: every teammate ≥ 4 m away is a Pass candidate in the utility AI (see *Utility AI*), scored from this estimate's `SuccessProbability`, forward progress and the receiver's goal proximity.
 
-**Decision placeholder**: see *On-ball decisions* below.
 
 **During flight**: the receiver (or interceptor) sprints to the landing point; the passing team keeps its attacking shape; the defending presser chases the ball.
 
-**Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, then `PossessionChanged`), `PassMisplaced` (actor = passer, position = landing).
+**Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, then `PossessionChanged`), `PassMisplaced` (actor = passer, target = intended receiver, position = landing).
 
 ## Carrying (implemented)
 
-`CarryIntent(Carrier, Destination)` → `CarryResolver.Resolve` → `CarryResult(Start, Target, Speed, Duration, EndTick, Quality)` (ADR-014). No randomness; the carrier keeps the ball.
+`CarryIntent(Carrier, Destination)` → `CarryResolver.Resolve` → `CarryResult(Carrier, StartPosition, TargetPosition, Speed, Duration, StartTick, EndTick, Quality)` (ADR-014). No randomness; the carrier keeps the ball.
 
-- `ChooseDestination`: up to 10 m forward in team frame, steered sideways away from the nearest opponent within 12 m (steer strength ∝ Awareness and closeness), with a small drift toward the centre; kept 3 m inside touchlines and goal lines.
+- `ChooseDestination`: up to 10 m forward in team frame (bending toward goal in the final third), steered sideways away from the nearest opponent within 12 m (steer strength ∝ Awareness and closeness), with a small drift toward the centre; kept 3 m inside touchlines and goal lines.
 - Speed = top speed × (0.55 + 0.03 × Technique) — `MovementIntensity.Carry`.
 - `CarrySystem.Start` sets `CurrentIntent` / `ActiveCarry` and emits `CarryStarted`. The carry ends at `EndTick`, on reaching the target, or when the ball leaves the carrier.
 
@@ -148,7 +147,7 @@ PassDecisionSystem ─▶ PassTargetSelector ─▶ PassIntent ─▶ PassResolv
 - Roll clean `clamp(0.6 + 0.03·(tackler Awareness − 5), 0.1, 0.9)` → **Won**, otherwise **LooseBall** (ball 2–5 m away, random direction).
 - Pace matters indirectly: faster defenders reach challenge range sooner.
 
-`TackleSystem`: the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability rate × tick length, rate = `TackleBaseRatePerSecond` (0.17) × (contact chance ÷ an even duel's) × 2 if the carrier is in the defender's own third. Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
+`TackleSystem`: the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability rate × tick length, rate = `TackleBaseRatePerSecond` (0.17) × (contact chance ÷ an even duel's) × (1 + `TackleDangerBonus`, default 1) when the carrier is within Length/3 of the defender's goal centre. Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
 
 Events: `TackleAttempted` (actor = tackler, target = carrier) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
 
@@ -190,7 +189,7 @@ ADR-018. Every decision: generate `ActionCandidate`s → `UtilitySelector.Choose
 |---|---|
 | Hold | 88 − 12 × seconds held − 30 × pressure. While carrying: 62 − 10 × seconds carrying − 30 × pressure. Pressure = 1 − (nearest opponent ÷ 3 m), 0 beyond 3 m. |
 | Pass (each teammate ≥ 4 m) | 50 × success probability + 0.75 × forward progress (m) + 18 × goal proximity of receiver (1 on the goal line, 0 at ≥ 35 m) − 15 if goalkeeper |
-| Carry (outfield, not mid-carry) | 42 + 0.8 × forward gain + 2 × space ahead (≤ 12 m) − 30 × pressure × (1 − 0.05 × (Technique − 5)) |
+| Carry (outfield, not mid-carry, > 4 m from the goal line) | 42 + 0.8 × forward gain + 2 × space ahead (≤ 12 m) − 30 × pressure × (1 − 0.05 × (Technique − 5)) |
 | Shoot (outfield, ≤ 35 m, xG ≥ 0.03) | 22 + 318 × xG |
 
 Goalkeepers only hold or pass.
@@ -201,13 +200,13 @@ Skipped: goalkeepers, the carrier, the presser and a pass receiver (they keep th
 
 | Candidate | When | Target / intensity | Utility |
 |---|---|---|---|
-| MoveIntoPosition | always | team-shape target, jog | 40 |
+| MoveIntoPosition | always | team-shape target and intensity (`Easy` in possession, `Jog` defending) | 40 |
 | RecoverPosition | defending, > 10 m from shape target | shape target, sprint | 40 + 1.5 × (distance − 10) (+10 if ahead of the ball) |
 | SupportBallCarrier | attacking, not a defender, ≤ 30 m from carrier | best of 8 spots 12 m around the carrier, jog | 28 + 2.5 × openness (≤ 10) + 2 × lane clearance (≤ 5) − 0.4 × travel (+4 if forward) |
-| MakeForwardRun | attacking, ST/LW/RW/LCM/RCM, ball beyond 35 m | 1 m beyond the opponents' last outfield line (≤ 16 m from goal), in the player's lane, sprint | 31 + 0.8 × Pace + space behind the line (≤ 20) + role bonus (ST 8, wingers 5) |
-| DefendGoalSide | defending, defender/midfielder | 2 m goal-side of the nearest unmarked attacker within 15 m of the shape target; sprint if > 8 m away | 36 + 18 × threat − 0.5 × travel |
+| MakeForwardRun | attacking, ST/LW/RW/LCM/RCM, ball beyond 35 m | 1 m beyond the opponents' last outfield line but never closer than 16 m to the goal line, in the player's lane, sprint | 31 + 0.8 × Pace + min(20, 0.6 × space behind the line) + role bonus (ST 8, wingers 5) |
+| DefendGoalSide | defending, defender/midfielder | 2 m goal-side of the nearest unmarked attacker (not the carrier, within 15 m of the shape target, X < ball X + 15 m in team frame); sprint if > 8 m away | 36 + 18 × threat − 0.5 × travel; threat = max(0, 1 − attacker's distance to own goal ÷ 50) |
 
-Commitment: forward runs 3 s, support and marking 1.5 s, others 1 s. Team limits: 2 supporters, 2 runners, one marker per opponent.
+Commitment: forward runs 3 s, support and marking 1.5 s, others 1 s. A plan is dropped early if the attacking team changes or the marked opponent gains the ball. Team limits: 2 supporters, 2 runners, one marker per opponent.
 
 **CloseDownOpponent** is the presser chosen by `TeamShapeSystem` (fatigue-weighted nearest outfield player). Against a carrier the presser jockeys 1.5 m goal-side (inside the 1.8 m challenge range); a loose or flying ball is chased directly.
 
@@ -251,6 +250,7 @@ Matches are 90 continuous minutes (no stoppages); real football has ~55–60 min
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7          # highlights + statistics
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7 --all    # every event
 dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 1000
+dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3   # SHA-256 per seed (CI compares OSes)
 ```
 
 `Diagnostics.MatchReport` prints one line per event (`04:31 Blue #6 passes to Blue #9`, `09:14 Saved by Red GK`, `27:51 GOAL — Blue #10 (1–0)`), `FULL TIME`, the score and a statistics table. Highlights mode keeps kickoffs, shots, saves, misses and goals.
@@ -312,7 +312,7 @@ A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`);
 
 ## Match state (implemented)
 
-`MatchState.Create(home, away, pitch, startingPosition)` builds the authoritative state:
+`MatchState.Create(MatchConfig config, TeamDefinition home, TeamDefinition away, Func<TeamSide, PlayerDefinition, Vec2> startingPosition)` builds the authoritative state:
 
 - validates that player ids are unique across both teams and that every starting position is on the pitch;
 - `Players` is an ordered list of 22 `PlayerMatchState` — home then away, each in team-definition order. **Iterate this list, never a dictionary, when order can affect outcomes.**
@@ -323,13 +323,13 @@ A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`);
 
 - `PlayerDefinition` — immutable: `Id`, `Name`, `ShirtNumber`, `Position` (4-3-3 slot, ADR-008), `Stats`.
 - `PlayerStats` — the nine ADR-002 attributes, each validated to 1–10.
-- `PlayerMatchState` — mutable: `Position`, `MovementTarget`, `CurrentStamina` (0–100, starts at 100). `CurrentIntent` will be added with the intent system (M1.5).
+- `PlayerMatchState` — mutable: `Position`, `MovementTarget`, `MovementIntensity`, `CurrentStamina` (0–100, starts at 100), `LastTickDistance`, `DistanceCovered`, `CurrentIntent`, `ActiveCarry`, `OffBallPlan`, `TackleCooldownUntilTick`.
 
 ## Ball and possession (implemented)
 
 `BallState` holds `Position` and `PossessorId`; `IsLoose` is derived. Possession is stored **only** on the ball (ADR-007):
 `MatchState.HasBall(id)`, `PossessionPlayerId` and `PossessionTeam` are computed from it, so two players can never both have the ball.
-Ball-in-flight and presentation data (start/target/duration/quality) arrive with passing (M1.5).
+A pass in the air is `BallState.Flight` (`BallFlight`: the resolved `PassResult` plus launch/arrival ticks); `IsInFlight` / `IsLoose` are derived.
 
 ## Invariants (implemented)
 
