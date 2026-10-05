@@ -218,6 +218,9 @@ Consequences:
 This is positional scaffolding, not tactical intelligence. Off-ball choices such as support runs,
 forward runs and recovery (M1.9 utility AI) will adjust or override these targets.
 
+Update (M1.9, M1.11): off-ball utility AI now overrides these targets where it chooses to (ADR-018), and the shift
+is computed from each team's smoothed *shape focus* rather than the raw ball (ADR-020); the team-frame model is unchanged.
+
 ---
 
 ## ADR-012 — Passes Are Resolved at the Kick and Applied on Arrival
@@ -280,6 +283,9 @@ in `MatchState` rather than in each caller makes stale carries impossible (an in
 
 Consequences:
 Tackle and carry *decisions* (when to tackle, when to carry) are placeholders until utility AI (M1.9).
+
+Update (M1.9): the decisions are now made by the utility AI and judgement-based tackle commitment (ADR-018);
+the resolution model above is unchanged.
 
 ---
 
