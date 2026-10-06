@@ -33,9 +33,9 @@ Each `Step()`:
 3. Run the current phase:
    - `Kickoff` — `RestartSystem.TakeKickoff`: the kicking side's ST is placed on the centre spot; emit `Kickoff`; give them the ball (after a goal this also emits `PossessionChanged`); phase → `OpenPlay`.
    - `OpenPlay` — in this order:
-     1. `BallFlightSystem` — move a ball in flight; on its arrival tick, land the pass.
+     1. `BallFlightSystem` — move a pass or shot in flight; on its arrival tick, apply its outcome. If a shot went in, the rest of the tick is skipped.
      2. `CarrySystem` — end carries whose time is up, whose target is reached, or whose carrier lost the ball.
-     3. `OnBallDecisionSystem` — utility AI: carrier holds, passes, carries or shoots. If a goal was scored, the rest of the tick is skipped.
+     3. `OnBallDecisionSystem` — utility AI: carrier holds, passes, carries or shoots (a shot is struck and launched; it lands on a later tick).
      4. `TackleSystem` — the presser (or another opponent in range) may challenge.
      5. `TeamShapeSystem` — default targets: team shape, the presser, a pass receiver; the carrier follows their carry.
      6. `OffBallDecisionSystem` — utility AI for everyone else: support, forward runs, marking, recovery.
@@ -153,7 +153,7 @@ Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`
 
 ## Shooting and goalkeeping (implemented)
 
-`ShotIntent(Shooter)` → `ShotResolver` → `ShotResult` → `ShotExecution.Apply` (ADR-015).
+`ShotIntent(Shooter)` → `ShotResolver` → `ShotResult` → `ShotExecution.Strike` → ball in flight → `ShotExecution.Land` (ADR-015, ADR-022).
 
 **Estimate** (no randomness; shared with the shooting decision):
 
@@ -167,7 +167,9 @@ Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`
 
 **Resolve**: `Roll(onTarget)` → fail = **Missed**: `Roll(0.5)` picks a side, target 0.5–4 m wide of a post on the goal line. Otherwise the target is a random point inside the goal mouth, then `Roll(save)` → **Saved** or **Goal**. Travel duration = distance ÷ (18 + 1.2·Power) m/s.
 
-**Apply**: emit `ShotTaken` (metadata `xg`, `onTarget`, `save`, `distance`, `stamina`, `keeperStamina`, `travel`), then:
+**Strike**: emit `ShotTaken` (metadata `xg`, `onTarget`, `save`, `distance`, `stamina`, `keeperStamina`, `travel`) and launch a `BallFlight` carrying the decided `ShotResult`; it arrives after ⌈travel ÷ tick⌉ ticks (at least one). While it travels nobody has the ball and `AttackingTeam` is the shooting side.
+
+**Land** (arrival tick):
 
 - **Goal** — ball loose at the target, score +1, `KickoffTeam` = conceding side, phase `GoalRestart`, emit `GoalScored` (metadata `score`).
 - **Saved** — emit `ShotSaved` (actor = keeper, target = shooter), keeper gets the ball (`PossessionChanged`).
@@ -230,18 +232,18 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every PR.
 
-Current defaults, 1 000 matches between all-5 teams:
+Current defaults, 1 000 matches between all-5 teams (after M2.1b shot flight):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 2.91 (max 9) |
-| Shots / on target per match | 27.8 / 9.0 (32 %) |
-| Passes per match, completion | 1 667, 82 % |
-| Home win / draw / away win | 39.3 % / 22.9 % / 37.8 % |
+| Goals per match | 2.87 (max 11) |
+| Shots / on target per match | 27.4 / 8.8 (32 %) |
+| Passes per match, completion | 1 660, 82 % |
+| Home win / draw / away win | 41.0 % / 23.1 % / 35.9 % |
 | Home possession | 50.0 % |
-| Tackles / carries / possession changes | 295 / 211 / 397 |
-| Striker share of goals | 82 % |
-| Outfield distance, stamina at full time | 15.3 km, 48.5 |
+| Tackles / carries / possession changes | 293 / 209 / 395 |
+| Striker share of goals | 83 % |
+| Outfield distance, stamina at full time | 15.3 km, 48.6 |
 
 Matches are 90 continuous minutes (no stoppages); real football has ~55–60 minutes of ball-in-play, so per-match volumes (passes, tackles) read high against real totals.
 
@@ -340,7 +342,7 @@ A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`);
 
 `BallState` holds `Position` and `PossessorId`; `IsLoose` is derived. Possession is stored **only** on the ball (ADR-007):
 `MatchState.HasBall(id)`, `PossessionPlayerId` and `PossessionTeam` are computed from it, so two players can never both have the ball.
-A pass in the air is `BallState.Flight` (`BallFlight`: the resolved `PassResult` plus launch/arrival ticks); `IsInFlight` / `IsLoose` are derived.
+A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `PassResult` **or** `ShotResult` plus launch/arrival ticks); `IsInFlight` / `IsLoose` are derived. A shot still in the air when the match reaches 90:00 is abandoned (interim until M2.1d, where a period ends only at a stoppage).
 
 ## Invariants (implemented)
 
