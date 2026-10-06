@@ -93,12 +93,26 @@ public class GoalAndRestartTests
     }
 
     [Fact]
-    public void Every_shot_has_exactly_one_outcome()
+    public void Every_shot_has_exactly_one_outcome_after_it_has_travelled()
     {
-        var events = NewSimulation(3).RunToCompletion().Events;
-        for (var i = 0; i < events.Count; i++)
-            if (events[i].Type == MatchEventType.ShotTaken)
-                Assert.Contains(events[i + 1].Type, new[] { MatchEventType.GoalScored, MatchEventType.ShotSaved, MatchEventType.ShotMissed });
+        MatchEventType[] outcomes = [MatchEventType.GoalScored, MatchEventType.ShotSaved, MatchEventType.ShotMissed];
+        foreach (var seed in Enumerable.Range(1, 4))
+        {
+            var events = NewSimulation(seed).RunToCompletion().Events;
+            for (var i = 0; i < events.Count; i++)
+            {
+                if (events[i].Type != MatchEventType.ShotTaken)
+                    continue;
+
+                // Nothing else can happen while a shot is in the air: the next event is its outcome, applied later
+                // than the strike — unless the match ends first.
+                var next = events[i + 1];
+                if (next.Type == MatchEventType.MatchFinished)
+                    continue;
+                Assert.Contains(next.Type, outcomes);
+                Assert.True(next.Timestamp.Seconds > events[i].Timestamp.Seconds, $"seed {seed}: outcome at the strike tick");
+            }
+        }
     }
 
     [Fact]

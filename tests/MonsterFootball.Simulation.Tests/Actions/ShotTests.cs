@@ -1,3 +1,4 @@
+using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
@@ -24,6 +25,22 @@ public class ShotTests
     private static ShotIntent Intent(Scenario s) => new(s.State.Slot(TeamSide.Home, PlayingPosition.ST).PlayerId);
 
     private ShotEstimate Estimate(Scenario s) => _resolver.Estimate(s.State, Intent(s));
+
+    /// <summary>Strikes the shot and advances the ball tick by tick until it arrives (ADR-012 pattern for shots).</summary>
+    private static void StrikeAndFly(Scenario s, ShotResult result)
+    {
+        ShotExecution.Strike(s.Context, result);
+        var flight = new BallFlightSystem();
+        while (s.State.Ball.IsInFlight)
+        {
+            Assert.Null(s.State.PossessionPlayerId);
+            Assert.Equal(TeamSide.Home, s.State.AttackingTeam);
+            Assert.Equal(0, s.State.Score.Home);
+            s.State.Clock.Advance();
+            flight.Apply(s.Context);
+            MatchStateInvariants.Verify(s.State);
+        }
+    }
 
     private double GoalRate(Scenario s, int trials = 5000)
     {
@@ -105,7 +122,7 @@ public class ShotTests
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
         Assert.Equal(ShotOutcome.Goal, result.Outcome);
 
-        ShotExecution.Apply(s.Context, result);
+        StrikeAndFly(s, result);
 
         Assert.Equal(1, s.State.Score.Home);
         Assert.Equal(0, s.State.Score.Away);
@@ -122,7 +139,7 @@ public class ShotTests
         var s = Chance(95, 34, random: new ScriptedRandom(0.0, 0.5, 0.0));
         var keeper = s.State.Slot(TeamSide.Away, PlayingPosition.GK);
 
-        ShotExecution.Apply(s.Context, _resolver.Resolve(s.State, Intent(s), s.Context.Random));
+        StrikeAndFly(s, _resolver.Resolve(s.State, Intent(s), s.Context.Random));
 
         Assert.Equal(0, s.State.Score.Home);
         Assert.True(s.State.HasBall(keeper.PlayerId));
@@ -137,7 +154,7 @@ public class ShotTests
         var keeper = s.State.Slot(TeamSide.Away, PlayingPosition.GK);
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
 
-        ShotExecution.Apply(s.Context, result);
+        StrikeAndFly(s, result);
 
         Assert.Equal(ShotOutcome.Missed, result.Outcome);
         Assert.Equal(0, s.State.Score.Home);
@@ -145,6 +162,45 @@ public class ShotTests
         Assert.True(s.State.HasBall(keeper.PlayerId));
         Assert.Equal([MatchEventType.ShotTaken, MatchEventType.ShotMissed, MatchEventType.PossessionChanged], s.EventTypes);
         Assert.Equal(PossessionCause.KeeperRestart, s.Log.Events[^1].GetPossessionCause());
+    }
+
+    [Fact]
+    public void A_struck_shot_travels_and_its_outcome_is_applied_only_on_arrival()
+    {
+        var s = Chance(85, 34, random: new ScriptedRandom(0.0, 0.5, 0.9999));
+        var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
+        Assert.Equal(ShotOutcome.Goal, result.Outcome);
+
+        ShotExecution.Strike(s.Context, result);
+
+        Assert.True(s.State.Ball.IsInFlight);
+        Assert.Equal(result, s.State.Ball.Flight!.Shot);
+        Assert.Null(s.State.Ball.Flight.Pass);
+        Assert.Equal(0, s.State.Score.Home);
+        Assert.NotEqual(MatchPhase.GoalRestart, s.State.Phase);
+        Assert.Equal([MatchEventType.ShotTaken], s.EventTypes);
+
+        var flight = new BallFlightSystem();
+        var arrival = s.State.Ball.Flight.ArrivalTick;
+        Assert.True(arrival > s.State.Clock.Tick, "a 18 m shot takes at least one tick");
+        var previousX = s.State.Ball.Position.X;
+        while (s.State.Clock.Tick < arrival - 1)
+        {
+            s.State.Clock.Advance();
+            flight.Apply(s.Context);
+            Assert.True(s.State.Ball.Position.X > previousX, "the ball moves toward goal");
+            previousX = s.State.Ball.Position.X;
+            Assert.Equal(0, s.State.Score.Home);
+        }
+
+        s.State.Clock.Advance();
+        flight.Apply(s.Context);
+
+        Assert.Equal(1, s.State.Score.Home);
+        Assert.False(s.State.Ball.IsInFlight);
+        var goal = s.Log.Events[^1];
+        Assert.Equal(MatchEventType.GoalScored, goal.Type);
+        Assert.Equal(s.State.Clock.Now, goal.Timestamp);
     }
 
     [Fact]

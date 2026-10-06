@@ -49,10 +49,10 @@ public sealed class MatchState
     public long PossessionStartTick { get; private set; }
 
     /// <summary>
-    /// The team currently attacking: the possessor's team, or the passing team while a pass is in flight.
+    /// The team currently attacking: the possessor's team, or the team that struck a pass or shot in flight.
     /// Null when the ball is loose.
     /// </summary>
-    public TeamSide? AttackingTeam => PossessionTeam ?? Ball.Flight?.Pass.Team;
+    public TeamSide? AttackingTeam => PossessionTeam ?? Ball.Flight?.Team;
 
     private Vec2 _homeShapeFocus;
     private Vec2 _awayShapeFocus;
@@ -142,7 +142,7 @@ public sealed class MatchState
         Ball.SetLoose(position);
     }
 
-    internal void LaunchBall(Actions.Passing.BallFlight flight)
+    internal void LaunchBall(Actions.BallFlight flight)
     {
         ReleaseHolder();
         Ball.Launch(flight);
