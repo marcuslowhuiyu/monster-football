@@ -5,13 +5,13 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.1a possession causes (ADR-021) — done in PR; next M2.1b shot flight
+M2.1b shot flight (ADR-022) — done in PR; next M2.1c stoppage model
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, goals and restarts, stamina/fatigue, utility AI on and off the ball
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 283 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-021
+- 284 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-022
 
 In progress:
 - nothing
@@ -35,7 +35,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 - Periods end only at a stoppage after added time (replaces "match ends at exactly 90:00")
 
 Next recommended work:
-- Continue the M2 plan: M2.1b shot flight, M2.1c stoppage model, M2.1d periods
+- Continue the M2 plan: M2.1c stoppage model, M2.1d periods
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:

@@ -291,7 +291,7 @@ the resolution model above is unchanged.
 
 ## ADR-015 — Shots Resolve Immediately; Keeper Restarts After Saves and Misses
 
-Status: Accepted
+Status: Accepted; timing superseded by ADR-022 (shots now travel and apply on arrival)
 
 Decision:
 - A shot is resolved and applied in the same tick: `ShotTaken` then exactly one of `GoalScored`, `ShotSaved`, `ShotMissed`. The `ShotResult` still carries start/target position and travel duration for animation.
@@ -466,3 +466,30 @@ won in open play, not a throw-in).
 Consequences:
 Every match fingerprint changes (the `PossessionChanged` canonical text gains `cause`), but no football does: the
 1 000-match batch figures are identical to the M1 baseline. `PossessionsWon` falls; `PossessionChanges` is unchanged.
+
+---
+
+## ADR-022 — Shots Are Resolved at the Strike and Applied on Arrival
+
+Status: Accepted (M2.1b). Supersedes the timing in ADR-015; its probabilities and keeper restarts are unchanged.
+
+Decision:
+- `ShotExecution.Strike` emits `ShotTaken` and launches a `BallFlight` holding the decided `ShotResult`. `BallFlightSystem`
+  moves it each tick and calls `ShotExecution.Land` on the arrival tick, which applies the outcome exactly as before
+  (goal → score and `GoalRestart`; save or miss → the keeper gets the ball).
+- `BallFlight` moved from `Actions.Passing` to `Actions` and carries a `PassResult` **or** a `ShotResult` (`Team`,
+  `StartPosition`, `TargetPosition` shared). Travel time in ticks uses one rule for both: ⌈travel ÷ tick⌉, at least one.
+- A goal ends the tick at the ball-flight step (the check moved from after the on-ball decision).
+- Interim: a shot still in the air at 90:00 is abandoned. M2.1d replaces this: a period ends only at a stoppage, so a
+  struck shot always arrives.
+
+Reason:
+Milestone 2 §6.1: the viewer must show the ball reach the net before the score changes, and later laws (parries,
+deflections, corners) need the ball to exist in flight. The outcome stays predetermined at the strike, as for passes
+(ADR-012), so presentation never decides it.
+
+Consequences:
+Every match fingerprint changes (players keep moving for the shot's flight time, and outcomes land later). 1 000-match
+batch (seeds 1–1000), before → after: goals 2.91 → 2.87, shots 27.8 → 27.4, passes 1 667 → 1 660, tackles 295 → 293,
+possession changes 397 → 395, striker share 82 % → 83 %, home−away win gap 0.015 → 0.051 — the last is seed noise
+(seeds 1001–2000: 0.017 after vs 0.025 before, favouring away). All bands pass.
