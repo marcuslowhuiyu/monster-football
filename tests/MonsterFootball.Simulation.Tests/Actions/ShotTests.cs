@@ -127,6 +127,7 @@ public class ShotTests
         Assert.Equal(0, s.State.Score.Home);
         Assert.True(s.State.HasBall(keeper.PlayerId));
         Assert.Equal([MatchEventType.ShotTaken, MatchEventType.ShotSaved, MatchEventType.PossessionChanged], s.EventTypes);
+        Assert.Equal(PossessionCause.Save, s.Log.Events[^1].GetPossessionCause());
     }
 
     [Fact]
@@ -143,6 +144,7 @@ public class ShotTests
         Assert.True(Math.Abs(result.TargetPosition.Y - 34) > PitchGeometry.GoalWidth / 2);
         Assert.True(s.State.HasBall(keeper.PlayerId));
         Assert.Equal([MatchEventType.ShotTaken, MatchEventType.ShotMissed, MatchEventType.PossessionChanged], s.EventTypes);
+        Assert.Equal(PossessionCause.KeeperRestart, s.Log.Events[^1].GetPossessionCause());
     }
 
     [Fact]

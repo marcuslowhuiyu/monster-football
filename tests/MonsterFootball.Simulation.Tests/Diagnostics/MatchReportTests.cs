@@ -25,6 +25,22 @@ public class MatchReportTests
             MatchReport.Describe(state, new MatchEvent(new MatchTime(554), MatchEventType.ShotSaved, keeper.PlayerId, st.PlayerId, TeamSide.Away)));
     }
 
+    [Theory]
+    [InlineData(PossessionCause.Tackle, "Red win the ball")]
+    [InlineData(PossessionCause.Kickoff, "Red have the ball (kickoff)")]
+    [InlineData(PossessionCause.KeeperRestart, "Red have the ball (keeper restart)")]
+    public void Possession_changes_say_whether_the_ball_was_won_or_awarded(PossessionCause cause, string expected)
+    {
+        var state = TestTeams.Match();
+        var e = new MatchEvent(new MatchTime(10), MatchEventType.PossessionChanged, Team: TeamSide.Away)
+        {
+            Metadata = System.Collections.Immutable.ImmutableSortedDictionary.CreateRange(
+                [new KeyValuePair<string, string>("cause", cause.ToString())]),
+        };
+
+        Assert.Equal(expected, MatchReport.Describe(state, e));
+    }
+
     [Fact]
     public void Highlights_start_with_match_start_and_end_with_the_score_and_statistics()
     {

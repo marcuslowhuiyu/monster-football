@@ -80,6 +80,7 @@ public class PassFlowTests
         var changed = s.Log.Events[^1];
         Assert.Equal(TeamSide.Away, changed.Team);
         Assert.Equal(interceptor.PlayerId, changed.ActorPlayerId);
+        Assert.Equal(PossessionCause.Interception, changed.GetPossessionCause());
     }
 
     [Fact]
@@ -98,6 +99,7 @@ public class PassFlowTests
 
         Assert.True(s.State.HasBall(collector.PlayerId));
         Assert.Equal(MatchEventType.PossessionChanged, s.EventTypes[^1]);
+        Assert.Equal(PossessionCause.LooseBall, s.Log.Events[^1].GetPossessionCause());
     }
 
     [Fact]
