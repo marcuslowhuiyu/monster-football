@@ -58,7 +58,7 @@
 
 **Interception threat** — An opponent close enough to the pass lane to cut it out, with a probability and position along the lane.
 
-**BallFlight** — A pass in the air: its resolved result plus launch and arrival ticks.
+**BallFlight** — A pass or shot in the air: its resolved result (decided at the strike) plus launch and arrival ticks; the outcome is applied on arrival.
 
 **Loose ball** — Nobody possesses the ball and it is not in flight; the nearest player within 1.5 m collects it.
 
