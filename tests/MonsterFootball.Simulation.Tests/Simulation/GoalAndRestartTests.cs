@@ -74,6 +74,25 @@ public class GoalAndRestartTests
     }
 
     [Fact]
+    public void Possession_after_a_goal_is_a_kickoff_not_a_ball_won()
+    {
+        var kickoffChanges = 0;
+        foreach (var seed in Enumerable.Range(1, 8))
+        {
+            var events = NewSimulation(seed).RunToCompletion().Events;
+            for (var i = 1; i < events.Count; i++)
+            {
+                if (events[i].Type != MatchEventType.PossessionChanged || events[i - 1].Type != MatchEventType.Kickoff)
+                    continue;
+                Assert.Equal(PossessionCause.Kickoff, events[i].GetPossessionCause());
+                kickoffChanges++;
+            }
+        }
+
+        Assert.True(kickoffChanges > 0, "no post-goal kickoffs in 8 matches");
+    }
+
+    [Fact]
     public void Every_shot_has_exactly_one_outcome()
     {
         var events = NewSimulation(3).RunToCompletion().Events;

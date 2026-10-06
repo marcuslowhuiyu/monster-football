@@ -31,13 +31,20 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
             Metadata = metadata ?? ImmutableSortedDictionary<string, string>.Empty,
         });
 
-    /// <summary>Gives the ball to a player, emitting PossessionChanged if control passes to the other team.</summary>
-    public void GiveBall(PlayerId playerId)
+    /// <summary>
+    /// Gives the ball to a player, emitting PossessionChanged (with its <paramref name="cause"/>) if control passes
+    /// to the other team.
+    /// </summary>
+    public void GiveBall(PlayerId playerId, PossessionCause cause)
     {
         var previousTeam = State.LastPossessionTeam;
         State.GiveBallTo(playerId);
         var player = State.Player(playerId);
         if (previousTeam is { } previous && previous != player.Team)
-            Emit(MatchEventType.PossessionChanged, actor: playerId, team: player.Team, position: player.Position);
+            Emit(MatchEventType.PossessionChanged, actor: playerId, team: player.Team, position: player.Position,
+                metadata: ImmutableSortedDictionary.CreateRange(
+                [
+                    new KeyValuePair<string, string>(PossessionCauseExtensions.MetadataKey, cause.ToString()),
+                ]));
     }
 }

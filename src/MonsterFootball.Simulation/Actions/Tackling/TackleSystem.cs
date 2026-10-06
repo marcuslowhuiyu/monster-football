@@ -82,7 +82,7 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
             case TackleOutcome.Won:
                 context.Emit(MatchEventType.TackleWon, actor: tackler.PlayerId, target: carrier.PlayerId,
                     team: tackler.Team, position: result.Position);
-                context.GiveBall(tackler.PlayerId);
+                context.GiveBall(tackler.PlayerId, PossessionCause.Tackle);
                 carrier.TackleCooldownUntilTick = tick + Ticks(DispossessedCooldownSeconds);
                 break;
 

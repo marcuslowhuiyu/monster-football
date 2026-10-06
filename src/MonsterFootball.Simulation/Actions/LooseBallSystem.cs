@@ -1,3 +1,5 @@
+using MonsterFootball.Simulation.Events;
+
 namespace MonsterFootball.Simulation.Actions;
 
 /// <summary>A loose ball is collected by the nearest player within <see cref="ControlRadius"/> (ties → earlier player).</summary>
@@ -17,6 +19,6 @@ internal sealed class LooseBallSystem
             .MinBy(p => p.Position.DistanceTo(ball));
 
         if (collector is not null)
-            context.GiveBall(collector.PlayerId);
+            context.GiveBall(collector.PlayerId, PossessionCause.LooseBall);
     }
 }

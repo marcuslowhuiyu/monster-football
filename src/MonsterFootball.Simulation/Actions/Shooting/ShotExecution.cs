@@ -43,13 +43,13 @@ internal static class ShotExecution
             case ShotOutcome.Saved:
                 context.Emit(MatchEventType.ShotSaved, actor: result.Goalkeeper, target: result.Shooter,
                     team: result.Team.Opponent(), position: result.TargetPosition);
-                context.GiveBall(result.Goalkeeper);
+                context.GiveBall(result.Goalkeeper, PossessionCause.Save);
                 break;
 
             case ShotOutcome.Missed:
                 context.Emit(MatchEventType.ShotMissed, actor: result.Shooter, team: result.Team, position: result.TargetPosition);
                 // No goal kicks yet: the defending goalkeeper restarts play with the ball.
-                context.GiveBall(result.Goalkeeper);
+                context.GiveBall(result.Goalkeeper, PossessionCause.KeeperRestart);
                 break;
         }
     }
