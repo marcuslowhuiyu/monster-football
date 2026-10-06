@@ -102,6 +102,8 @@
 
 **MatchStatistics** — Per-team goals, shots, shots on target, passes, possessions won and possession time, derived from the event log.
 
+**Possession cause** — Why a player has the ball, recorded on `PossessionChanged`: won in open play (interception, tackle, loose ball, save, reception) or awarded by a restart (kickoff, keeper restart). Only open-play causes count as possessions won.
+
 **Possession time** — Seconds credited to the team last in control of the ball, including while its pass is in flight or the ball is loose.
 
 **Shape focus** — The smoothed ball position a team's shape is built around (3 s average when attacking, 0.75 s when defending).

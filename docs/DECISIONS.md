@@ -444,3 +444,25 @@ behaviour. Making the batch a CI gate means a change that breaks the football (e
 Consequences:
 Bands can be tightened as the simulation matures. A legitimate behaviour change that moves a figure outside a band
 needs the band revisited deliberately, with the reason recorded here.
+
+---
+
+## ADR-021 — Possession Changes Carry a Cause; Only Open-Play Changes Count as Won
+
+Status: Accepted (M2.1a)
+
+Decision:
+- `MatchContext.GiveBall(player, cause)` requires a `PossessionCause`; `PossessionChanged` carries it as `cause` metadata.
+- Causes: `Reception`, `Interception`, `Tackle`, `LooseBall`, `Save` (open play) and `Kickoff`, `KeeperRestart` (restarts awarded by the laws, not won). `PossessionCauseExtensions.IsOpenPlay` is the single definition.
+- `MatchStatistics.PossessionsWon` counts only open-play causes. `PossessionChanges` still counts every change, and possession time still switches at every change.
+- No new event types: the cause is metadata, so consumers that only need "who has the ball now" are unaffected. Restarts added in M2 (throw-ins, goal kicks, corners, free kicks, penalties) add causes to the same enum.
+
+Reason:
+A kickoff after conceding, or the keeper picking the ball up after a miss, changes possession without anyone winning it.
+Counting those as "possessions won" mixed defensive success with the laws' bookkeeping (≈ 214 per side per match).
+With M2's restarts this distinction becomes much larger, and tactical analysis needs it (a Transition follows a ball
+won in open play, not a throw-in).
+
+Consequences:
+Every match fingerprint changes (the `PossessionChanged` canonical text gains `cause`), but no football does: the
+1 000-match batch figures are identical to the M1 baseline. `PossessionsWon` falls; `PossessionChanges` is unchanged.
