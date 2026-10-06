@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
@@ -10,6 +11,12 @@ public class MatchStatisticsTests
 {
     private static MatchEvent E(double seconds, MatchEventType type, TeamSide? team = null) =>
         new(new MatchTime(seconds), type, ActorPlayerId: new PlayerId(1), Team: team);
+
+    private static MatchEvent Changed(double seconds, TeamSide team, PossessionCause cause) =>
+        E(seconds, MatchEventType.PossessionChanged, team) with
+        {
+            Metadata = ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>("cause", cause.ToString())]),
+        };
 
     [Fact]
     public void Counts_shots_on_target_passes_and_goals_per_team()
@@ -50,8 +57,8 @@ public class MatchStatisticsTests
         MatchEvent[] events =
         [
             E(0, MatchEventType.Kickoff, TeamSide.Away),
-            E(40, MatchEventType.PossessionChanged, TeamSide.Home),
-            E(70, MatchEventType.PossessionChanged, TeamSide.Away),
+            Changed(40, TeamSide.Home, PossessionCause.Tackle),
+            Changed(70, TeamSide.Away, PossessionCause.Interception),
             E(100, MatchEventType.MatchFinished),
         ];
 
@@ -74,7 +81,7 @@ public class MatchStatisticsTests
             E(0, MatchEventType.Kickoff, TeamSide.Home),
             E(50, MatchEventType.GoalScored, TeamSide.Home),
             E(50.25, MatchEventType.Kickoff, TeamSide.Away),
-            E(50.25, MatchEventType.PossessionChanged, TeamSide.Away),
+            Changed(50.25, TeamSide.Away, PossessionCause.Kickoff),
             E(100, MatchEventType.MatchFinished),
         ];
 
@@ -82,6 +89,29 @@ public class MatchStatisticsTests
 
         Assert.Equal(50.25, stats.Home.PossessionSeconds, precision: 9);
         Assert.Equal(49.75, stats.Away.PossessionSeconds, precision: 9);
+    }
+
+    [Fact]
+    public void Restarts_change_possession_but_are_not_possessions_won()
+    {
+        MatchEvent[] events =
+        [
+            E(0, MatchEventType.Kickoff, TeamSide.Home),
+            E(20, MatchEventType.GoalScored, TeamSide.Home),
+            E(20.25, MatchEventType.Kickoff, TeamSide.Away),
+            Changed(20.25, TeamSide.Away, PossessionCause.Kickoff),
+            Changed(30, TeamSide.Home, PossessionCause.LooseBall),
+            E(40, MatchEventType.ShotMissed, TeamSide.Home),
+            Changed(40, TeamSide.Away, PossessionCause.KeeperRestart),
+            Changed(50, TeamSide.Home, PossessionCause.Save),
+            E(60, MatchEventType.MatchFinished),
+        ];
+
+        var stats = MatchStatistics.FromEvents(events);
+
+        Assert.Equal(4, stats.PossessionChanges);
+        Assert.Equal(2, stats.Home.PossessionsWon);
+        Assert.Equal(0, stats.Away.PossessionsWon);
     }
 
     [Fact]
@@ -105,7 +135,11 @@ public class MatchStatisticsTests
         Assert.Equal(result.HomeGoals, stats.Home.Goals);
         Assert.Equal(result.AwayGoals, stats.Away.Goals);
         Assert.Equal(MatchConfig.Default.MatchDurationSeconds, stats.Home.PossessionSeconds + stats.Away.PossessionSeconds, precision: 6);
-        Assert.Equal(result.Events.Count(e => e.Type == MatchEventType.PossessionChanged), stats.PossessionChanges);
+        var changes = result.Events.Where(e => e.Type == MatchEventType.PossessionChanged).ToList();
+        Assert.Equal(changes.Count, stats.PossessionChanges);
+        Assert.All(changes, e => Assert.NotNull(e.GetPossessionCause()));
+        Assert.Equal(changes.Count(e => e.GetPossessionCause()!.Value.IsOpenPlay()), stats.Home.PossessionsWon + stats.Away.PossessionsWon);
+        Assert.True(stats.Home.PossessionsWon + stats.Away.PossessionsWon < stats.PossessionChanges, "keeper restarts are not possessions won");
 
         foreach (var team in new[] { stats.Home, stats.Away })
         {

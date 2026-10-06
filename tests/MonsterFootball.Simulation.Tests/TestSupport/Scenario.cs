@@ -40,10 +40,10 @@ internal sealed class Scenario
         return player;
     }
 
-    public PlayerMatchState GiveBall(TeamSide side, PlayingPosition slot)
+    public PlayerMatchState GiveBall(TeamSide side, PlayingPosition slot, PossessionCause cause = PossessionCause.Reception)
     {
         var player = State.Slot(side, slot);
-        Context.GiveBall(player.PlayerId);
+        Context.GiveBall(player.PlayerId, cause);
         return player;
     }
 }

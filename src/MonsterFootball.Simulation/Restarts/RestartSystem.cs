@@ -36,7 +36,7 @@ internal sealed class RestartSystem
         taker.Position = state.Pitch.Centre;
         taker.MovementTarget = taker.Position;
         context.Emit(MatchEventType.Kickoff, actor: taker.PlayerId, team: side, position: taker.Position);
-        context.GiveBall(taker.PlayerId);
+        context.GiveBall(taker.PlayerId, PossessionCause.Kickoff);
         state.Phase = MatchPhase.OpenPlay;
     }
 }

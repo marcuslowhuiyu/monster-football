@@ -74,6 +74,7 @@ public class TackleTests
         Assert.Equal(
             [MatchEventType.TackleAttempted, MatchEventType.TackleWon, MatchEventType.PossessionChanged],
             s.EventTypes);
+        Assert.Equal(PossessionCause.Tackle, s.Log.Events[^1].GetPossessionCause());
     }
 
     [Fact]

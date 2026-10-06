@@ -74,7 +74,12 @@ public static class MatchReport
             MatchEventType.TackleWon => "Tackle won",
             MatchEventType.TackleLost => "Tackle beaten",
             MatchEventType.TackleLooseBall => "Ball knocked loose",
-            MatchEventType.PossessionChanged => $"{TeamName(state, e.Team)} win the ball",
+            MatchEventType.PossessionChanged => e.GetPossessionCause() switch
+            {
+                PossessionCause.Kickoff => $"{TeamName(state, e.Team)} have the ball (kickoff)",
+                PossessionCause.KeeperRestart => $"{TeamName(state, e.Team)} have the ball (keeper restart)",
+                _ => $"{TeamName(state, e.Team)} win the ball",
+            },
             MatchEventType.ShotTaken => $"{P(e.ActorPlayerId)} shoots",
             MatchEventType.ShotSaved => $"Saved by {P(e.ActorPlayerId)}",
             MatchEventType.ShotMissed => "Wide",

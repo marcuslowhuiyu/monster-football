@@ -36,7 +36,7 @@ internal static class PassExecution
         switch (pass.Outcome)
         {
             case PassOutcome.Completed:
-                context.GiveBall(pass.IntendedReceiver);
+                context.GiveBall(pass.IntendedReceiver, PossessionCause.Reception);
                 context.Emit(MatchEventType.PassCompleted, actor: pass.Passer, target: pass.IntendedReceiver,
                     team: pass.Team, position: context.State.Ball.Position);
                 break;
@@ -49,7 +49,7 @@ internal static class PassExecution
                     [
                         new KeyValuePair<string, string>("chance", Format(pass.InterceptionProbability)),
                     ]));
-                context.GiveBall(interceptor);
+                context.GiveBall(interceptor, PossessionCause.Interception);
                 break;
 
             case PassOutcome.Misplaced:

@@ -20,6 +20,8 @@ public sealed record TeamStatistics(
 /// Match statistics derived entirely from the event log (ADR-019). Possession time is credited to the team
 /// that last had the ball under control — including while a pass is in flight or the ball is loose — from the
 /// opening kickoff, switching at each <see cref="MatchEventType.PossessionChanged"/>, until <see cref="MatchEventType.MatchFinished"/>.
+/// Possessions won count only changes whose cause is open play (<see cref="PossessionCauseExtensions.IsOpenPlay"/>);
+/// kickoffs and keeper restarts change possession without anyone winning the ball.
 /// </summary>
 public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, int PossessionChanges)
 {
@@ -60,8 +62,9 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                     break;
                 case MatchEventType.PossessionChanged:
                     possessionChanges++;
-                    Of(e.Team!.Value).PossessionsWon++;
-                    SwitchPossession(e.Team.Value, at);
+                    if (e.GetPossessionCause()?.IsOpenPlay() == true)
+                        Of(e.Team!.Value).PossessionsWon++;
+                    SwitchPossession(e.Team!.Value, at);
                     break;
                 case MatchEventType.PassAttempted:
                     Of(e.Team!.Value).PassesAttempted++;
