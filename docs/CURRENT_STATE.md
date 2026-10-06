@@ -26,7 +26,7 @@ Known issues (calibration, all within health bands):
 
 Environment notes:
 - `dotnet` is installed at `~/.dotnet` and may not be on `PATH` in every shell
-- Godot editor not installed; `godot/` has only been built, never opened
+- Godot 4.7.2 .NET (mono) is at `~/Downloads/Godot_mono.app`; `godot/` has not been opened in it yet (M2.1e)
 - Branch protection unavailable on the current GitHub plan for this private repo; PR workflow enforced by convention (ADR-017)
 - Open Dependabot PRs: test tooling updates (#4, #5, #7)
 

@@ -66,7 +66,7 @@ Events emitted during a step carry the timestamp from **before** the clock advan
 - `MatchEvent` (immutable record): `Timestamp`, `Type`, optional `ActorPlayerId`, `TargetPlayerId`, `Team`, `Position`, and `Metadata` (sorted string map, empty by default).
 - `ToString()` gives a canonical one-line form used by determinism tests.
 - `MatchEventLog` is append-only; `MatchSimulation.Events` exposes it read-only.
-- `MatchEventType` (17 values): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`). New types are appended.
+- `MatchEventType` (17 values; `PossessionChanged` carries a `cause`): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`). New types are appended.
 
 ## Positioning and shape (implemented)
 
@@ -220,7 +220,8 @@ ADR-019. `MatchStatistics.FromEvents` derives everything from the event log:
 | Shots | `ShotTaken` |
 | Shots on target | `GoalScored` + `ShotSaved` (event team is the saving side; credited to the shooting side) |
 | Passes attempted / completed | `PassAttempted` / `PassCompleted` |
-| Possessions won, possession changes | `PossessionChanged` |
+| Possession changes | every `PossessionChanged` |
+| Possessions won | `PossessionChanged` whose `cause` is open play (not kickoffs or keeper restarts) |
 | Possession seconds | opening `Kickoff` → each `PossessionChanged` → `MatchFinished`; loose and in-flight time counts for the last team in control |
 
 Full-match tests check the statistics against the score, the event log and a 5 400 s possession total.
@@ -292,7 +293,8 @@ Typical full-time stamina (all-5 teams): GK ≈ 86, defenders ≈ 63–67, midfi
 
 ## Possession bookkeeping (implemented)
 
-- `MatchContext.GiveBall` is the only way systems transfer possession; it emits `PossessionChanged` (actor = new holder, team = new team) when the team differs from `LastPossessionTeam`. The opening kickoff does not emit it.
+- `MatchContext.GiveBall(player, cause)` is the only way systems transfer possession; it emits `PossessionChanged` (actor = new holder, team = new team, metadata `cause`) when the team differs from `LastPossessionTeam`. The opening kickoff does not emit it.
+- `PossessionCause` (ADR-021): `Reception` (completed pass), `Interception`, `Tackle`, `LooseBall`, `Save` — won in open play — and `Kickoff`, `KeeperRestart` — restarts, not won. `MatchEvent.GetPossessionCause()` reads it back.
 - `PossessionStartTick` records when the current holder got the ball.
 - When the ball leaves a player by any route, `MatchState` clears that player's `CurrentIntent` and `ActiveCarry`.
 - `AttackingTeam` = possessor's team, or the passing team during a flight; null when loose.
