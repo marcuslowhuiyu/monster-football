@@ -6,14 +6,17 @@ using MonsterFootball.Simulation.Events;
 namespace MonsterFootball.Simulation.Actions.Shooting;
 
 /// <summary>
-/// Applies a resolved shot immediately (ADR-015). Goals increment the score and move the match to
-/// <see cref="MatchPhase.GoalRestart"/>; saves and misses give the ball to the defending goalkeeper.
+/// Applies a resolved shot in two steps, like a pass (ADR-022): <see cref="Strike"/> emits ShotTaken and launches the
+/// ball; <see cref="Land"/> applies the outcome decided at the strike when the ball arrives. Goals increment the
+/// score and move the match to <see cref="MatchPhase.GoalRestart"/>; saves and misses give the ball to the
+/// defending goalkeeper.
 /// </summary>
 internal static class ShotExecution
 {
-    public static void Apply(MatchContext context, ShotResult result)
+    public static void Strike(MatchContext context, ShotResult result)
     {
         var state = context.State;
+        var tick = state.Clock.Tick;
         context.Emit(MatchEventType.ShotTaken, actor: result.Shooter, team: result.Team, position: result.StartPosition,
             metadata: ImmutableSortedDictionary.CreateRange(
             [
@@ -25,7 +28,12 @@ internal static class ShotExecution
                 new KeyValuePair<string, string>("keeperStamina", Format(state.Player(result.Goalkeeper).CurrentStamina)),
                 new KeyValuePair<string, string>("travel", Format(result.TravelDuration)),
             ]));
+        state.LaunchBall(BallFlight.ForShot(result, tick, tick + BallFlight.TravelTicks(result.TravelDuration, context.Config.TickSeconds)));
+    }
 
+    public static void Land(MatchContext context, ShotResult result)
+    {
+        var state = context.State;
         switch (result.Outcome)
         {
             case ShotOutcome.Goal:

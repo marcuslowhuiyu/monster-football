@@ -46,13 +46,3 @@ public sealed record PassResult(
         _ => null,
     };
 }
-
-/// <summary>A pass travelling through the air between <see cref="LaunchTick"/> and <see cref="ArrivalTick"/>.</summary>
-public sealed record BallFlight(PassResult Pass, long LaunchTick, long ArrivalTick)
-{
-    public Vec2 PositionAt(long tick)
-    {
-        var progress = ArrivalTick == LaunchTick ? 1 : Math.Clamp((double)(tick - LaunchTick) / (ArrivalTick - LaunchTick), 0, 1);
-        return Pass.StartPosition + (Pass.TargetPosition - Pass.StartPosition) * progress;
-    }
-}
