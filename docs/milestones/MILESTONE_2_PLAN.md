@@ -13,6 +13,9 @@ as a sequence of small PRs, each green on CI, with every match-fingerprint chang
 
 **Tech stack:** .NET 10 / C# (pinned by `global.json`), xUnit, Godot 4.7.2 .NET, GitHub Actions (3 OS).
 
+**ADR numbers** below are provisional; ADRs are numbered sequentially in `DECISIONS.md` when accepted
+(possession causes became ADR-021).
+
 **Working assumptions:** the open decisions in spec §54 (D1–D14) are taken as recommended unless changed; each PR
 that implements one restates it and records the ADR.
 
@@ -245,7 +248,7 @@ Each is verified cross-platform by CI and recorded in its ADR. Any other PR that
 
 | # | Risk | Mitigation |
 |---|---|---|
-| R1 | Godot 4.7.2 .NET not installed; viewer from M2.2 | Install before M2.2; M2.1 code PRs proceed without it |
+| R1 | Godot needed from M2.2 | Resolved: 4.7.2 .NET found at `~/Downloads/Godot_mono.app` |
 | R2 | Restart volumes unrealistic (too few throw-ins/corners) | D4/D5 in 4f; measure at the 7c checkpoint; D6 clearance as fallback |
 | R3 | Offside floods matches before the AI adapts | Enable offside and the AI changes in one PR (5b); offsides band |
 | R4 | Restart setup stalls (players never "ready") | Setup timeout; invariant/test that every stoppage restarts within N s |
