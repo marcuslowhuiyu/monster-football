@@ -1,17 +1,17 @@
 # Current Development State
 
 Current milestone:
-M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **specified, not started** (`milestones/MILESTONE_2.md`, revision 2)
+M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in progress** (`milestones/MILESTONE_2.md`, plan `milestones/MILESTONE_2_PLAN.md`)
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2 specification review; next: M2.1–M2.12 implementation plan, then M2.1
+M2.1a possession causes (ADR-021) — done in PR; next M2.1b shot flight
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, goals and restarts, stamina/fatigue, utility AI on and off the ball
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 269 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-020
+- 283 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-021
 
 In progress:
 - nothing
@@ -35,8 +35,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 - Periods end only at a stoppage after added time (replaces "match ends at exactly 90:00")
 
 Next recommended work:
-- Review `milestones/MILESTONE_2.md` revision 2 and its open decisions (§54)
-- Write the M2 implementation plan; install Godot 4.7.2 .NET (needed from M2.1)
+- Continue the M2 plan: M2.1b shot flight, M2.1c stoppage model, M2.1d periods
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
