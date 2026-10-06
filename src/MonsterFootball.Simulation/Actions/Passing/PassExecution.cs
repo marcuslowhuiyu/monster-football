@@ -11,8 +11,7 @@ internal static class PassExecution
     {
         var state = context.State;
         var tick = state.Clock.Tick;
-        var travelTicks = Math.Max(1, (long)Math.Ceiling(result.TravelDuration / context.Config.TickSeconds - 1e-9));
-        state.LaunchBall(new BallFlight(result, tick, tick + travelTicks));
+        state.LaunchBall(BallFlight.ForPass(result, tick, tick + BallFlight.TravelTicks(result.TravelDuration, context.Config.TickSeconds)));
 
         context.Emit(MatchEventType.PassAttempted,
             actor: result.Passer,
@@ -30,9 +29,8 @@ internal static class PassExecution
             ]));
     }
 
-    public static void Land(MatchContext context, BallFlight flight)
+    public static void Land(MatchContext context, PassResult pass)
     {
-        var pass = flight.Pass;
         switch (pass.Outcome)
         {
             case PassOutcome.Completed:

@@ -123,15 +123,16 @@ public sealed class MatchSimulation
 
     /// <summary>
     /// Open-play tick order. Systems never call each other; this method is the only sequencing.
-    /// A goal switches the phase to GoalRestart; the rest of that tick is skipped.
+    /// A goal (a shot arriving in the net) switches the phase to GoalRestart; the rest of that tick is skipped.
     /// </summary>
     private void RunOpenPlay()
     {
-        _ballFlight.Apply(_context);      // advance / land a pass in flight
+        _ballFlight.Apply(_context);      // advance a pass or shot in flight; apply its outcome on arrival
+        if (State.Phase != MatchPhase.OpenPlay)
+            return;                       // a shot arrived in the net
+
         _carry.Apply(_context);           // end finished carries
         _onBallDecision.Apply(_context);  // carrier holds, passes, carries or shoots (utility AI)
-        if (State.Phase != MatchPhase.OpenPlay)
-            return;
 
         _tackle.Apply(_context);          // presser (or another defender) in range may challenge
         _shape.Apply(State,                                  // default targets: shape, presser, pass receiver

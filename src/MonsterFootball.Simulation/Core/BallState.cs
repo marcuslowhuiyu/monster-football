@@ -1,6 +1,6 @@
 namespace MonsterFootball.Simulation.Core;
 
-using MonsterFootball.Simulation.Actions.Passing;
+using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Players;
 
 /// <summary>
@@ -17,7 +17,7 @@ public sealed class BallState
     public Vec2 Position { get; private set; }
     public PlayerId? PossessorId { get; private set; }
 
-    /// <summary>The pass currently travelling, if any. A ball in flight has no possessor.</summary>
+    /// <summary>The pass or shot currently travelling, if any. A ball in flight has no possessor.</summary>
     public BallFlight? Flight { get; private set; }
 
     public bool IsInFlight => Flight is not null;
@@ -43,7 +43,7 @@ public sealed class BallState
     {
         PossessorId = null;
         Flight = flight;
-        Position = flight.Pass.StartPosition;
+        Position = flight.StartPosition;
     }
 
     internal void MoveInFlight(Vec2 position) => Position = position;

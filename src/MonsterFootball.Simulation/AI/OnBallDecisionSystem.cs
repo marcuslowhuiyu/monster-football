@@ -34,7 +34,7 @@ internal sealed class OnBallDecisionSystem(
         switch (choice.Intent)
         {
             case ShotIntent shot:
-                ShotExecution.Apply(context, shotResolver.Resolve(state, shot, context.Random));
+                ShotExecution.Strike(context, shotResolver.Resolve(state, shot, context.Random));
                 break;
             case PassIntent pass:
                 PassExecution.Launch(context, passResolver.Resolve(state, pass, context.Random));

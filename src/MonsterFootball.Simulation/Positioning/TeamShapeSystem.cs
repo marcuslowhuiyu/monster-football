@@ -45,10 +45,10 @@ internal sealed class TeamShapeSystem
         foreach (var side in Enum.GetValues<TeamSide>())
             AssignTeam(state, side);
 
-        if (state.Ball.Flight is { Pass.FinalReceiver: { } receiverId } flight)
+        if (state.Ball.Flight is { Pass: { FinalReceiver: { } receiverId } pass })
         {
             var receiver = state.Player(receiverId);
-            receiver.MovementTarget = flight.Pass.TargetPosition;
+            receiver.MovementTarget = pass.TargetPosition;
             receiver.MovementIntensity = MovementIntensity.Sprint;
         }
     }
