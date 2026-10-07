@@ -577,3 +577,48 @@ Every fingerprint changes. 1 000-match batch, before → after: goals 2.86 → 2
 1 706, tackles 286 → 301, possession changes 385 → 405, outfield distance 15.1 → 15.8 km (closer to its band),
 stamina at full time 49.6 → 47.1; ball in play 92.5 min, added time 1.3 min per half, 96 % of halves ended by the cap.
 All bands pass.
+
+---
+
+## ADR-025 — Observers Read Immutable Match Frames
+
+Status: Accepted (decision taken 2026-10-05; implemented M2.2)
+
+Decision:
+- `Observation.MatchFrame.Capture(MatchState)` copies everything observable at the end of a tick into immutable
+  records (`MatchFrame`, `PlayerFrame`, `BallFrame`, `BallFlightFrame`). Presentation, tactical analysis (M2.8+) and
+  debug tools consume frames plus events, never the live `MatchState`.
+- Frames hold only fields something reads; new fields are added with their first reader.
+- A ball flight's landing point is in the frame for animation. Tactical analysis must use only the intended receiver
+  and the lane, never predetermined outcomes (enforced when analysis lands).
+
+Reason:
+`MatchState` is mutated in place each tick and is writable from anywhere inside the simulation assembly. A copy makes
+"observing cannot change the match" structural, and gives the viewer the previous and next states to interpolate
+between. The milestone's §16 sketch fed `MatchState` to analysis directly; this deviation was approved.
+
+Consequences:
+One copy of 22 small records per tick (cheap). A fingerprint test proves capturing every tick changes nothing.
+
+---
+
+## ADR-026 — Playback Library and Godot Developer Viewer
+
+Status: Accepted (M2.2)
+
+Decision:
+- New plain-.NET project `MonsterFootball.Playback` (references the simulation; never Godot — architecture test):
+  `MatchPlayer` (records a frame per tick, steps the simulation only on demand, seeks without re-simulating),
+  `PlaybackClock` (play/pause, speeds 0.25×–4×, seek), `FrameInterpolator` (positions only), `PlaybackSession`.
+- The Godot project draws `PlaybackSession.Update(delta)` each rendered frame with simple shapes (`_Draw`), plus a
+  code-built HUD. No Godot physics, no scene-tree football. Launch options after `++`: `--seed`, `--start`, `--speed`,
+  `--autoplay`; `tools/viewer.sh` launches it with an Arm64 `DOTNET_ROOT`.
+- Godot scenes are not unit-tested; their logic lives in Playback, which is.
+
+Reason:
+Milestone §35: rendering time must never advance or resolve football. Keeping the clock and frame logic in a tested
+library makes that a test, not a convention, and keeps the Godot layer thin.
+
+Consequences:
+The viewer keeps every frame of a match in memory (tens of MB), fine for a developer tool. Godot 4.4+ may generate
+`*.uid` files next to scripts when the editor opens them; commit them with the scripts.
