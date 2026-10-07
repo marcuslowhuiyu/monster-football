@@ -27,6 +27,14 @@ public class DependencyRulesTests
     }
 
     [Fact]
+    public void Playback_does_not_reference_Godot_and_the_simulation_does_not_reference_Playback()
+    {
+        var playback = Assembly.Load("MonsterFootball.Playback");
+        Assert.DoesNotContain(playback.GetReferencedAssemblies(), a => a.Name!.StartsWith("Godot", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(SimulationAssembly.GetReferencedAssemblies(), a => a.Name == "MonsterFootball.Playback");
+    }
+
+    [Fact]
     public void Simulation_targets_plain_dotnet()
     {
         Assert.Equal("MonsterFootball.Simulation", SimulationAssembly.GetName().Name);
