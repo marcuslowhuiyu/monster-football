@@ -99,6 +99,12 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "monsterfootball.playback": {
+        "type": "Project",
+        "dependencies": {
+          "MonsterFootball.Simulation": "[1.0.0, )"
+        }
+      },
       "monsterfootball.simulation": {
         "type": "Project"
       }

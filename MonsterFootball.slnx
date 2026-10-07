@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/MonsterFootball.DebugRunner/MonsterFootball.DebugRunner.csproj" />
+    <Project Path="src/MonsterFootball.Playback/MonsterFootball.Playback.csproj" />
     <Project Path="src/MonsterFootball.Simulation/MonsterFootball.Simulation.csproj" />
   </Folder>
   <Folder Name="/tests/">
