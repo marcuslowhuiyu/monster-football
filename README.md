@@ -47,7 +47,9 @@ Launching from Finder does not pass `DOTNET_ROOT`; use the command above, or `la
 src/MonsterFootball.Simulation        headless simulation (no Godot dependency)
 src/MonsterFootball.DebugRunner       console runner for matches and batches
 tests/MonsterFootball.Simulation.Tests xUnit tests
-godot/                                Godot developer viewer (Milestone 2; currently empty)
+src/MonsterFootball.Playback          playback clock, frame history and interpolation for the viewer
+godot/                                Godot developer match viewer
+tools/viewer.sh                       launches the viewer
 docs/                                 design, architecture, decisions, current state
 ```
 
@@ -95,6 +97,17 @@ dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 200 --f
 ```
 
 Plays the matches in parallel, prints averages (goals, shots, passes, pass completion, home/draw/away %, possession, tackles, distance…) and pathology health checks. Exits 1 if any check fails; CI runs `batch 1000` on every pull request.
+
+## Watching a match (developer viewer)
+
+```sh
+tools/viewer.sh                       # seed 1, paused at kickoff
+tools/viewer.sh --seed=7 --autoplay   # options: --seed=N --start=TICK --speed=X --autoplay
+```
+
+The script finds Godot 4.7.2 .NET (or `GODOT=/path/to/Godot`), sets `DOTNET_ROOT`, builds the C# project and opens
+`godot/`. Controls: play/pause (space), speed 0.25×–4×, restart, seed, next seed. Ticks are 0.25 s, so minute *m* is
+tick 240·*m*. The viewer draws what the simulation decided; it never changes the football.
 
 ## Development workflow
 

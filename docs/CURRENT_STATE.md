@@ -5,13 +5,15 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.1e presentation review — done in PR; next M2.2 frames and basic viewer
+M2.2 frames, playback library and basic Godot viewer (ADR-025, ADR-026) — done in PR; next M2.3 tactical zones
 
 What exists:
-- Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, goals and restarts, stamina/fatigue, utility AI on and off the ball
+- Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, stamina/fatigue, utility AI on and off the ball
+- Match flow (M2.1): possession causes, shots in flight, stoppages and restarts (kickoffs), two halves with added time ending at a stoppage, ball-in-play statistics
+- Observation and viewer (M2.2): immutable `MatchFrame`s, `MonsterFootball.Playback`, Godot developer viewer (`tools/viewer.sh`)
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 306 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-024
+- 327 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-026
 
 In progress:
 - nothing
@@ -35,7 +37,8 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 - Periods end only at a stoppage after added time (replaces "match ends at exactly 90:00")
 
 Next recommended work:
-- Continue the M2 plan: M2.2 frames, Playback library and basic Godot viewer; the pass-arrival visual check (spec §6.2) happens in the viewer
+- Watch matches: `tools/viewer.sh --seed=7 --autoplay`
+- Continue the M2 plan: M2.3 tactical zones (and the tackle danger-zone fix)
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:

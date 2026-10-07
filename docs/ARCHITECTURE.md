@@ -19,9 +19,10 @@ Why: determinism, testability, and the ability to run thousands of matches headl
 ## 2. Projects and dependency direction
 
 ```text
-MonsterFootball.Godot (godot/)  ──┐
-MonsterFootball.DebugRunner     ──┼──▶  MonsterFootball.Simulation
-MonsterFootball.Simulation.Tests ─┘         (no outward dependencies)
+MonsterFootball.Godot (godot/) ───┬──▶ MonsterFootball.Playback ──┐
+MonsterFootball.Simulation.Tests ─┤                               ├──▶  MonsterFootball.Simulation
+                                  └───────────────────────────────┤        (no outward dependencies)
+MonsterFootball.DebugRunner ──────────────────────────────────────┘
 ```
 
 | Project | Path | Role |
@@ -29,10 +30,20 @@ MonsterFootball.Simulation.Tests ─┘         (no outward dependencies)
 | `MonsterFootball.Simulation` | `src/MonsterFootball.Simulation` | Headless football simulation. Plain .NET, no Godot. |
 | `MonsterFootball.DebugRunner` | `src/MonsterFootball.DebugRunner` | Console app: run one match / batch runs, print events. |
 | `MonsterFootball.Simulation.Tests` | `tests/MonsterFootball.Simulation.Tests` | xUnit tests, including architecture rules. |
-| `MonsterFootball.Godot` | `godot/` | Presentation placeholder. Empty in Milestone 1. |
+| `MonsterFootball.Playback` | `src/MonsterFootball.Playback` | Non-visual playback for presentation: frame history, playback clock, interpolation (ADR-026). Plain .NET, no Godot. |
+| `MonsterFootball.Godot` | `godot/` | Developer match viewer (`MatchViewer/`): draws frames from a `PlaybackSession`. Launch with `tools/viewer.sh`. |
 
-Dependencies point **inward** to the simulation only. The simulation knows nothing about its consumers.
-This rule is enforced by `Architecture/DependencyRulesTests` (ADR-003).
+Dependencies point **inward** to the simulation only. The simulation knows nothing about its consumers, and
+Playback knows nothing about Godot. Enforced by `Architecture/DependencyRulesTests` (ADR-003, ADR-026).
+
+### Observation and playback (M2.2)
+
+Consumers observe a match through `Observation.MatchFrame`, an immutable copy of the state at the end of a tick
+(ADR-025), never through the live `MatchState`. `MatchPlayer` records a frame per tick and steps the simulation only
+when a frame is needed; `PlaybackClock` turns real time into a position in ticks at 0.25×–4×; `FrameInterpolator`
+blends the frames either side of that position; `PlaybackSession` combines them. Godot calls
+`PlaybackSession.Update(delta)` every rendered frame and draws the result, so rendering never advances or resolves
+football by itself (milestone §35). Godot physics is not used.
 
 Namespaces inside the simulation are created as subtasks need them, not ahead of time:
 
@@ -49,6 +60,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Core` additions | `Stoppage`, `StoppageReason`, `RestartType`; `MatchPhase` = `Stopped`/`RestartSetup`/`OpenPlay`/`Finished` | M2.1c |
 | `Core` additions | `AddedTimeTuning`; period-aware `MatchClock` and `MatchTime` | M2.1d |
 | `Periods` | `PeriodSystem` (added time, end of a period at a stoppage, half-time, full time) | M2.1d |
+| `Observation` | `MatchFrame`, `PlayerFrame`, `BallFrame`, `BallFlightFrame` (immutable per-tick copies for observers) | M2.2 |
 | `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |
@@ -117,4 +129,4 @@ Every change reaches `main` through a pull request gated by CI (ADR-017): format
 - Utility-score modifiers from roles, traits, tactics, manager instructions, species and cards: implement `IUtilityModifier` and pass it to `UtilitySelector` (ADR-018). The hook exists; no modifiers do.
 - AI weights per team or per match: `MatchConfig.Ai` (`AiTuning`) is data and can be varied without code changes.
 - Opportunity detection as an event-log consumer.
-- Presentation playback driven by `Step()` and event presentation data (start/target position, duration, quality).
+- Tactical analysis (M2.8+) reads `MatchFrame`s, like the viewer.
