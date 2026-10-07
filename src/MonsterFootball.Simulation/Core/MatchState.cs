@@ -15,12 +15,13 @@ public sealed class MatchState
     private MatchState(
         PitchGeometry pitch,
         double tickSeconds,
+        double regularPeriodSeconds,
         TeamDefinition homeTeam,
         TeamDefinition awayTeam,
         IReadOnlyList<PlayerMatchState> players)
     {
         Pitch = pitch;
-        Clock = new MatchClock(tickSeconds);
+        Clock = new MatchClock(tickSeconds, regularPeriodSeconds);
         HomeTeam = homeTeam;
         AwayTeam = awayTeam;
         Players = players;
@@ -89,6 +90,12 @@ public sealed class MatchState
 
     internal void BeginRestartSetup() => Phase = MatchPhase.RestartSetup;
 
+    /// <summary>The side that took the opening kickoff (coin toss); the other side kicks off the second half.</summary>
+    public TeamSide OpeningKickoffTeam { get; internal set; } = TeamSide.Home;
+
+    /// <summary>Added time accumulated in the current period's regular time, in seconds (ADR-024).</summary>
+    public double AddedTimeAllowanceSeconds { get; internal set; }
+
     /// <summary>The restart has been taken: the ball is back in play.</summary>
     internal void ResumePlay()
     {
@@ -135,7 +142,7 @@ public sealed class MatchState
             throw new ArgumentException(
                 $"Starting positions must be on the pitch; outside: {string.Join("; ", outside)}.");
 
-        return new MatchState(pitch, config.TickSeconds, homeTeam, awayTeam, players.AsReadOnly());
+        return new MatchState(pitch, config.TickSeconds, config.PeriodSeconds, homeTeam, awayTeam, players.AsReadOnly());
     }
 
     public TeamDefinition Team(TeamSide side) => side == TeamSide.Home ? HomeTeam : AwayTeam;

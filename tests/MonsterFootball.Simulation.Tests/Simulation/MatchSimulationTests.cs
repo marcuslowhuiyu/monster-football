@@ -11,13 +11,78 @@ public class MatchSimulationTests
         new(config ?? MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), seed);
 
     [Fact]
-    public void Full_match_runs_to_ninety_minutes_and_finishes()
+    public void Full_match_plays_two_halves_and_finishes_after_regular_time()
     {
         var result = CheckedRun.ToCompletion(NewSimulation());
+        var clock = result.FinalState.Clock;
 
         Assert.Equal(MatchPhase.Finished, result.FinalState.Phase);
-        Assert.Equal(MatchConfig.Default.TotalTicks, result.FinalState.Clock.Tick);
-        Assert.Equal("90:00", result.FinalState.Clock.Now.ToString());
+        Assert.Equal(2, clock.Period);
+        Assert.True(clock.Now.PeriodSeconds >= MatchConfig.Default.PeriodSeconds);
+
+        var ends = result.Events.Where(e => e.Type == MatchEventType.PeriodEnded).ToList();
+        Assert.Equal(["1", "2"], ends.Select(e => e.Metadata["period"]));
+        Assert.Equal(MatchEventType.MatchFinished, result.Events[^1].Type);
+        Assert.Same(ends[1], result.Events[^2]);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void The_other_team_kicks_off_the_second_half_at_45_minutes(int seed)
+    {
+        var events = NewSimulation(seed).RunToCompletion().Events;
+        var opening = events.First(e => e.Type == MatchEventType.Kickoff);
+        var halfTime = events.ToList().FindIndex(e => e.Type == MatchEventType.PeriodEnded);
+        var secondHalf = events.Skip(halfTime).First(e => e.Type == MatchEventType.Kickoff);
+
+        Assert.Equal(opening.Team!.Value.Opponent(), secondHalf.Team);
+        Assert.Equal(2, secondHalf.Timestamp.Period);
+        Assert.Equal("45:00", secondHalf.Timestamp.ToString());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Added_time_is_announced_once_per_half_from_its_goals(int seed)
+    {
+        var events = NewSimulation(seed).RunToCompletion().Events;
+        var announced = events.Where(e => e.Type == MatchEventType.AddedTimeAnnounced).ToList();
+
+        Assert.Equal(2, announced.Count);
+        foreach (var (e, period) in announced.Select((e, i) => (e, i + 1)))
+        {
+            Assert.Equal(period, e.Timestamp.Period);
+            Assert.Equal(MatchConfig.Default.PeriodSeconds, e.Timestamp.PeriodSeconds);
+            var goals = events.Count(g => g.Type == MatchEventType.GoalScored && g.Timestamp.Period == period
+                                          && g.Timestamp.PeriodSeconds < MatchConfig.Default.PeriodSeconds);
+            var expected = (int)Math.Ceiling(goals * MatchConfig.Default.AddedTime.PerGoalSeconds / 60);
+            Assert.Equal(expected.ToString(System.Globalization.CultureInfo.InvariantCulture), e.Metadata["minutes"]);
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void A_half_ends_at_a_stoppage_after_time_is_up_or_at_the_safety_cap(int seed)
+    {
+        var config = MatchConfig.Default;
+        var events = NewSimulation(seed).RunToCompletion().Events;
+        foreach (var end in events.Where(e => e.Type == MatchEventType.PeriodEnded))
+        {
+            var minutes = double.Parse(events.Last(e => e.Type == MatchEventType.AddedTimeAnnounced && e.Timestamp.Period == end.Timestamp.Period)
+                .Metadata["minutes"], System.Globalization.CultureInfo.InvariantCulture);
+            var timeUp = config.PeriodSeconds + 60 * minutes;
+            Assert.True(end.Timestamp.PeriodSeconds >= timeUp, $"seed {seed}: {end} before time was up");
+            if (end.Metadata["end"] == "SafetyCap")
+                Assert.True(end.Timestamp.PeriodSeconds >= timeUp + config.AddedTime.SafetyCapSeconds);
+            else
+                Assert.Equal("Stoppage", end.Metadata["end"]);
+        }
     }
 
     [Fact]
@@ -65,7 +130,8 @@ public class MatchSimulationTests
 
         var finished = Assert.Single(result.Events, e => e.Type == MatchEventType.MatchFinished);
         Assert.Same(finished, result.Events[^1]);
-        Assert.Equal("90:00", finished.Timestamp.ToString());
+        Assert.Equal(2, finished.Timestamp.Period);
+        Assert.True(finished.Timestamp.PeriodSeconds >= MatchConfig.Default.PeriodSeconds);
     }
 
     [Fact]
@@ -107,10 +173,13 @@ public class MatchSimulationTests
     }
 
     [Fact]
-    public void Short_configured_match_finishes_on_time()
+    public void Short_configured_match_plays_both_halves_and_finishes()
     {
-        var config = MatchConfig.Default with { MatchDurationSeconds = 10 };
-        var result = NewSimulation(config: config).RunToCompletion();
-        Assert.Equal(40, result.FinalState.Clock.Tick);
+        var config = MatchConfig.Default with { PeriodSeconds = 10 };
+        var result = CheckedRun.ToCompletion(NewSimulation(config: config));
+
+        Assert.Equal(2, result.FinalState.Clock.Period);
+        Assert.Equal(2, result.Events.Count(e => e.Type == MatchEventType.PeriodEnded));
+        Assert.True(result.FinalState.Clock.Tick >= 2 * config.PeriodTicks);
     }
 }

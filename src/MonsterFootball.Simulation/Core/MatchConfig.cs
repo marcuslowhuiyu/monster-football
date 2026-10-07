@@ -3,7 +3,7 @@ using MonsterFootball.Simulation.Restarts;
 
 namespace MonsterFootball.Simulation.Core;
 
-/// <summary>Match-wide settings. Defaults: 105 × 68 pitch, 0.25 s ticks, 90 minutes.</summary>
+/// <summary>Match-wide settings. Defaults: 105 × 68 pitch, 0.25 s ticks, two halves of 45 minutes plus added time.</summary>
 public sealed record MatchConfig
 {
     public static MatchConfig Default { get; } = new();
@@ -17,11 +17,21 @@ public sealed record MatchConfig
         init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(TickSeconds), value, "Tick length must be positive.");
     } = 0.25;
 
-    public double MatchDurationSeconds
+    /// <summary>Regular length of each period (half), before added time.</summary>
+    public double PeriodSeconds
     {
         get;
-        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(MatchDurationSeconds), value, "Match duration must be positive.");
-    } = 90 * 60;
+        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(PeriodSeconds), value, "Period length must be positive.");
+    } = 45 * 60;
+
+    public int Periods
+    {
+        get;
+        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(Periods), value, "A match needs at least one period.");
+    } = 2;
+
+    /// <summary>Added-time allowances and the safety cap that ends a period if play never stops (ADR-024).</summary>
+    public AddedTimeTuning AddedTime { get; init; } = AddedTimeTuning.Default;
 
     /// <summary>Utility AI weights (ADR-018).</summary>
     public AiTuning Ai { get; init; } = AiTuning.Default;
@@ -29,6 +39,9 @@ public sealed record MatchConfig
     /// <summary>Restart timing and law distances (ADR-023).</summary>
     public RestartTuning Restarts { get; init; } = RestartTuning.Default;
 
-    /// <summary>Ticks in a full match, rounded up so the match never ends early.</summary>
-    public long TotalTicks => (long)Math.Ceiling(MatchDurationSeconds / TickSeconds - 1e-9);
+    /// <summary>Ticks in a period's regular time, rounded up so a period never ends early.</summary>
+    public long PeriodTicks => TicksFor(PeriodSeconds);
+
+    /// <summary>Whole ticks covering <paramref name="seconds"/>, rounded up.</summary>
+    public long TicksFor(double seconds) => (long)Math.Ceiling(seconds / TickSeconds - 1e-9);
 }

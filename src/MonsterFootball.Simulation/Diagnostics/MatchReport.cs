@@ -23,6 +23,8 @@ public static class MatchReport
         MatchEventType.ShotSaved,
         MatchEventType.ShotMissed,
         MatchEventType.GoalScored,
+        MatchEventType.AddedTimeAnnounced,
+        MatchEventType.PeriodEnded,
         MatchEventType.MatchFinished,
     ];
 
@@ -84,6 +86,9 @@ public static class MatchReport
             MatchEventType.ShotSaved => $"Saved by {P(e.ActorPlayerId)}",
             MatchEventType.ShotMissed => "Wide",
             MatchEventType.GoalScored => $"GOAL — {P(e.ActorPlayerId)} ({e.Metadata.GetValueOrDefault("score", "")})",
+            MatchEventType.AddedTimeAnnounced => $"Added time: +{e.Metadata.GetValueOrDefault("minutes", "?")}",
+            MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
+                                          + (e.Metadata.GetValueOrDefault("end") == "SafetyCap" ? " (safety cap: play never stopped)" : ""),
             MatchEventType.PlayStopped =>
                 $"Play stopped ({e.Metadata.GetValueOrDefault("reason", "?")}) — {TeamName(state, e.Team)} to restart: {e.Metadata.GetValueOrDefault("restart", "?")}",
             _ => null,

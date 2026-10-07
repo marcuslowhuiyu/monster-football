@@ -8,6 +8,7 @@ using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Movement;
+using MonsterFootball.Simulation.Periods;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Random;
@@ -36,6 +37,7 @@ public sealed class MatchSimulation
     private readonly LooseBallSystem _looseBall = new();
     private readonly StaminaSystem _stamina = new();
     private readonly RestartSystem _restart = new();
+    private readonly PeriodSystem _periods = new();
     private bool _started;
 
     /// <summary>Time constants of the ball average each team's shape follows (see <see cref="MatchState.ShapeFocus"/>):
@@ -92,9 +94,7 @@ public sealed class MatchSimulation
             RunStoppage();
 
         State.Clock.Advance();
-
-        if (State.Clock.Tick >= _config.TotalTicks)
-            Finish();
+        _periods.Apply(_context);         // added time, end of a period at a stoppage, half-time, full time
     }
 
     public MatchResult RunToCompletion()
@@ -110,6 +110,7 @@ public sealed class MatchSimulation
         _started = true;
         // Coin toss for the opening kickoff.
         var kickingSide = _context.Random.Roll(0.5) ? TeamSide.Home : TeamSide.Away;
+        State.OpeningKickoffTeam = kickingSide;
         State.StopPlay(new Stoppage(StoppageReason.MatchStart, RestartType.Kickoff, kickingSide, State.Pitch.Centre, State.Clock.Tick));
         _context.Emit(MatchEventType.MatchStarted);
     }
@@ -152,11 +153,5 @@ public sealed class MatchSimulation
         State.SyncBallToPossessor();
         _looseBall.Apply(_context);       // collect a loose ball
         _stamina.Apply(_context);         // drain stamina from movement and this tick's actions
-    }
-
-    private void Finish()
-    {
-        State.Phase = MatchPhase.Finished;
-        _context.Emit(MatchEventType.MatchFinished);
     }
 }

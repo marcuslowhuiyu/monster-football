@@ -17,13 +17,15 @@ public sealed record TeamStatistics(
 }
 
 /// <summary>
-/// Match statistics derived entirely from the event log (ADR-019). Possession time is credited to the team
-/// that last had the ball under control — including while a pass is in flight or the ball is loose — from the
-/// opening kickoff, switching at each <see cref="MatchEventType.PossessionChanged"/>, until <see cref="MatchEventType.MatchFinished"/>.
+/// Match statistics derived entirely from the event log (ADR-019). Ball-in-play time runs from each kickoff to the
+/// next stoppage (<see cref="MatchEventType.PlayStopped"/>, <see cref="MatchEventType.PeriodEnded"/> or
+/// <see cref="MatchEventType.MatchFinished"/>). Possession time is ball-in-play time credited to the team that last had
+/// the ball under control — including while a pass is in flight or the ball is loose — switching at each kickoff and
+/// <see cref="MatchEventType.PossessionChanged"/>.
 /// Possessions won count only changes whose cause is open play (<see cref="PossessionCauseExtensions.IsOpenPlay"/>);
 /// kickoffs and keeper restarts change possession without anyone winning the ball.
 /// </summary>
-public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, int PossessionChanges)
+public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, int PossessionChanges, double BallInPlaySeconds)
 {
     public TeamStatistics For(TeamSide side) => side == TeamSide.Home ? Home : Away;
 
@@ -42,14 +44,31 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
 
         TeamSide? inPossession = null;
         var since = 0.0;
+        var inPlay = false;
+        var playSince = 0.0;
+        var ballInPlay = 0.0;
         var possessionChanges = 0;
+
+        void Accrue(double at)
+        {
+            if (inPlay && inPossession is { } current)
+                Of(current).PossessionSeconds += at - since;
+            since = at;
+        }
 
         void SwitchPossession(TeamSide side, double at)
         {
-            if (inPossession is { } current)
-                Of(current).PossessionSeconds += at - since;
+            Accrue(at);
             inPossession = side;
-            since = at;
+        }
+
+        void StopPlay(double at)
+        {
+            if (!inPlay)
+                return;
+            Accrue(at);
+            ballInPlay += at - playSince;
+            inPlay = false;
         }
 
         foreach (var e in events)
@@ -57,8 +76,17 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
             var at = e.Timestamp.Seconds;
             switch (e.Type)
             {
-                case MatchEventType.Kickoff when inPossession is null:
+                case MatchEventType.Kickoff:
                     SwitchPossession(e.Team!.Value, at);
+                    if (!inPlay)
+                    {
+                        inPlay = true;
+                        playSince = at;
+                    }
+
+                    break;
+                case MatchEventType.PlayStopped or MatchEventType.PeriodEnded:
+                    StopPlay(at);
                     break;
                 case MatchEventType.PossessionChanged:
                     possessionChanges++;
@@ -83,14 +111,13 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                     Of(e.Team!.Value).Goals++;
                     Of(e.Team.Value).ShotsOnTarget++;
                     break;
-                case MatchEventType.MatchFinished when inPossession is { } current:
-                    Of(current).PossessionSeconds += at - since;
-                    inPossession = null;
+                case MatchEventType.MatchFinished:
+                    StopPlay(at);
                     break;
             }
         }
 
-        return new MatchStatistics(home.ToStatistics(), away.ToStatistics(), possessionChanges);
+        return new MatchStatistics(home.ToStatistics(), away.ToStatistics(), possessionChanges, ballInPlay);
     }
 
     private sealed class Tally

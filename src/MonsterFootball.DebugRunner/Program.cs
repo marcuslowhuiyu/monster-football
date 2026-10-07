@@ -104,4 +104,7 @@ static string FormatBatch(BatchSummary b) => string.Join('\n',
     string.Create(CultureInfo.InvariantCulture, $"Striker share of goals     {b.StrikerGoalShare:P0}"),
     string.Create(CultureInfo.InvariantCulture, $"Outfield distance (km)     {b.AverageOutfieldDistanceKm:0.0}"),
     string.Create(CultureInfo.InvariantCulture, $"Outfield stamina at FT     {b.AverageOutfieldStaminaAtFullTime:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Ball in play (min)         {b.AverageBallInPlayMinutes:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Added time per half (min)  {b.AverageAddedMinutesPerPeriod:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Halves ended by safety cap {b.SafetyCapPeriodShare:P0}"),
 ]);

@@ -55,6 +55,16 @@ public class MatchReportTests
     }
 
     [Fact]
+    public void Highlights_show_added_time_and_the_end_of_each_half()
+    {
+        var lines = MatchReport.Create(Play(), details: false).Split('\n');
+
+        Assert.Equal(2, lines.Count(l => l.Contains("Added time: +", StringComparison.Ordinal)));
+        Assert.Contains(lines, l => l.Contains("END OF PERIOD 1", StringComparison.Ordinal));
+        Assert.Contains(lines, l => l.Contains("END OF PERIOD 2", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Highlights_start_with_match_start_and_end_with_the_score_and_statistics()
     {
         var result = Play();
