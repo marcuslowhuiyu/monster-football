@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MonsterFootball.Simulation\MonsterFootball.Simulation.csproj" />
+    <ProjectReference Include="..\..\src\MonsterFootball.Playback\MonsterFootball.Playback.csproj" />
   </ItemGroup>
 
 </Project>
