@@ -30,6 +30,7 @@ public class MatchSimulationTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
+    [InlineData(4)] // first half ends during a goal stoppage; the scorers still kick off the second half
     public void The_other_team_kicks_off_the_second_half_at_45_minutes(int seed)
     {
         var events = NewSimulation(seed).RunToCompletion().Events;
