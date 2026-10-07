@@ -46,10 +46,11 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Movement` | `MovementSystem` | M1.4 |
 | root | `MatchSimulation`, `MatchResult` | M1.3 |
 | `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
+| `Core` additions | `Stoppage`, `StoppageReason`, `RestartType`; `MatchPhase` = `Stopped`/`RestartSetup`/`OpenPlay`/`Finished` | M2.1c |
 | `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |
-| `Restarts` | `RestartSystem` (goal reset, kickoff) | M1.7 |
+| `Restarts` | `RestartSystem` (stoppage positioning, dead ball → setup → restart), `RestartTuning` | M1.7, M2.1c |
 | `AI` | `ActionCandidate`/`ActionKind`, `UtilitySelector`, `IUtilityModifier`, `AiTuning`/`OnBallWeights`/`OffBallWeights` (weights), `OnBallCandidateGenerator` + `OnBallDecisionSystem`, `OffBallCandidateGenerator` + `OffBallDecisionSystem` + `OffBallPlan` | M1.9 |
 | `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
 | root | `MatchContext` | M1.5 |
@@ -74,7 +75,7 @@ Given identical starting state, configuration and seed, the simulation must prod
 
 ### Systems
 
-Per-tick behaviour lives in small `internal sealed` system classes owned by `MatchSimulation` (e.g. `TeamShapeSystem`, `MovementSystem`, `BallFlightSystem`), each with an `Apply(…)` method. Systems that use randomness or emit events take a `MatchContext` (state + config + `IMatchRandom` + event output); purely positional systems take `MatchState`. `MatchSimulation` decides the order they run in; systems never call each other's `Apply`. They may share small static execution helpers (`PassExecution`, `ShotExecution`, `CarrySystem.Start`) and `RestartSystem` exposes `ResetForKickoff`/`TakeKickoff` for the two restart phases. This keeps each behaviour independently testable and makes the tick order explicit in one place.
+Per-tick behaviour lives in small `internal sealed` system classes owned by `MatchSimulation` (e.g. `TeamShapeSystem`, `MovementSystem`, `BallFlightSystem`), each with an `Apply(…)` method. Systems that use randomness or emit events take a `MatchContext` (state + config + `IMatchRandom` + event output); purely positional systems take `MatchState`. `MatchSimulation` decides the order they run in; systems never call each other's `Apply`. They may share small static execution helpers (`PassExecution`, `ShotExecution`, `CarrySystem.Start`) and `RestartSystem` exposes `Position`/`Advance` for stopped ticks (ADR-023). This keeps each behaviour independently testable and makes the tick order explicit in one place.
 
 ## 4. Event architecture
 
