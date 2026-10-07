@@ -27,7 +27,7 @@ public static class Formation433
             PlayingPosition.CM => (30, 34),
             PlayingPosition.RCM => (34, 22),
             PlayingPosition.LW => (48, 60),
-            PlayingPosition.ST => (49, 34),
+            PlayingPosition.ST => (42, 34), // outside the centre circle; the kicking side's ST walks to the ball
             PlayingPosition.RW => (48, 8),
             _ => throw new ArgumentOutOfRangeException(nameof(position), position, null),
         };

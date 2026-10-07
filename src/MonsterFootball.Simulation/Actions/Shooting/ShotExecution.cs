@@ -7,9 +7,9 @@ namespace MonsterFootball.Simulation.Actions.Shooting;
 
 /// <summary>
 /// Applies a resolved shot in two steps, like a pass (ADR-022): <see cref="Strike"/> emits ShotTaken and launches the
-/// ball; <see cref="Land"/> applies the outcome decided at the strike when the ball arrives. Goals increment the
-/// score and move the match to <see cref="MatchPhase.GoalRestart"/>; saves and misses give the ball to the
-/// defending goalkeeper.
+/// ball; <see cref="Land"/> applies the outcome decided at the strike when the ball arrives. A goal increments the
+/// score and stops play with a kickoff for the conceding side; saves and misses give the ball to the defending
+/// goalkeeper.
 /// </summary>
 internal static class ShotExecution
 {
@@ -39,13 +39,12 @@ internal static class ShotExecution
             case ShotOutcome.Goal:
                 state.SetBallLoose(result.TargetPosition);
                 state.Score.AddGoal(result.Team);
-                state.KickoffTeam = result.Team.Opponent();
-                state.Phase = MatchPhase.GoalRestart;
                 context.Emit(MatchEventType.GoalScored, actor: result.Shooter, team: result.Team, position: result.TargetPosition,
                     metadata: ImmutableSortedDictionary.CreateRange(
                     [
                         new KeyValuePair<string, string>("score", state.Score.ToString()),
                     ]));
+                context.StopPlay(StoppageReason.Goal, RestartType.Kickoff, result.Team.Opponent(), state.Pitch.Centre);
                 break;
 
             case ShotOutcome.Saved:

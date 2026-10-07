@@ -42,6 +42,19 @@ public class MatchReportTests
     }
 
     [Fact]
+    public void A_stoppage_says_why_play_stopped_and_how_it_restarts()
+    {
+        var state = TestTeams.Match();
+        var e = new MatchEvent(new MatchTime(10), MatchEventType.PlayStopped, Team: TeamSide.Away)
+        {
+            Metadata = System.Collections.Immutable.ImmutableSortedDictionary.CreateRange(
+                [new KeyValuePair<string, string>("reason", "Goal"), new KeyValuePair<string, string>("restart", "Kickoff")]),
+        };
+
+        Assert.Equal("Play stopped (Goal) — Red to restart: Kickoff", MatchReport.Describe(state, e));
+    }
+
+    [Fact]
     public void Highlights_start_with_match_start_and_end_with_the_score_and_statistics()
     {
         var result = Play();

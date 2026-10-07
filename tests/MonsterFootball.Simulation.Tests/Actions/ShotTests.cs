@@ -126,9 +126,10 @@ public class ShotTests
 
         Assert.Equal(1, s.State.Score.Home);
         Assert.Equal(0, s.State.Score.Away);
-        Assert.Equal(MatchPhase.GoalRestart, s.State.Phase);
-        Assert.Equal(TeamSide.Away, s.State.KickoffTeam);
-        Assert.Equal([MatchEventType.ShotTaken, MatchEventType.GoalScored], s.EventTypes);
+        Assert.Equal(MatchPhase.Stopped, s.State.Phase);
+        Assert.Equal(new Stoppage(StoppageReason.Goal, RestartType.Kickoff, TeamSide.Away, s.State.Pitch.Centre, s.State.Clock.Tick),
+            s.State.CurrentStoppage);
+        Assert.Equal([MatchEventType.ShotTaken, MatchEventType.GoalScored, MatchEventType.PlayStopped], s.EventTypes);
         Assert.Equal(s.State.Pitch.Length, result.TargetPosition.X);
         Assert.InRange(result.TargetPosition.Y, 34 - PitchGeometry.GoalWidth / 2, 34 + PitchGeometry.GoalWidth / 2);
     }
@@ -177,7 +178,7 @@ public class ShotTests
         Assert.Equal(result, s.State.Ball.Flight!.Shot);
         Assert.Null(s.State.Ball.Flight.Pass);
         Assert.Equal(0, s.State.Score.Home);
-        Assert.NotEqual(MatchPhase.GoalRestart, s.State.Phase);
+        Assert.Equal(MatchPhase.OpenPlay, s.State.Phase);
         Assert.Equal([MatchEventType.ShotTaken], s.EventTypes);
 
         var flight = new BallFlightSystem();
@@ -198,9 +199,10 @@ public class ShotTests
 
         Assert.Equal(1, s.State.Score.Home);
         Assert.False(s.State.Ball.IsInFlight);
-        var goal = s.Log.Events[^1];
+        var goal = s.Log.Events[^2];
         Assert.Equal(MatchEventType.GoalScored, goal.Type);
         Assert.Equal(s.State.Clock.Now, goal.Timestamp);
+        Assert.Equal(MatchEventType.PlayStopped, s.Log.Events[^1].Type);
     }
 
     [Fact]

@@ -86,18 +86,10 @@ public sealed class MatchSimulation
         if (!_started)
             Start();
 
-        switch (State.Phase)
-        {
-            case MatchPhase.Kickoff:
-                _restart.TakeKickoff(_context);
-                break;
-            case MatchPhase.OpenPlay:
-                RunOpenPlay();
-                break;
-            case MatchPhase.GoalRestart:
-                _restart.ResetForKickoff(State);
-                break;
-        }
+        if (State.Phase == MatchPhase.OpenPlay)
+            RunOpenPlay();
+        else
+            RunStoppage();
 
         State.Clock.Advance();
 
@@ -117,13 +109,30 @@ public sealed class MatchSimulation
     {
         _started = true;
         // Coin toss for the opening kickoff.
-        State.KickoffTeam = _context.Random.Roll(0.5) ? TeamSide.Home : TeamSide.Away;
+        var kickingSide = _context.Random.Roll(0.5) ? TeamSide.Home : TeamSide.Away;
+        State.StopPlay(new Stoppage(StoppageReason.MatchStart, RestartType.Kickoff, kickingSide, State.Pitch.Centre, State.Clock.Tick));
         _context.Emit(MatchEventType.MatchStarted);
     }
 
     /// <summary>
+    /// Stoppage tick order (ADR-023): players head for their restart positions; the restart is taken when the
+    /// dead-ball time is over and everyone is in position (that tick ends there); otherwise players move.
+    /// No decisions, tackles or random draws happen while play is stopped.
+    /// </summary>
+    private void RunStoppage()
+    {
+        _restart.Position(State);         // restart targets for everyone
+        _restart.Advance(_context);       // dead ball → setup → restart taken
+        if (State.Phase == MatchPhase.OpenPlay)
+            return;
+
+        _movement.Apply(State, _config.TickSeconds);
+        _stamina.Apply(_context);         // walking back still costs stamina
+    }
+
+    /// <summary>
     /// Open-play tick order. Systems never call each other; this method is the only sequencing.
-    /// A goal (a shot arriving in the net) switches the phase to GoalRestart; the rest of that tick is skipped.
+    /// A goal (a shot arriving in the net) stops play; the rest of that tick is skipped.
     /// </summary>
     private void RunOpenPlay()
     {

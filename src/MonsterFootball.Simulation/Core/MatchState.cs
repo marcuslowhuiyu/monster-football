@@ -26,6 +26,7 @@ public sealed class MatchState
         Players = players;
         _playersById = players.ToDictionary(p => p.PlayerId);
         Ball = new BallState(pitch.Centre);
+        CurrentStoppage = new Stoppage(StoppageReason.MatchStart, RestartType.Kickoff, TeamSide.Home, pitch.Centre, 0);
         _homeShapeFocus = pitch.Centre;
         _awayShapeFocus = pitch.Centre;
     }
@@ -40,7 +41,13 @@ public sealed class MatchState
 
     public BallState Ball { get; }
     public Score Score { get; } = new();
-    public MatchPhase Phase { get; internal set; } = MatchPhase.Kickoff;
+    public MatchPhase Phase { get; internal set; } = MatchPhase.Stopped;
+
+    /// <summary>
+    /// The current stoppage while play is stopped or a restart is being set up; null in open play. A new match is
+    /// stopped awaiting the opening kickoff (the kicking side is decided by the coin toss on the first step).
+    /// </summary>
+    public Stoppage? CurrentStoppage { get; private set; }
 
     /// <summary>The team that most recently had the ball under control; null before the kickoff.</summary>
     public TeamSide? LastPossessionTeam { get; private set; }
@@ -71,8 +78,23 @@ public sealed class MatchState
             _awayShapeFocus = focus;
     }
 
-    /// <summary>The side that takes the next kickoff.</summary>
-    public TeamSide KickoffTeam { get; internal set; } = TeamSide.Home;
+    /// <summary>Stops play with the given stoppage. Nobody holds a dead ball.</summary>
+    internal void StopPlay(Stoppage stoppage)
+    {
+        if (Ball.PossessorId is not null)
+            SetBallLoose(Ball.Position);
+        CurrentStoppage = stoppage;
+        Phase = MatchPhase.Stopped;
+    }
+
+    internal void BeginRestartSetup() => Phase = MatchPhase.RestartSetup;
+
+    /// <summary>The restart has been taken: the ball is back in play.</summary>
+    internal void ResumePlay()
+    {
+        CurrentStoppage = null;
+        Phase = MatchPhase.OpenPlay;
+    }
 
     public PlayerId? PossessionPlayerId => Ball.PossessorId;
 

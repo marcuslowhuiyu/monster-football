@@ -40,6 +40,14 @@ public static class MatchStateInvariants
         if (state.Ball.IsInFlight && state.Ball.PossessorId is not null)
             violations.Add($"Ball in flight but possessed by {state.Ball.PossessorId}.");
 
+        var stopped = state.Phase is MatchPhase.Stopped or MatchPhase.RestartSetup;
+        if (stopped && state.CurrentStoppage is null)
+            violations.Add($"Phase {state.Phase} without a stoppage record.");
+        if (state.Phase == MatchPhase.OpenPlay && state.CurrentStoppage is not null)
+            violations.Add($"Open play with a stoppage still recorded: {state.CurrentStoppage}.");
+        if (stopped && state.Ball.PossessorId is { } holder)
+            violations.Add($"Play is stopped but {holder} holds the ball.");
+
         if (state.Score.Home < 0 || state.Score.Away < 0)
             violations.Add($"Score is negative: {state.Score}.");
 

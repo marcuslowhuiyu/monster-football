@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.AI;
+using MonsterFootball.Simulation.Restarts;
 
 namespace MonsterFootball.Simulation.Core;
 
@@ -24,6 +25,9 @@ public sealed record MatchConfig
 
     /// <summary>Utility AI weights (ADR-018).</summary>
     public AiTuning Ai { get; init; } = AiTuning.Default;
+
+    /// <summary>Restart timing and law distances (ADR-023).</summary>
+    public RestartTuning Restarts { get; init; } = RestartTuning.Default;
 
     /// <summary>Ticks in a full match, rounded up so the match never ends early.</summary>
     public long TotalTicks => (long)Math.Ceiling(MatchDurationSeconds / TickSeconds - 1e-9);

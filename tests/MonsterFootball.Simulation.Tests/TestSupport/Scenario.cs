@@ -16,6 +16,7 @@ internal sealed class Scenario
         State = TestTeams.Match(homeStats, awayStats);
         Log = new MatchEventLog();
         Context = new MatchContext(MatchConfig.Default, State, random ?? new MatchRng(1), Log);
+        State.ResumePlay(); // action scenarios take place in open play
 
         var parked = 0;
         foreach (var player in State.Players)
