@@ -9,6 +9,8 @@ public sealed record PitchGeometry
     public const double GoalWidth = 7.32;
     public const double PenaltyAreaDepth = 16.5;
     public const double PenaltyAreaWidth = 40.32;
+    public const double GoalAreaDepth = 5.5;
+    public const double GoalAreaWidth = 18.32;
 
     public static PitchGeometry Standard { get; } = new(105, 68);
 

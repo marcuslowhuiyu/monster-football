@@ -1,6 +1,7 @@
 namespace MonsterFootball.Simulation.Core;
 
 using MonsterFootball.Simulation.Players;
+using MonsterFootball.Simulation.Tactical;
 
 /// <summary>
 /// The complete authoritative state of an active match.
@@ -14,6 +15,7 @@ public sealed class MatchState
 
     private MatchState(
         PitchGeometry pitch,
+        ZoneBoundaries zones,
         double tickSeconds,
         double regularPeriodSeconds,
         TeamDefinition homeTeam,
@@ -21,6 +23,7 @@ public sealed class MatchState
         IReadOnlyList<PlayerMatchState> players)
     {
         Pitch = pitch;
+        Zones = new TacticalZones(pitch, zones);
         Clock = new MatchClock(tickSeconds, regularPeriodSeconds);
         HomeTeam = homeTeam;
         AwayTeam = awayTeam;
@@ -33,6 +36,9 @@ public sealed class MatchState
     }
 
     public PitchGeometry Pitch { get; }
+
+    /// <summary>Tactical zone and area classification for this pitch (ADR-027).</summary>
+    public TacticalZones Zones { get; }
     public MatchClock Clock { get; }
     public TeamDefinition HomeTeam { get; }
     public TeamDefinition AwayTeam { get; }
@@ -142,7 +148,7 @@ public sealed class MatchState
             throw new ArgumentException(
                 $"Starting positions must be on the pitch; outside: {string.Join("; ", outside)}.");
 
-        return new MatchState(pitch, config.TickSeconds, config.PeriodSeconds, homeTeam, awayTeam, players.AsReadOnly());
+        return new MatchState(pitch, config.Zones, config.TickSeconds, config.PeriodSeconds, homeTeam, awayTeam, players.AsReadOnly());
     }
 
     public TeamDefinition Team(TeamSide side) => side == TeamSide.Home ? HomeTeam : AwayTeam;
