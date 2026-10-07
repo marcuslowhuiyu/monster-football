@@ -37,13 +37,9 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     /// </summary>
     public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location)
     {
-        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick));
-        foreach (var player in State.Players)
-        {
-            player.ClearIntent();
-            player.OffBallPlan = null;
-            player.TackleCooldownUntilTick = 0;
-        }
+        BeginStoppage(reason, restart, awardedTeam, location);
+        if (reason == StoppageReason.Goal && State.Clock.Tick < State.Clock.RegularEndTick)
+            State.AddedTimeAllowanceSeconds += Config.AddedTime.PerGoalSeconds;
 
         Emit(MatchEventType.PlayStopped, team: awardedTeam, position: location,
             metadata: ImmutableSortedDictionary.CreateRange(
@@ -51,6 +47,18 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
                 new KeyValuePair<string, string>("reason", reason.ToString()),
                 new KeyValuePair<string, string>("restart", restart.ToString()),
             ]));
+    }
+
+    /// <summary>Records a stoppage and clears every player's ongoing action and plan, without emitting an event.</summary>
+    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location)
+    {
+        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick));
+        foreach (var player in State.Players)
+        {
+            player.ClearIntent();
+            player.OffBallPlan = null;
+            player.TackleCooldownUntilTick = 0;
+        }
     }
 
     /// <summary>

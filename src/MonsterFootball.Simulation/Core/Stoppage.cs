@@ -7,6 +7,9 @@ public enum StoppageReason
     MatchStart,
 
     Goal,
+
+    /// <summary>Before the kickoff that starts a later period (the second half).</summary>
+    PeriodStart,
 }
 
 /// <summary>How play resumes after a stoppage. New restart types are appended as they are implemented.</summary>

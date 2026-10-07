@@ -23,4 +23,6 @@ public enum MatchEventType
 
     // Match flow (M2)
     PlayStopped,
+    AddedTimeAnnounced,
+    PeriodEnded,
 }

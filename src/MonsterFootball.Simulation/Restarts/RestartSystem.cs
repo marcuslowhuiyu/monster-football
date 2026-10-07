@@ -39,7 +39,7 @@ internal sealed class RestartSystem
         if (state.Phase != MatchPhase.RestartSetup)
             return;
 
-        var lineUp = stoppage.Reason == StoppageReason.MatchStart;
+        var lineUp = stoppage.Reason is StoppageReason.MatchStart or StoppageReason.PeriodStart;
         var timedOut = elapsed >= deadBall + tuning.SetupTimeoutSeconds - 1e-9;
         if (lineUp || timedOut)
             PlaceAll(state, stoppage);

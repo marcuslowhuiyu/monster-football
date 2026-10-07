@@ -115,6 +115,30 @@ public class MatchStatisticsTests
     }
 
     [Fact]
+    public void Possession_and_ball_in_play_time_pause_while_play_is_stopped()
+    {
+        MatchEvent[] events =
+        [
+            E(0, MatchEventType.Kickoff, TeamSide.Home),
+            E(20, MatchEventType.GoalScored, TeamSide.Home),
+            E(20, MatchEventType.PlayStopped, TeamSide.Away),
+            E(65, MatchEventType.Kickoff, TeamSide.Away),
+            Changed(65, TeamSide.Away, PossessionCause.Kickoff),
+            E(80, MatchEventType.PeriodEnded),
+            E(80, MatchEventType.Kickoff, TeamSide.Home),
+            Changed(80, TeamSide.Home, PossessionCause.Kickoff),
+            E(90, MatchEventType.PeriodEnded),
+            E(90, MatchEventType.MatchFinished),
+        ];
+
+        var stats = MatchStatistics.FromEvents(events);
+
+        Assert.Equal(20 + 15 + 10, stats.BallInPlaySeconds);
+        Assert.Equal(20 + 10, stats.Home.PossessionSeconds);
+        Assert.Equal(15, stats.Away.PossessionSeconds);
+    }
+
+    [Fact]
     public void Empty_match_has_zero_statistics()
     {
         var stats = MatchStatistics.FromEvents([]);
@@ -134,7 +158,9 @@ public class MatchStatisticsTests
 
         Assert.Equal(result.HomeGoals, stats.Home.Goals);
         Assert.Equal(result.AwayGoals, stats.Away.Goals);
-        Assert.Equal(MatchConfig.Default.MatchDurationSeconds, stats.Home.PossessionSeconds + stats.Away.PossessionSeconds, precision: 6);
+        Assert.Equal(stats.BallInPlaySeconds, stats.Home.PossessionSeconds + stats.Away.PossessionSeconds, precision: 6);
+        Assert.True(stats.BallInPlaySeconds < result.FinalState.Clock.Now.Seconds, "stoppages are not ball-in-play time");
+        Assert.True(stats.BallInPlaySeconds > 2 * MatchConfig.Default.PeriodSeconds * 0.8);
         var changes = result.Events.Where(e => e.Type == MatchEventType.PossessionChanged).ToList();
         Assert.Equal(changes.Count, stats.PossessionChanges);
         Assert.All(changes, e => Assert.NotNull(e.GetPossessionCause()));
