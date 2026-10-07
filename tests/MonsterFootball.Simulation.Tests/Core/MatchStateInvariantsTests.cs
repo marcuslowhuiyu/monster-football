@@ -43,6 +43,24 @@ public class MatchStateInvariantsTests
     }
 
     [Fact]
+    public void Detects_a_player_holding_the_ball_while_play_is_stopped()
+    {
+        var state = TestTeams.Match();
+        state.GiveBallTo(state.Players[9].PlayerId);
+
+        Assert.Contains(MatchStateInvariants.FindViolations(state), v => v.Contains("stopped", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Detects_open_play_with_a_stoppage_still_recorded()
+    {
+        var state = TestTeams.Match();
+        state.Phase = MatchPhase.OpenPlay;
+
+        Assert.Contains(MatchStateInvariants.FindViolations(state), v => v.Contains("stoppage", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Verify_passes_on_valid_state()
     {
         MatchStateInvariants.Verify(TestTeams.Match());

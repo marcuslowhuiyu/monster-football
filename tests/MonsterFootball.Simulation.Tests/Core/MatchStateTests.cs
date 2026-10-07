@@ -32,7 +32,10 @@ public class MatchStateTests
         var state = TestTeams.Match();
 
         Assert.Empty(MatchStateInvariants.FindViolations(state));
-        Assert.Equal(MatchPhase.Kickoff, state.Phase);
+        Assert.Equal(MatchPhase.Stopped, state.Phase);
+        Assert.Equal(StoppageReason.MatchStart, state.CurrentStoppage!.Reason);
+        Assert.Equal(RestartType.Kickoff, state.CurrentStoppage.Restart);
+        Assert.Equal(state.Pitch.Centre, state.CurrentStoppage.Location);
         Assert.Equal(0, state.Score.Home);
         Assert.Equal(0, state.Score.Away);
         Assert.True(state.Ball.IsLoose);

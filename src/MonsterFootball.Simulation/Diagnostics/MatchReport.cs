@@ -84,6 +84,8 @@ public static class MatchReport
             MatchEventType.ShotSaved => $"Saved by {P(e.ActorPlayerId)}",
             MatchEventType.ShotMissed => "Wide",
             MatchEventType.GoalScored => $"GOAL — {P(e.ActorPlayerId)} ({e.Metadata.GetValueOrDefault("score", "")})",
+            MatchEventType.PlayStopped =>
+                $"Play stopped ({e.Metadata.GetValueOrDefault("reason", "?")}) — {TeamName(state, e.Team)} to restart: {e.Metadata.GetValueOrDefault("restart", "?")}",
             _ => null,
         };
     }

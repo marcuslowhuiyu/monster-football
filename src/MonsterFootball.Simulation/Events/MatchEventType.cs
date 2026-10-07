@@ -20,4 +20,7 @@ public enum MatchEventType
     ShotMissed,
     GoalScored,
     MatchFinished,
+
+    // Match flow (M2)
+    PlayStopped,
 }
