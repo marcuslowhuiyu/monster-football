@@ -1,6 +1,6 @@
 <Project Sdk="Godot.NET.Sdk/4.7.2">
-  <!-- Presentation layer placeholder. It may depend on the simulation;
-       the simulation must never depend on this project or on Godot. -->
+  <!-- Developer match viewer (Milestone 2). It may depend on the simulation and the playback library;
+       neither may depend on this project or on Godot. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -10,5 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\MonsterFootball.Simulation\MonsterFootball.Simulation.csproj" />
+    <ProjectReference Include="..\src\MonsterFootball.Playback\MonsterFootball.Playback.csproj" />
   </ItemGroup>
 </Project>

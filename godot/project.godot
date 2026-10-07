@@ -6,8 +6,14 @@ config_version=5
 [application]
 
 config/name="Monster Football"
+run/main_scene="res://MatchViewer/MatchViewer.tscn"
 config/features=PackedStringArray("4.7", "C#")
 
 [dotnet]
 
 project/assembly_name="MonsterFootball.Godot"
+
+[display]
+
+window/size/viewport_width=1400
+window/size/viewport_height=900
