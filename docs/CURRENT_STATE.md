@@ -5,15 +5,16 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.2 frames, playback library and basic Godot viewer (ADR-025, ADR-026) — done in PR; next M2.3 tactical zones
+M2.3 20-zone tactical model and tackle danger area (ADR-027) — done in PR; next M2.4 ball out of play and restarts
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, stamina/fatigue, utility AI on and off the ball
 - Match flow (M2.1): possession causes, shots in flight, stoppages and restarts (kickoffs), two halves with added time ending at a stoppage, ball-in-play statistics
+- Tactical zones (M2.3): 20 team-relative zones and overlapping areas (`MatchState.Zones`, `docs/TACTICAL_ANALYSIS.md`)
 - Observation and viewer (M2.2): immutable `MatchFrame`s, `MonsterFootball.Playback`, Godot developer viewer (`tools/viewer.sh`)
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 327 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-026
+- 357 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-027
 
 In progress:
 - nothing
@@ -38,7 +39,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 
 Next recommended work:
 - Watch matches: `tools/viewer.sh --seed=7 --autoplay`
-- Continue the M2 plan: M2.3 tactical zones (and the tackle danger-zone fix)
+- Continue the M2 plan: M2.4 ball out of play and restarts
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:

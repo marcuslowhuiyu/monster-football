@@ -622,3 +622,31 @@ library makes that a test, not a convention, and keeps the Godot layer thin.
 Consequences:
 The viewer keeps every frame of a match in memory (tens of MB), fine for a developer tool. Godot 4.4+ may generate
 `*.uid` files next to scripts when the editor opens them; commit them with the scripts.
+
+---
+
+## ADR-027 — Tactical Zones Are Classified in Team Frame from Continuous Positions
+
+Status: Accepted (M2.3)
+
+Decision:
+- `Tactical.TacticalZone` is a pair (`LongitudinalBand` × `VerticalChannel`), giving 20 zones, rather than a 20-value
+  enum. Zones are always relative to a team and computed in its team frame, so one implementation serves both sides.
+- Overlapping concepts (halves, final third, penalty and goal areas, central/wide box) are `TacticalAreas` flags, not
+  exclusive types. Penalty and goal areas come in own/opposition pairs so the laws can ask about "the area this side
+  defends" without switching perspective.
+- Band and channel splits are fractions in `ZoneBoundaries` (`MatchConfig.Zones`), default equal quarters and
+  fifths. The final third and box dimensions are law/pitch geometry, not tunable splits.
+- Boundary points go to the band further forward and the channel further left; off-pitch points clamp. Every point
+  has exactly one zone and Home/Away mirror exactly.
+- `MatchState.Zones` exposes the classifier. First consumer: `TackleSystem`'s danger bonus now applies when the
+  carrier is in its `FinalThird` (a strip 35 m deep) instead of within 35 m of the defender's goal centre.
+
+Reason:
+Milestone §17–§21 and §6.5. Composition keeps band-only or channel-only questions trivial; flags let a point be in
+the final third and the penalty area at once; team frame avoids duplicated Home/Away logic.
+
+Consequences:
+Fingerprint change (ledger #5). Batch of 1,000 stays healthy: goals 2.91 → 2.80, shots 28.3 → 27.7, tackles
+301 → 307; other figures within noise. The zones on a shared boundary are not exact complements for the two teams
+(each team's boundary point goes forward for it); no current reader depends on that.

@@ -49,4 +49,4 @@ tools/viewer.sh --seed=7 --autoplay            # Godot developer viewer (needs G
 ## Key docs
 
 - `docs/milestones/MILESTONE_2.md` — current milestone spec (Milestone 1: `MILESTONE_1.md`, complete)
-- `docs/ARCHITECTURE.md`, `docs/MATCH_SIMULATION.md`, `docs/DECISIONS.md`, `docs/GLOSSARY.md`
+- `docs/ARCHITECTURE.md`, `docs/MATCH_SIMULATION.md`, `docs/TACTICAL_ANALYSIS.md`, `docs/DECISIONS.md`, `docs/GLOSSARY.md`
