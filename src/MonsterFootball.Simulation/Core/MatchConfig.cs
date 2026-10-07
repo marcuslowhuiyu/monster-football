@@ -1,5 +1,6 @@
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Restarts;
+using MonsterFootball.Simulation.Tactical;
 
 namespace MonsterFootball.Simulation.Core;
 
@@ -38,6 +39,9 @@ public sealed record MatchConfig
 
     /// <summary>Restart timing and law distances (ADR-023).</summary>
     public RestartTuning Restarts { get; init; } = RestartTuning.Default;
+
+    /// <summary>Band and channel splits for the 20 tactical zones (ADR-027).</summary>
+    public ZoneBoundaries Zones { get; init; } = ZoneBoundaries.Default;
 
     /// <summary>Ticks in a period's regular time, rounded up so a period never ends early.</summary>
     public long PeriodTicks => TicksFor(PeriodSeconds);

@@ -95,8 +95,20 @@ public static class MatchReport
         };
     }
 
-    /// <summary>The ratings and odds behind an action, or null for events without any.</summary>
+    /// <summary>
+    /// The ratings and odds behind an action, or null for events without any. Ends with the zone the event happened
+    /// in, from the acting player's team's point of view.
+    /// </summary>
     public static string? Details(MatchState state, MatchEvent e)
+    {
+        if (Ratings(state, e) is not { } ratings)
+            return null;
+        if (e.Position is not { } at || e.ActorPlayerId is not { } actor)
+            return ratings;
+        return $"{ratings} · {state.Zones.ZoneOf(state.Player(actor).Team, at)}";
+    }
+
+    private static string? Ratings(MatchState state, MatchEvent e)
     {
         PlayerStats? Stats(PlayerId? id) => id is { } x ? state.Player(x).Definition.Stats : null;
         string? Meta(string key) => e.Metadata.TryGetValue(key, out var v) ? v : null;
