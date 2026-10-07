@@ -124,9 +124,9 @@ public class MatchReportTests
         var lines = MatchReport.Create(Play(), allEvents: true).Split('\n');
 
         Assert.Contains(lines, l => System.Text.RegularExpressions.Regex.IsMatch(l,
-            @"^ {6}Passing \d+ · Technique \d+ · Awareness \d+ · stamina \d+ · \d+ m · accuracy \d+% · success \d+% · \d+ in lane$"));
+            @"^ {6}Passing \d+ · Technique \d+ · Awareness \d+ · stamina \d+ · \d+ m · accuracy \d+% · success \d+% · \d+ in lane · [A-Za-z]+ / [A-Za-z]+$"));
         Assert.Contains(lines, l => System.Text.RegularExpressions.Regex.IsMatch(l,
-            @"^ {6}Finishing \d+ · Technique \d+ · Power \d+ · stamina \d+ · \d+ m · on target \d+% · save \d+% · xG \d\.\d\d$"));
+            @"^ {6}Finishing \d+ · Technique \d+ · Power \d+ · stamina \d+ · \d+ m · on target \d+% · save \d+% · xG \d\.\d\d · [A-Za-z]+ / [A-Za-z]+$"));
         Assert.Contains(lines, l => l.StartsWith("      Defending", StringComparison.Ordinal) && l.Contains(" vs Technique", StringComparison.Ordinal));
     }
 
