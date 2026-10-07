@@ -56,7 +56,9 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-          cache: true
+          # The fingerprint-only jobs restore no NuGet packages, so there is nothing to cache (and saving an empty
+          # cache folder fails the job).
+          cache: ${{ matrix.tests }}
           cache-dependency-path: "**/packages.lock.json"
 
       - name: Restore (locked)
