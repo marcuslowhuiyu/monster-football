@@ -47,6 +47,8 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | root | `MatchSimulation`, `MatchResult` | M1.3 |
 | `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
 | `Core` additions | `Stoppage`, `StoppageReason`, `RestartType`; `MatchPhase` = `Stopped`/`RestartSetup`/`OpenPlay`/`Finished` | M2.1c |
+| `Core` additions | `AddedTimeTuning`; period-aware `MatchClock` and `MatchTime` | M2.1d |
+| `Periods` | `PeriodSystem` (added time, end of a period at a stoppage, half-time, full time) | M2.1d |
 | `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |

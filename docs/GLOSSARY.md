@@ -36,11 +36,11 @@
 
 **Tick** — One fixed simulation step (default 0.25 simulated seconds).
 
-**MatchConfig** — Match-wide settings: pitch, tick length, match duration.
+**MatchConfig** — Match-wide settings: pitch, tick length, period length and count, added time, AI weights, restart timing.
 
-**MatchClock** — Counts ticks; the authoritative measure of elapsed match time.
+**MatchClock** — Counts ticks (the authoritative measure of elapsed time) and tracks the current period and its added time.
 
-**MatchTime** — A simulated timestamp in seconds, displayed as MM:SS.
+**MatchTime** — A simulated timestamp: seconds elapsed since kickoff (for ordering and durations) plus the period and time into it, displayed as the referee's clock (`63:12`, `45+01:30`).
 
 **MatchSimulation** — Runs one match: owns the `MatchState`, the random source and the event log; advanced with `Step()` or `RunToCompletion()`.
 
@@ -104,7 +104,7 @@
 
 **Possession cause** — Why a player has the ball, recorded on `PossessionChanged`: won in open play (interception, tackle, loose ball, save, reception) or awarded by a restart (kickoff, keeper restart). Only open-play causes count as possessions won.
 
-**Possession time** — Seconds credited to the team last in control of the ball, including while its pass is in flight or the ball is loose.
+**Possession time** — Ball-in-play seconds credited to the team last in control of the ball, including while its pass is in flight or the ball is loose.
 
 **Shape focus** — The smoothed ball position a team's shape is built around (3 s average when attacking, 0.75 s when defending).
 

@@ -542,3 +542,38 @@ Every fingerprint changes; `MatchPhase` values are a public API break (D14), upd
 1 000-match batch, before → after: goals 2.87 → 2.86, shots 27.4 → 27.2, passes 1 660 → 1 621, tackles 293 → 286,
 possession changes 395 → 385, outfield distance 15.3 → 15.1 km, stamina at full time 48.6 → 49.6. All bands pass.
 Each goal now removes ~50 s of open play; M2.1d adds the matching added time.
+
+---
+
+## ADR-024 — Two Halves with Added Time; a Half Ends Only at a Stoppage
+
+Status: Accepted (M2.1d)
+
+Decision:
+- `MatchConfig.PeriodSeconds` (2 700) × `Periods` (2) replace `MatchDurationSeconds`/`TotalTicks`. Match length in ticks
+  is no longer fixed; it is still fully determined by teams, configuration and seed.
+- Ticks and `MatchTime.Seconds` (elapsed since kickoff) stay authoritative and monotonic. `MatchTime` also carries the
+  period and time into it so it can show the referee's clock: `45+01:30` in added time; the second half starts at 45:00.
+- `PeriodSystem` runs after the clock advances. It announces added time at the end of regular time
+  (`AddedTimeAnnounced`, allowances rounded up to whole minutes; goals 45 s each so far). Once regular + added time is
+  up, the period ends at the first tick on which play is stopped (`PeriodEnded`, `end = Stoppage`); a ball in flight
+  is never cut off. If play has not stopped within the safety cap, the period ends at the next tick with no ball in
+  flight (`end = SafetyCap`). When penalties exist, a penalty awarded after time is up must be taken first (M2.6).
+- Half-time takes no ticks: the second half starts immediately with a `PeriodStart` stoppage; teams line up placed and
+  the side that did not take the opening kickoff kicks off. No stamina recovery (decision D13).
+- Statistics: ball-in-play time runs from each kickoff to the next `PlayStopped`/`PeriodEnded`/`MatchFinished`;
+  possession time counts ball-in-play time only. Batch output adds ball-in-play minutes, added time per half and the
+  share of halves ended by the safety cap.
+- **Interim safety cap of 60 s** (decision D2 proposed 180 s). Until the ball can go out of play (M2.4), goals are the
+  only stoppages and ~96 % of halves end at the cap; with 180 s the extra play pushed outfield distance to 16.4 km,
+  over its 16 km band. Revisit at the M2.7 calibration checkpoint, when the cap should rarely trigger.
+
+Reason:
+The user asked for real-football endings: time added for lost time, and the whistle only when play stops. Stopping at a
+stoppage also removes the "shot in the air at 90:00" special case (ADR-022's interim rule).
+
+Consequences:
+Every fingerprint changes. 1 000-match batch, before → after: goals 2.86 → 2.91, shots 27.2 → 28.3, passes 1 621 →
+1 706, tackles 286 → 301, possession changes 385 → 405, outfield distance 15.1 → 15.8 km (closer to its band),
+stamina at full time 49.6 → 47.1; ball in play 92.5 min, added time 1.3 min per half, 96 % of halves ended by the cap.
+All bands pass.

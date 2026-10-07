@@ -19,10 +19,20 @@ MatchResult result = simulation.RunToCompletion();
 
 ## Fixed timestep and clock (implemented)
 
-- `MatchConfig`: `Pitch` (default 105 × 68), `TickSeconds` (default 0.25 → 4 ticks per second), `MatchDurationSeconds` (default 5400). Both durations must be positive.
-- `TotalTicks` = duration ÷ tick length, rounded **up** so a match never ends early (default 21 600).
-- `MatchClock.Tick` (integer) is authoritative; `Now` (`MatchTime`, seconds) is derived as `Tick × TickSeconds`. The only mutation is `Advance()` (+1), so the clock cannot run backwards.
-- `MatchTime` prints as `MM:SS` (`04:31`, `90:00`). No stoppage time.
+- `MatchConfig`: `Pitch` (default 105 × 68), `TickSeconds` (default 0.25 → 4 ticks per second), `PeriodSeconds` (default 2 700) and `Periods` (default 2), all positive; `AddedTime` (`AddedTimeTuning`).
+- `PeriodTicks` = period length ÷ tick length, rounded **up** so a period never ends early (default 10 800). A match's length in ticks is not fixed: it depends on added time and on when play stops (ADR-024).
+- `MatchClock.Tick` (integer) is authoritative and only ever advances by one. The clock also holds `Period`, `PeriodStartTick`, `RegularEndTick` and, once announced, `AddedTimeTicks`.
+- `MatchTime`: `Seconds` = time elapsed since kickoff (never decreases; durations use it) plus `Period`, `PeriodSeconds` and `RegularPeriodSeconds` for the referee's clock. Prints `MM:SS` (`04:31`), or in added time regular end + overrun (`45+01:30`, `90+03:00`). The second half's clock starts at `45:00` however much time was added to the first.
+
+## Periods and added time (implemented)
+
+ADR-024, `PeriodSystem`, checked every tick after the clock advances:
+
+- **Allowances**: each goal in a period's regular time adds `AddedTime.PerGoalSeconds` (45 s). More reasons arrive with cards and penalties.
+- **Announcement**: at the end of regular time, `AddedTimeAnnounced` (metadata `minutes`, `period`) with the allowance rounded **up** to whole minutes.
+- **End of a period**: once regular + added time is up, the period ends at the first tick on which play is stopped. A ball in flight is never cut off: a struck shot always lands. If play has not stopped `AddedTime.SafetyCapSeconds` after that (interim 60 s; see *Current limitations*), the period ends at the next tick with no ball in flight. `PeriodEnded` (metadata `period`, `end` = `Stoppage` or `SafetyCap`).
+- **Half-time** takes no ticks: the second period starts at once with a `PeriodStart` stoppage and a kickoff for the side that did not take the opening one; teams line up (placed) and kick off on the next tick. No stamina recovery.
+- **Full time**: the last period's `PeriodEnded` is followed by `MatchFinished`.
 
 ## Tick order (implemented)
 
@@ -44,7 +54,7 @@ Each `Step()`:
      9. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
      10. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
 4. Advance the clock one tick.
-5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
+5. `PeriodSystem`: announce added time at the end of regular time; end the period at a stoppage once time is up (or at the safety cap); start the second half or finish the match.
 
 Events emitted during a step carry the timestamp from **before** the clock advances, so the kickoff is at 00:00.
 
@@ -238,7 +248,8 @@ ADR-019. `MatchStatistics.FromEvents` derives everything from the event log:
 | Passes attempted / completed | `PassAttempted` / `PassCompleted` |
 | Possession changes | every `PossessionChanged` |
 | Possessions won | `PossessionChanged` whose `cause` is open play (not kickoffs or keeper restarts) |
-| Possession seconds | opening `Kickoff` → each `PossessionChanged` → `MatchFinished`; loose and in-flight time counts for the last team in control |
+| Ball-in-play seconds | each `Kickoff` → next `PlayStopped`, `PeriodEnded` or `MatchFinished` |
+| Possession seconds | ball-in-play time only, switching at each `Kickoff` and `PossessionChanged`; loose and in-flight time counts for the last team in control |
 
 Full-match tests check the statistics against the score, the event log and a 5 400 s possession total.
 
@@ -246,20 +257,21 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
-Current defaults, 1 000 matches between all-5 teams (after M2.1c stoppages):
+Current defaults, 1 000 matches between all-5 teams (after M2.1d periods and added time):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 2.86 (max 10) |
-| Shots / on target per match | 27.2 / 8.8 (32 %) |
-| Passes per match, completion | 1 621, 82 % |
-| Home win / draw / away win | 38.6 % / 24.7 % / 36.7 % |
-| Home possession | 50.1 % |
-| Tackles / carries / possession changes | 286 / 204 / 385 |
+| Goals per match | 2.91 (max 11) |
+| Shots / on target per match | 28.3 / 9.0 (32 %) |
+| Passes per match, completion | 1 706, 82 % |
+| Home win / draw / away win | 38.3 % / 25.9 % / 35.8 % |
+| Home possession | 50.0 % |
+| Tackles / carries / possession changes | 301 / 216 / 405 |
 | Striker share of goals | 82 % |
-| Outfield distance, stamina at full time | 15.1 km, 49.6 |
+| Outfield distance, stamina at full time | 15.8 km, 47.1 |
+| Ball in play; added time per half; halves ended by the safety cap | 92.5 min; 1.3 min; 96 % |
 
-Matches are 90 continuous minutes (no stoppages); real football has ~55–60 minutes of ball-in-play, so per-match volumes (passes, tackles) read high against real totals.
+Until the ball can go out of play (M2.4) goals are the only stoppages, so the ball is in play for ~92 of ~93 minutes and almost every half ends at the safety cap; real football has ~55–60 minutes of ball-in-play, so per-match volumes (passes, tackles) read high against real totals.
 
 ## Debug runner (implemented)
 
@@ -368,5 +380,5 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 - **Volume**: ~1 670 passes, ~295 tackles and ~400 possession changes per match (90 continuous minutes) — busy compared with real football.
 - **Distance**: 15.3 km per outfield player (real ≈ 10–12 km); just inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
-- The ball never goes out of play (no throw-ins, corners or goal kicks); misses go to the keeper.
+- The ball never goes out of play (no throw-ins, corners or goal kicks); misses go to the keeper. Consequently ~96 % of halves end at the safety cap, which is set to an interim 60 s (3 min pushed outfield distance over its 16 km band); revisit at the M2.7 calibration checkpoint.
 - No blocks as events, rebounds or posts.
