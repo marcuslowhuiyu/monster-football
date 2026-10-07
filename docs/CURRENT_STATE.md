@@ -5,13 +5,13 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.1c stoppage model (ADR-023) — done in PR; next M2.1d periods and added time
+M2.1d periods and added time (ADR-024) — done in PR; next M2.1e (open `godot/` in Godot), then M2.2 frames and viewer
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, goals and restarts, stamina/fatigue, utility AI on and off the ball
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 288 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-023
+- 306 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-024
 
 In progress:
 - nothing
@@ -21,7 +21,7 @@ Known issues (calibration, all within health bands):
 - ~1,670 passes and ~295 tackles per 90 continuous minutes (busy)
 - 15.3 km per outfield player (real ≈ 10–12 km)
 - Shot volume is steep in `ShotBase`
-- The ball never goes out of play; misses go to the keeper
+- The ball never goes out of play; misses go to the keeper — so ~96 % of halves end at the (interim, 60 s) safety cap and outfield distance (15.8 km) is close to its 16 km band
 - Test suite with coverage takes ~4.5 min in CI
 
 Environment notes:
@@ -35,7 +35,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 - Periods end only at a stoppage after added time (replaces "match ends at exactly 90:00")
 
 Next recommended work:
-- Continue the M2 plan: M2.1d periods and added time, then M2.1e (open `godot/` in Godot)
+- Continue the M2 plan: M2.1e (open `godot/` in Godot), M2.2 frames and basic viewer
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
