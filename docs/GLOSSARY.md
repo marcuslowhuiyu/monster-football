@@ -14,6 +14,12 @@
 
 **Team frame** — Coordinates relative to a team: own goal at X = 0, attacking +X, left flank +Y. Shape rules are written in team frame.
 
+**Tactical zone** — One of 20 regions of the pitch relative to a team: a longitudinal band (`Defensive`, `OwnMidfield`, `OppositionMidfield`, `Attacking`) crossed with a vertical channel (`LeftWide`, `LeftHalfSpace`, `Centre`, `RightHalfSpace`, `RightWide`). Classified from continuous positions in team frame.
+
+**Tactical areas** — Overlapping regions relative to a team (own/opposition half, final third, own/opposition penalty and goal areas, central/wide penalty area); a point can be in several.
+
+**Half-space** — The channel between a wide channel and the centre.
+
 **Anchor** — A slot's reference position in a layout (kickoff, in possession, out of possession) before shifting with the ball.
 
 **Defensive line** — The single X shared by the back four out of possession; always goal-side of the ball.
