@@ -24,7 +24,7 @@ internal sealed class CarryResolver
         var local = TeamFrame.Convert(pitch, carrier.Team, carrier.Position);
         // Head straight up the pitch, bending toward the goal in the final third.
         var goalLocal = new Vec2(pitch.Length, pitch.Width / 2);
-        var finalThirdBlend = Math.Clamp((local.X - pitch.Length * 2 / 3) / (pitch.Length / 3), 0, 1);
+        var finalThirdBlend = Math.Clamp((local.X - state.Zones.FinalThirdX) / (pitch.Length - state.Zones.FinalThirdX), 0, 1);
         var forward = (new Vec2(1, 0) * (1 - finalThirdBlend) + (goalLocal - local).Normalized() * finalThirdBlend).Normalized();
 
         var nearest = state.TeamPlayers(carrier.Team.Opponent()).MinBy(o => o.Position.DistanceTo(carrier.Position));

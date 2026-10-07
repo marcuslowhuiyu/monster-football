@@ -111,7 +111,8 @@ public class GoalAndRestartTests
                 if (events[i].Type != MatchEventType.GoalScored)
                     continue;
 
-                var next = events.Skip(i + 1).First(e => e.Type is MatchEventType.Kickoff or MatchEventType.MatchFinished);
+                // A half that ends during the goal stoppage restarts with the period's own kickoff instead.
+                var next = events.Skip(i + 1).First(e => e.Type is MatchEventType.Kickoff or MatchEventType.PeriodEnded);
                 if (next.Type == MatchEventType.Kickoff)
                     Assert.Equal(events[i].Team!.Value.Opponent(), next.Team);
             }

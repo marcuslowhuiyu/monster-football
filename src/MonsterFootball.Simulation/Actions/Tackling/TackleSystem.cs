@@ -10,7 +10,7 @@ namespace MonsterFootball.Simulation.Actions.Tackling;
 /// Challenge decision for the defending team's CloseDownOpponent behaviour: the nearest eligible outfield
 /// opponent within <see cref="ChallengeRange"/> of the carrier commits to a tackle with probability
 /// rate × tick length, where rate = <see cref="AI.OffBallWeights.TackleBaseRatePerSecond"/> × (contact chance ÷ an even duel's)
-/// × (1 + <see cref="AI.OffBallWeights.TackleDangerBonus"/> when the carrier is in the defender's own third). Defenders who are likely
+/// × (1 + <see cref="AI.OffBallWeights.TackleDangerBonus"/> when the carrier is in its <see cref="Tactical.TacticalAreas.FinalThird"/>, i.e. the defender's own third). Defenders who are likely
 /// to win the ball, or who are close to their own goal, commit sooner. At most one tackle per tick; cooldowns
 /// stop the same players challenging repeatedly.
 /// </summary>
@@ -54,9 +54,8 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
     {
         var evenDuel = resolver.ContactProbability(PlayerStats.Uniform(5), PlayerStats.Uniform(5));
         var confidence = resolver.ContactProbability(tackler, carrier) / evenDuel;
-        var ownGoal = state.Pitch.OwnGoalCentre(tackler.Team);
-        var inOwnThird = carrier.Position.DistanceTo(ownGoal) < state.Pitch.Length / 3;
-        var rate = weights.TackleBaseRatePerSecond * confidence * (inOwnThird ? 1 + weights.TackleDangerBonus : 1);
+        var dangerous = state.Zones.IsIn(carrier.Team, carrier.Position, Tactical.TacticalAreas.FinalThird);
+        var rate = weights.TackleBaseRatePerSecond * confidence * (dangerous ? 1 + weights.TackleDangerBonus : 1);
         return Math.Min(1, rate * tickSeconds);
     }
 
