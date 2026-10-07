@@ -149,11 +149,9 @@ public class GoalAndRestartTests
                 if (events[i].Type != MatchEventType.ShotTaken)
                     continue;
 
-                // Nothing else can happen while a shot is in the air: the next event is its outcome, applied later
-                // than the strike — unless the match ends first.
+                // Nothing else can happen while a shot is in the air — not even the end of a half (a half ends only
+                // at a stoppage): the next event is its outcome, applied later than the strike.
                 var next = events[i + 1];
-                if (next.Type == MatchEventType.MatchFinished)
-                    continue;
                 Assert.Contains(next.Type, outcomes);
                 Assert.True(next.Timestamp.Seconds > events[i].Timestamp.Seconds, $"seed {seed}: outcome at the strike tick");
             }

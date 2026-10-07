@@ -1,3 +1,4 @@
+using System.Globalization;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Statistics;
@@ -14,7 +15,10 @@ public sealed record MatchSummary(
     int Carries,
     int StrikerGoals,
     double OutfieldDistanceKm,
-    double OutfieldStaminaAtFullTime)
+    double OutfieldStaminaAtFullTime,
+    int Periods,
+    int SafetyCapPeriods,
+    int AddedMinutes)
 {
     public static MatchSummary From(MatchResult result)
     {
@@ -31,6 +35,10 @@ public sealed record MatchSummary(
             result.Events.Count(e => e.Type == MatchEventType.GoalScored
                                      && state.Player(e.ActorPlayerId!.Value).Definition.Position == PlayingPosition.ST),
             outfield.Average(p => p.DistanceCovered) / 1000,
-            outfield.Average(p => p.CurrentStamina));
+            outfield.Average(p => p.CurrentStamina),
+            result.Events.Count(e => e.Type == MatchEventType.PeriodEnded),
+            result.Events.Count(e => e.Type == MatchEventType.PeriodEnded && e.Metadata.GetValueOrDefault("end") == "SafetyCap"),
+            result.Events.Where(e => e.Type == MatchEventType.AddedTimeAnnounced)
+                .Sum(e => int.Parse(e.Metadata["minutes"], CultureInfo.InvariantCulture)));
     }
 }

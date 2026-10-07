@@ -24,7 +24,10 @@ public sealed record BatchSummary(
     double TeamMatchesWithoutShotShare,
     int MaxGoalsInMatch,
     double AverageOutfieldDistanceKm,
-    double AverageOutfieldStaminaAtFullTime)
+    double AverageOutfieldStaminaAtFullTime,
+    double AverageBallInPlayMinutes,
+    double AverageAddedMinutesPerPeriod,
+    double SafetyCapPeriodShare)
 {
     public static BatchSummary From(IReadOnlyList<MatchSummary> summaries)
     {
@@ -55,6 +58,9 @@ public sealed record BatchSummary(
             ordered.Sum(s => (s.Statistics.Home.Shots == 0 ? 1 : 0) + (s.Statistics.Away.Shots == 0 ? 1 : 0)) / (2 * n),
             ordered.Max(s => s.HomeGoals + s.AwayGoals),
             ordered.Average(s => s.OutfieldDistanceKm),
-            ordered.Average(s => s.OutfieldStaminaAtFullTime));
+            ordered.Average(s => s.OutfieldStaminaAtFullTime),
+            ordered.Average(s => s.Statistics.BallInPlaySeconds) / 60,
+            (double)ordered.Sum(s => s.AddedMinutes) / ordered.Sum(s => s.Periods),
+            (double)ordered.Sum(s => s.SafetyCapPeriods) / ordered.Sum(s => s.Periods));
     }
 }
