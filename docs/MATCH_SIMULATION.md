@@ -29,9 +29,9 @@ MatchResult result = simulation.RunToCompletion();
 Each `Step()`:
 
 1. If finished → throw.
-2. First step only: coin toss (`Roll(0.5)`) picks `KickoffTeam`, emit `MatchStarted`.
+2. First step only: coin toss (`Roll(0.5)`) picks the side taking the opening kickoff (recorded on the `MatchStart` stoppage), emit `MatchStarted`.
 3. Run the current phase:
-   - `Kickoff` — `RestartSystem.TakeKickoff`: the kicking side's ST is placed on the centre spot; emit `Kickoff`; give them the ball (after a goal this also emits `PossessionChanged`); phase → `OpenPlay`.
+   - `Stopped` / `RestartSetup` — see *Stoppages*: restart targets → advance the stoppage (the tick ends if the restart is taken) → movement → stamina.
    - `OpenPlay` — in this order:
      1. `BallFlightSystem` — move a pass or shot in flight; on its arrival tick, apply its outcome. If a shot went in, the rest of the tick is skipped.
      2. `CarrySystem` — end carries whose time is up, whose target is reached, or whose carrier lost the ball.
@@ -43,7 +43,6 @@ Each `Step()`:
      8. Sync a possessed ball to its carrier.
      9. `LooseBallSystem` — nearest player within 1.5 m collects a loose ball.
      10. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
-   - `GoalRestart` — `RestartSystem.ResetForKickoff`: all players back to the kickoff layout, intents and cooldowns cleared, ball loose on the centre spot; phase → `Kickoff`.
 4. Advance the clock one tick.
 5. If `Tick ≥ TotalTicks` → phase `Finished`, emit `MatchFinished` (timestamp 90:00).
 
@@ -51,7 +50,22 @@ Events emitted during a step carry the timestamp from **before** the clock advan
 
 ## Phases (implemented)
 
-`Kickoff → OpenPlay → (GoalRestart → Kickoff → OpenPlay)* → Finished`. A goal sets `GoalRestart` and `KickoffTeam` = the conceding side. The clock keeps running through restarts (one tick each).
+ADR-023. The ball is in play (`OpenPlay`) or play is stopped:
+
+```text
+Stopped (dead ball) → RestartSetup (waiting for positions) → restart taken → OpenPlay → … → Finished
+```
+
+A new match is `Stopped` with a `MatchStart` stoppage; a goal stops play with a `Goal` stoppage. The clock keeps running through stoppages.
+
+## Stoppages (implemented)
+
+- `MatchState.CurrentStoppage` (`Stoppage`): `Reason` (`MatchStart`, `Goal`), `Restart` (`Kickoff`), `AwardedTeam`, `Location`, `StoppedAtTick`. Present exactly while play is stopped. Reasons and restart types are appended as laws are added (M2.4–M2.6).
+- `MatchContext.StopPlay` records it, makes the ball dead (nobody holds it), clears every player's intent, carry, off-ball plan and tackle cooldown, and emits `PlayStopped` (team = awarded team, position = restart location, metadata `reason`, `restart`).
+- Each stopped tick, `RestartSystem.Position` gives every player a restart target at `Jog`: for a kickoff, the 4-3-3 kickoff layout (everyone in their own half, opponents outside the centre circle) with the kicking side's ST on the ball. Players walk there with the normal movement rules and stamina drain.
+- `RestartSystem.Advance`: once the minimum dead-ball time has passed (`MatchConfig.Restarts.GoalDeadBallSeconds` = 45 s after a goal; 0 at the start) the phase becomes `RestartSetup`; the restart is taken when everyone is within 1 m of their target, or after `SetupTimeoutSeconds` (30 s) with stragglers placed directly. A kickoff that starts a period is taken at once with the teams placed (they line up before the whistle).
+- Kickoff: the taker is placed on the centre spot, shape focus resets to the centre, play resumes, `Kickoff` is emitted and the taker gets the ball (`PossessionChanged`, cause `Kickoff`, after a goal).
+- No decisions, tackles or random draws happen while play is stopped.
 
 ## Deterministic RNG (implemented)
 
@@ -66,7 +80,7 @@ Events emitted during a step carry the timestamp from **before** the clock advan
 - `MatchEvent` (immutable record): `Timestamp`, `Type`, optional `ActorPlayerId`, `TargetPlayerId`, `Team`, `Position`, and `Metadata` (sorted string map, empty by default).
 - `ToString()` gives a canonical one-line form used by determinism tests.
 - `MatchEventLog` is append-only; `MatchSimulation.Events` exposes it read-only.
-- `MatchEventType` (17 values; `PossessionChanged` carries a `cause`): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`). New types are appended.
+- `MatchEventType` (18 values; `PossessionChanged` carries a `cause`): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`), match flow (`PlayStopped`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`). New types are appended.
 
 ## Positioning and shape (implemented)
 
@@ -171,7 +185,7 @@ Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`
 
 **Land** (arrival tick):
 
-- **Goal** — ball loose at the target, score +1, `KickoffTeam` = conceding side, phase `GoalRestart`, emit `GoalScored` (metadata `score`).
+- **Goal** — ball loose at the target, score +1, emit `GoalScored` (metadata `score`), then stop play: `Goal` stoppage, kickoff to the conceding side.
 - **Saved** — emit `ShotSaved` (actor = keeper, target = shooter), keeper gets the ball (`PossessionChanged`).
 - **Missed** — emit `ShotMissed`, defending keeper gets the ball (stand-in for a goal kick).
 
@@ -232,18 +246,18 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every PR.
 
-Current defaults, 1 000 matches between all-5 teams (after M2.1b shot flight):
+Current defaults, 1 000 matches between all-5 teams (after M2.1c stoppages):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 2.87 (max 11) |
-| Shots / on target per match | 27.4 / 8.8 (32 %) |
-| Passes per match, completion | 1 660, 82 % |
-| Home win / draw / away win | 41.0 % / 23.1 % / 35.9 % |
-| Home possession | 50.0 % |
-| Tackles / carries / possession changes | 293 / 209 / 395 |
-| Striker share of goals | 83 % |
-| Outfield distance, stamina at full time | 15.3 km, 48.6 |
+| Goals per match | 2.86 (max 10) |
+| Shots / on target per match | 27.2 / 8.8 (32 %) |
+| Passes per match, completion | 1 621, 82 % |
+| Home win / draw / away win | 38.6 % / 24.7 % / 36.7 % |
+| Home possession | 50.1 % |
+| Tackles / carries / possession changes | 286 / 204 / 385 |
+| Striker share of goals | 82 % |
+| Outfield distance, stamina at full time | 15.1 km, 49.6 |
 
 Matches are 90 continuous minutes (no stoppages); real football has ~55–60 minutes of ball-in-play, so per-match volumes (passes, tackles) read high against real totals.
 
@@ -330,7 +344,7 @@ A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`);
 - validates that player ids are unique across both teams and that every starting position is on the pitch;
 - `Players` is an ordered list of 22 `PlayerMatchState` — home then away, each in team-definition order. **Iterate this list, never a dictionary, when order can affect outcomes.**
 - `Ball` starts loose at the centre spot; `Score` 0–0; `Phase` = `Kickoff`.
-- `Clock` (`MatchClock`) and `KickoffTeam` (side taking the next kickoff) are also part of the state.
+- `Clock` (`MatchClock`) and `CurrentStoppage` (while play is stopped) are also part of the state. A new match starts `Stopped`, awaiting the opening kickoff.
 
 ## Player state (implemented)
 
