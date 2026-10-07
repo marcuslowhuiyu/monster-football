@@ -244,7 +244,7 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ## Batch simulation (implemented)
 
-ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every PR.
+ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
 Current defaults, 1 000 matches between all-5 teams (after M2.1c stoppages):
 

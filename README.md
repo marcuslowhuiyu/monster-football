@@ -83,7 +83,7 @@ Plays the matches in parallel, prints averages (goals, shots, passes, pass compl
 
 ## Development workflow
 
-Work on a branch, open a pull request, and merge (rebase-and-merge) once CI is green. CI runs formatting checks, a Release build and the full test suite on Ubuntu, Windows and macOS, then checks that all three produced identical matches and that a 1,000-match batch is healthy. See ADR-017 in `docs/DECISIONS.md`.
+Work on a branch, open a pull request, and merge (rebase-and-merge) once CI is green. CI runs on pull requests (docs-only changes skip it): formatting checks, a Release build and the full test suite on Ubuntu, Release builds on Windows and macOS, then checks that all three produced identical matches and that a 1,000-match batch is healthy. See ADR-017 in `docs/DECISIONS.md`.
 
 The SDK version is pinned in `global.json`; NuGet dependencies are locked in `packages.lock.json`.
 
