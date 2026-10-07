@@ -273,6 +273,14 @@ Current defaults, 1 000 matches between all-5 teams (after M2.1d periods and add
 
 Until the ball can go out of play (M2.4) goals are the only stoppages, so the ball is in play for ~92 of ~93 minutes and almost every half ends at the safety cap; real football has ~55–60 minutes of ball-in-play, so per-match volumes (passes, tackles) read high against real totals.
 
+## Observation (implemented)
+
+ADR-025. `MatchFrame.Capture(state)` copies the end-of-tick state: tick, `MatchTime`, phase, stoppage, score, attacking
+team, ball (position, holder, flight: kind, team, start, landing point, launch/arrival tick, intended receiver) and every
+player (id, team, slot, shirt number, position, movement target and intensity, stamina, off-ball plan kind, carrying).
+Frames never change once captured; capturing one every tick leaves the match identical (fingerprint test). The
+landing point is for animation; tactical analysis must not read predetermined outcomes.
+
 ## Debug runner (implemented)
 
 ```sh
@@ -382,3 +390,6 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
 - The ball never goes out of play (no throw-ins, corners or goal kicks); misses go to the keeper. Consequently ~96 % of halves end at the safety cap, which is set to an interim 60 s (3 min pushed outfield distance over its 16 km band); revisit at the M2.7 calibration checkpoint.
 - No blocks as events, rebounds or posts.
+- Presentation snaps (measured over 20 matches, M2.2): passes land exactly on the receiver or interceptor (max 0.4 m),
+  but on a save the ball jumps from the goal mouth to the keeper (median 2.5 m, max 4.3 m) and after a miss to the
+  keeper restarting play (median 5.9 m). M2.4 replaces both (held/parried saves, goal kicks).

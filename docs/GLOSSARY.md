@@ -140,7 +140,9 @@
 
 **Dismissal** — A player sent off (straight red or second yellow); removed from active play for the rest of the match.
 
-**MatchFrame** — Immutable copy of observable match state at the end of a tick; what analysis and the viewer read.
+**MatchFrame** — Immutable copy of observable match state at the end of a tick; what analysis and the viewer read (implemented, M2.2).
+
+**Playback session** — The viewer's match: recorded frames, a playback clock (position in ticks, speed 0.25×–4×) and interpolation between the frames either side of the position.
 
 **Tactical zone** — One of 20 team-frame regions: a longitudinal band (Defensive, OwnMidfield, OppositionMidfield, Attacking) × a vertical channel (LeftWide, LeftHalfSpace, Centre, RightHalfSpace, RightWide).
 

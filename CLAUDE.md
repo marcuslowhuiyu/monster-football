@@ -43,6 +43,7 @@ dotnet format MonsterFootball.slnx --verify-no-changes
 dotnet run --project src/MonsterFootball.DebugRunner -- match 7 [--all]
 dotnet run --project src/MonsterFootball.DebugRunner -c Release -- batch 1000   # must print HEALTHY
 dotnet run --project src/MonsterFootball.DebugRunner -- fingerprint 1 2 3
+tools/viewer.sh --seed=7 --autoplay            # Godot developer viewer (needs Godot 4.7.2 .NET; see README)
 ```
 
 ## Key docs
