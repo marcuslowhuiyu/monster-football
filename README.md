@@ -11,14 +11,14 @@ The core is a headless, deterministic 11v11 match simulation (Milestone 1). Godo
 **Milestone 1 (deterministic 11v11 simulation) is complete** — see `docs/milestones/MILESTONE_1_ACCEPTANCE.md`.
 Milestone 2 (match flow, tactical understanding, developer viewer) is specified in `docs/milestones/MILESTONE_2.md`.
 Headless 4-3-3 football with passing, carrying, tackling, shooting, goalkeeping, restarts, stamina and utility AI;
-match statistics and a readable debug log; 265 automated tests; CI on three operating systems with a
+match statistics and a readable debug log; 300+ automated tests; CI on three operating systems with a
 cross-platform determinism check and a 1,000-match health-checked batch.
 
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - Git
-- *(Optional, not needed for Milestone 1)* Godot 4.7 .NET edition — only to open the presentation project in `godot/`
+- Godot **4.7.2 .NET** edition ("mono"; must match `Godot.NET.Sdk/4.7.2`) — for the developer viewer in `godot/` (Milestone 2)
 
 If the SDK was installed with Microsoft's `dotnet-install.sh` to `~/.dotnet`, put it on your `PATH`:
 
@@ -26,13 +26,28 @@ If the SDK was installed with Microsoft's `dotnet-install.sh` to `~/.dotnet`, pu
 export PATH="$HOME/.dotnet:$PATH"
 ```
 
+### Opening the Godot project
+
+Godot finds .NET through `DOTNET_ROOT`, then the machine-wide `/etc/dotnet/install_location`. On Apple Silicon that
+location can point at an Intel (x64) install, which Godot cannot load (`libhostfxr.dylib … incompatible architecture`).
+Either install the official Arm64 .NET 10 SDK (it registers itself in `/usr/local/share/dotnet`), or launch Godot with
+`DOTNET_ROOT` set to an Arm64 SDK:
+
+```sh
+DOTNET_ROOT="$HOME/.dotnet" /path/to/Godot_mono.app/Contents/MacOS/Godot --editor --path godot
+# headless checks: --headless --editor --path godot --quit   |   --headless --path godot --build-solutions --quit
+```
+
+Launching from Finder does not pass `DOTNET_ROOT`; use the command above, or `launchctl setenv DOTNET_ROOT ~/.dotnet`
+(lasts until logout).
+
 ## Repository layout
 
 ```text
 src/MonsterFootball.Simulation        headless simulation (no Godot dependency)
 src/MonsterFootball.DebugRunner       console runner for matches and batches
 tests/MonsterFootball.Simulation.Tests xUnit tests
-godot/                                Godot presentation project (placeholder)
+godot/                                Godot developer viewer (Milestone 2; currently empty)
 docs/                                 design, architecture, decisions, current state
 ```
 

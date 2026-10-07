@@ -118,7 +118,7 @@ public sealed record Stoppage(StoppageReason Reason, RestartType Restart, TeamSi
 | 1b | `feat/m2-1-shot-flight` | shot `BallFlight`, outcome applied on arrival, keeper during flight. ADR-023. | yes |
 | 1c | `feat/m2-1-stoppage-model` | `MatchPhase`/`Stoppage`/`RestartType`; kickoff and goal migrated; `PlayStopped`/`RestartTaken`; dead-ball time after goals. ADR-021. | yes |
 | 1d | `feat/m2-1-periods` | two periods, half-time kickoff, added time, end-at-stoppage, safety cap, ball-in-play statistics, match-length tests rewritten. ADR-022. | yes |
-| 1e | `docs/m2-1-presentation-review` | Godot 4.7.2 opened and smoke-run (needs install); `MATCH_SIMULATION.md` match flow | no |
+| 1e | `docs/m2-1-presentation-review` | Godot 4.7.2 opened and built headlessly (needs `DOTNET_ROOT`, see README); match-flow docs landed with 1c/1d; pass-arrival visual check (§6.2) moves to M2.2 | no |
 
 Note: until M2.4 the only stoppages are goals, so most periods end via the safety cap. Expected and temporary;
 telemetry shows the cap rate falling to ~0 once the ball can go out.
