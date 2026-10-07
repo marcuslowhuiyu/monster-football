@@ -23,6 +23,12 @@
           "GodotSharp": "4.7.2"
         }
       },
+      "monsterfootball.playback": {
+        "type": "Project",
+        "dependencies": {
+          "MonsterFootball.Simulation": "[1.0.0, )"
+        }
+      },
       "monsterfootball.simulation": {
         "type": "Project"
       }
