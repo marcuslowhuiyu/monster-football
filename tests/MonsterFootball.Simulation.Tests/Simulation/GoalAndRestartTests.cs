@@ -1,7 +1,7 @@
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
+using MonsterFootball.Simulation.Movement;
 using MonsterFootball.Simulation.Players;
-using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Tests.TestSupport;
 
 namespace MonsterFootball.Simulation.Tests.Simulation;
@@ -11,31 +11,76 @@ public class GoalAndRestartTests
     private static MatchSimulation NewSimulation(int seed = 123456) =>
         new(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), seed);
 
-    [Fact]
-    public void After_a_goal_players_reset_and_the_conceding_team_kicks_off()
+    /// <summary>Steps a match until the first goal has been scored; null if there is none.</summary>
+    private static MatchSimulation? UntilFirstGoal(int seed)
     {
-        var simulation = NewSimulation();
-        for (var i = 0; i < 40; i++)
+        var simulation = NewSimulation(seed);
+        while (!simulation.IsFinished && simulation.State.Score.Home + simulation.State.Score.Away == 0)
             simulation.Step();
+        return simulation.IsFinished ? null : simulation;
+    }
 
-        // Simulate the aftermath of a Home goal.
-        simulation.State.Phase = MatchPhase.GoalRestart;
-        simulation.State.KickoffTeam = TeamSide.Away;
+    [Fact]
+    public void A_goal_stops_play_with_a_kickoff_awarded_to_the_conceding_team()
+    {
+        var simulation = Enumerable.Range(1, 8).Select(UntilFirstGoal).First(s => s is not null)!;
+        var goal = simulation.Events.Last(e => e.Type == MatchEventType.GoalScored);
+        var stopped = simulation.Events[^1];
 
-        simulation.Step(); // GoalRestart → reset
-        Assert.Equal(MatchPhase.Kickoff, simulation.State.Phase);
-        Assert.True(simulation.State.Ball.IsLoose);
-        Assert.Equal(simulation.State.Pitch.Centre, simulation.State.Ball.Position);
-        foreach (var player in simulation.State.Players)
-            Assert.Equal(Formation433.KickoffPosition(simulation.State.Pitch, player.Team, player.Definition.Position), player.Position);
+        Assert.Equal(MatchPhase.Stopped, simulation.State.Phase);
+        Assert.Equal(MatchEventType.PlayStopped, stopped.Type);
+        Assert.Equal(goal.Timestamp, stopped.Timestamp);
 
-        simulation.Step(); // Kickoff
-        var kickoff = simulation.Events.Last(e => e.Type == MatchEventType.Kickoff);
-        Assert.Equal(simulation.State.Clock.Now.Seconds - MatchConfig.Default.TickSeconds, kickoff.Timestamp.Seconds);
-        Assert.Equal(TeamSide.Away, kickoff.Team);
-        Assert.Equal(TeamSide.Away, simulation.State.PossessionTeam);
-        Assert.Equal(PlayingPosition.ST, simulation.State.Player(kickoff.ActorPlayerId!.Value).Definition.Position);
-        Assert.Equal(MatchPhase.OpenPlay, simulation.State.Phase);
+        var stoppage = simulation.State.CurrentStoppage!;
+        Assert.Equal(StoppageReason.Goal, stoppage.Reason);
+        Assert.Equal(RestartType.Kickoff, stoppage.Restart);
+        Assert.Equal(goal.Team!.Value.Opponent(), stoppage.AwardedTeam);
+        Assert.Equal(simulation.State.Pitch.Centre, stoppage.Location);
+        Assert.Equal("Goal", stopped.Metadata["reason"]);
+        Assert.Equal("Kickoff", stopped.Metadata["restart"]);
+        Assert.Equal(stoppage.AwardedTeam, stopped.Team);
+        Assert.Null(simulation.State.PossessionPlayerId);
+    }
+
+    [Fact]
+    public void During_the_stoppage_players_walk_back_and_nothing_else_happens_until_the_kickoff()
+    {
+        var simulation = Enumerable.Range(1, 8).Select(UntilFirstGoal).First(s => s is not null)!;
+        var state = simulation.State;
+        var config = MatchConfig.Default;
+        var awarded = state.CurrentStoppage!.AwardedTeam;
+        var stoppedAt = state.Clock.Now.Seconds - config.TickSeconds;
+        var eventsBefore = simulation.Events.Count;
+
+        while (state.Phase != MatchPhase.OpenPlay)
+        {
+            var before = state.Players.ToDictionary(p => p.PlayerId, p => p.Position);
+            simulation.Step();
+            MatchStateInvariants.Verify(state);
+            if (state.Phase == MatchPhase.OpenPlay)
+                break;
+
+            Assert.Null(state.PossessionPlayerId);
+            foreach (var player in state.Players)
+                Assert.True(player.Position.DistanceTo(before[player.PlayerId]) <= MovementSystem.TopSpeed(player) * config.TickSeconds + 1e-9,
+                    $"{player} teleported during the stoppage");
+        }
+
+        var newEvents = simulation.Events.Skip(eventsBefore).Select(e => e.Type).ToList();
+        Assert.Equal(MatchEventType.Kickoff, newEvents[0]);
+        var kickoff = simulation.Events[eventsBefore];
+        Assert.Equal(awarded, kickoff.Team);
+        Assert.InRange(kickoff.Timestamp.Seconds - stoppedAt,
+            config.Restarts.GoalDeadBallSeconds, config.Restarts.GoalDeadBallSeconds + config.Restarts.SetupTimeoutSeconds + config.TickSeconds);
+
+        // At the kickoff everyone is in their own half and opponents are outside the centre circle.
+        foreach (var player in state.Players)
+        {
+            Assert.True(state.Pitch.IsInOwnHalf(player.Position, player.Team), $"{player} not in own half at the kickoff");
+            if (player.Team != awarded)
+                Assert.True(player.Position.DistanceTo(state.Pitch.Centre) >= config.Restarts.KickoffExclusionRadius - 1e-9,
+                    $"{player} inside the centre circle at the kickoff");
+        }
     }
 
     [Fact]

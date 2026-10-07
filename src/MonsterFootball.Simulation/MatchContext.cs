@@ -32,6 +32,28 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
         });
 
     /// <summary>
+    /// Stops play (ADR-023): records the stoppage, clears every player's ongoing action and plan, and emits
+    /// PlayStopped (team = awarded team, position = restart location, metadata <c>reason</c> and <c>restart</c>).
+    /// </summary>
+    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location)
+    {
+        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick));
+        foreach (var player in State.Players)
+        {
+            player.ClearIntent();
+            player.OffBallPlan = null;
+            player.TackleCooldownUntilTick = 0;
+        }
+
+        Emit(MatchEventType.PlayStopped, team: awardedTeam, position: location,
+            metadata: ImmutableSortedDictionary.CreateRange(
+            [
+                new KeyValuePair<string, string>("reason", reason.ToString()),
+                new KeyValuePair<string, string>("restart", restart.ToString()),
+            ]));
+    }
+
+    /// <summary>
     /// Gives the ball to a player, emitting PossessionChanged (with its <paramref name="cause"/>) if control passes
     /// to the other team.
     /// </summary>
