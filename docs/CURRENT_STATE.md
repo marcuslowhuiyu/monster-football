@@ -5,7 +5,7 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.1d periods and added time (ADR-024) — done in PR; next M2.1e (open `godot/` in Godot), then M2.2 frames and viewer
+M2.1e presentation review — done in PR; next M2.2 frames and basic viewer
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, goals and restarts, stamina/fatigue, utility AI on and off the ball
@@ -26,7 +26,7 @@ Known issues (calibration, all within health bands):
 
 Environment notes:
 - `dotnet` is installed at `~/.dotnet` and may not be on `PATH` in every shell
-- Godot 4.7.2 .NET (mono) is at `~/Downloads/Godot_mono.app`; `godot/` has not been opened in it yet (M2.1e)
+- Godot 4.7.2 .NET (mono) is at `~/Downloads/Godot_mono.app`; `godot/` opens and builds in it headlessly (M2.1e) **only with `DOTNET_ROOT=$HOME/.dotnet`**: `/etc/dotnet/install_location` points at an x64 .NET in `/usr/local/share/dotnet/x64`, which the arm64 Godot cannot load (see README)
 - Branch protection unavailable on the current GitHub plan for this private repo; PR workflow enforced by convention (ADR-017)
 - Open Dependabot PRs: test tooling updates (#4, #5, #7)
 
@@ -35,7 +35,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 - Periods end only at a stoppage after added time (replaces "match ends at exactly 90:00")
 
 Next recommended work:
-- Continue the M2 plan: M2.1e (open `godot/` in Godot), M2.2 frames and basic viewer
+- Continue the M2 plan: M2.2 frames, Playback library and basic Godot viewer; the pass-arrival visual check (spec §6.2) happens in the viewer
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
