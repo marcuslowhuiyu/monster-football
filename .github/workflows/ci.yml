@@ -1,9 +1,13 @@
 name: CI
 
+# Minutes budget (ADR-017): CI runs on pull requests only — a PR is rebased on main before merging, so the merged
+# tree is the tested tree and re-running on push to main would only repeat it. Docs-only PRs skip CI.
+# Run manually (workflow_dispatch) when needed.
 on:
-  push:
-    branches: [main]
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   workflow_dispatch:
 
 permissions:
@@ -11,7 +15,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   DOTNET_NOLOGO: true
@@ -31,14 +35,22 @@ jobs:
       - run: dotnet restore MonsterFootball.slnx --locked-mode
       - run: dotnet format MonsterFootball.slnx --verify-no-changes --no-restore
 
+  # Ubuntu runs the full test suite. Windows and macOS (billed at 2x and 10x) only build the debug runner and
+  # produce match fingerprints: their job is the cross-platform determinism check (ADR-013), which is all they add.
   build-test:
-    name: Build & test (${{ matrix.os }})
+    name: ${{ matrix.tests && 'Build & test' || 'Build & fingerprint' }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            tests: true
+          - os: windows-latest
+            tests: false
+          - os: macos-latest
+            tests: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -48,12 +60,13 @@ jobs:
           cache-dependency-path: "**/packages.lock.json"
 
       - name: Restore (locked)
-        run: dotnet restore MonsterFootball.slnx --locked-mode
+        run: dotnet restore ${{ matrix.tests && 'MonsterFootball.slnx' || 'src/MonsterFootball.DebugRunner' }} --locked-mode
 
       - name: Build
-        run: dotnet build MonsterFootball.slnx -c Release --no-restore
+        run: dotnet build ${{ matrix.tests && 'MonsterFootball.slnx' || 'src/MonsterFootball.DebugRunner' }} -c Release --no-restore
 
       - name: Test
+        if: matrix.tests
         run: >
           dotnet test MonsterFootball.slnx -c Release --no-build
           --logger "trx;LogFileName=results.trx"
@@ -68,7 +81,7 @@ jobs:
           cat fingerprint-${{ matrix.os }}.txt
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
+        if: always() && matrix.tests
         with:
           name: test-results-${{ matrix.os }}
           path: TestResults
