@@ -493,3 +493,39 @@ Every match fingerprint changes (players keep moving for the shot's flight time,
 batch (seeds 1–1000), before → after: goals 2.91 → 2.87, shots 27.8 → 27.4, passes 1 667 → 1 660, tackles 295 → 293,
 possession changes 397 → 395, striker share 82 % → 83 %, home−away win gap 0.015 → 0.051 — the last is seed noise
 (seeds 1001–2000: 0.017 after vs 0.025 before, favouring away). All bands pass.
+
+---
+
+## ADR-023 — The Ball Is In Play or Play Is Stopped; Stoppages Are Records
+
+Status: Accepted (M2.1c). Replaces the `Kickoff`/`GoalRestart` phases.
+
+Decision:
+- `MatchPhase` is `Stopped` (dead ball), `RestartSetup` (waiting for positions), `OpenPlay` or `Finished`. Taking the
+  restart returns to `OpenPlay`; there is no separate "restart" phase because the restart is an action on one tick.
+- `MatchState.CurrentStoppage` holds a `Stoppage(Reason, Restart, AwardedTeam, Location, StoppedAtTick)` exactly while
+  play is stopped (invariant). Nobody holds a dead ball (invariant). Reasons and restart types are appended as laws
+  arrive; fields (offender, fouled player, discipline) are added only when a law needs them.
+- `MatchContext.StopPlay` is the single way to stop play: it records the stoppage, clears intents, plans and tackle
+  cooldowns, and emits `PlayStopped` (metadata `reason`, `restart`). A kickoff keeps its existing `Kickoff` event;
+  later restart types will emit a generic restart event.
+- While play is stopped, `RestartSystem` gives every player a restart target and they **walk** there under the normal
+  movement and stamina rules; no decisions, tackles or random draws happen. The restart is taken once the minimum
+  dead-ball time has passed and everyone is in position, or after a setup timeout with stragglers placed. Timing and
+  distances live in `MatchConfig.Restarts` (`RestartTuning`).
+- After a goal: 45 s dead ball, then the kickoff once everyone is back in the kickoff layout. Kickoffs that start a
+  period are taken immediately with the teams placed (they line up before the whistle).
+- The kickoff layout is legal: everyone in their own half and the strikers' anchors 10.5 m from the centre spot
+  (was 3.5 m, inside the circle); the kicking side's ST walks to the ball.
+- `MatchState.KickoffTeam` is removed: the awarded team lives on the stoppage.
+
+Reason:
+Milestone 2 needs throw-ins, goal kicks, corners, free kicks and penalties. One stoppage model, with kickoffs and goals
+as its first users, avoids a special case per restart and gives the viewer, statistics (ball-in-play time) and
+tactical analysis (no open-play Opportunities while play is stopped) one thing to read.
+
+Consequences:
+Every fingerprint changes; `MatchPhase` values are a public API break (D14), updated in all consumers in the same PR.
+1 000-match batch, before → after: goals 2.87 → 2.86, shots 27.4 → 27.2, passes 1 660 → 1 621, tackles 293 → 286,
+possession changes 395 → 385, outfield distance 15.3 → 15.1 km, stamina at full time 48.6 → 49.6. All bands pass.
+Each goal now removes ~50 s of open play; M2.1d adds the matching added time.

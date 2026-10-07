@@ -46,7 +46,7 @@
 
 **MatchResult** — The outcome of a completed match: goals, events, final state, seed.
 
-**KickoffTeam** — The side that takes the next kickoff; decided by coin toss at the start, later the conceding side after a goal.
+**Kickoff team** — The side awarded a kickoff stoppage: decided by coin toss at the start, the conceding side after a goal.
 
 **MatchRng / IMatchRandom** — The single seeded random source for a match. All simulation randomness goes through it.
 
@@ -78,7 +78,7 @@
 
 **Out of position** — Distance between the goalkeeper and their ideal spot on the goal–ball line; lowers save chance.
 
-**GoalRestart** — Phase after a goal: players reset to the kickoff layout before the conceding side kicks off.
+**Goal stoppage** — After a goal play stops for at least 45 s while players walk back to the kickoff layout; then the conceding side kicks off.
 
 **Tiredness** — 1 − stamina/100: 0 when fresh, 1 when empty. All fatigue penalties are linear in it.
 
@@ -118,7 +118,7 @@
 
 **Opportunity** — A tactically significant open-play situation recognised by tactical analysis (M2: six types); an episode with a start and an end. Future: where manager intervention may become available.
 
-*Milestone 2 terms (specified, not yet implemented):*
+*Milestone 2 terms (specified; implemented step by step — see `MATCH_SIMULATION.md` for what exists):*
 
 **Ball in play / play stopped** — The ball is either live (open play) or dead (a stoppage) until a restart.
 
