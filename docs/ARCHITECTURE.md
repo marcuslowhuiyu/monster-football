@@ -60,6 +60,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Core` additions | `Stoppage`, `StoppageReason`, `RestartType`; `MatchPhase` = `Stopped`/`RestartSetup`/`OpenPlay`/`Finished` | M2.1c |
 | `Core` additions | `AddedTimeTuning`; period-aware `MatchClock` and `MatchTime` | M2.1d |
 | `Periods` | `PeriodSystem` (added time, end of a period at a stoppage, half-time, full time) | M2.1d |
+| `Tactical` | `LongitudinalBand`, `VerticalChannel`, `TacticalZone`, `TacticalAreas`, `ZoneBoundaries`, `TacticalZones` (`MatchState.Zones`) | M2.3 |
 | `Observation` | `MatchFrame`, `PlayerFrame`, `BallFrame`, `BallFlightFrame` (immutable per-tick copies for observers) | M2.2 |
 | `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |

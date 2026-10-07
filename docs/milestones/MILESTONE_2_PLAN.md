@@ -135,8 +135,7 @@ telemetry shows the cap rate falling to ~0 once the ball can go out.
 
 | PR | Branch | Scope | FP |
 |---|---|---|---|
-| 3a | `feat/m2-3-tactical-zones` | `LongitudinalBand`, `VerticalChannel`, `TacticalZone`, `TacticalAreas` flags, `ZoneBoundaries`, `TacticalZones`; zone in match report details. ADR-030. | no |
-| 3b | `fix/m2-3-tackle-danger-zone` | `TackleSystem` danger uses `FinalThird` instead of a 35 m radius (§6.5). | yes |
+| 3a+3b | `feat/m2-3-tactical-zones` | One PR, two commits (CI budget): zone model — `LongitudinalBand`, `VerticalChannel`, `TacticalZone`, `TacticalAreas` flags, `ZoneBoundaries`, `TacticalZones` (`MatchState.Zones`), zone in match report details, `docs/TACTICAL_ANALYSIS.md`; then `TackleSystem` danger uses `FinalThird` instead of a 35 m radius (§6.5). ADR-027. | yes (second commit) |
 
 ### M2.4 — Ball out of play and restarts
 
