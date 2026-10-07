@@ -29,7 +29,7 @@ Inspect → Plan → Implement → Test → Review invariants → Update docs �
 - **Never commit to `main`.** Start each subtask on a branch: `feat/m1-9-utility-ai`, `fix/…`, `chore/…`, `docs/…`.
 - Commits: small, one system per commit, conventional style (`feat(sim): ...`, `test(pass): ...`, `docs(sim): ...`). **Every commit must build.**
 - Before pushing: `dotnet format MonsterFootball.slnx --verify-no-changes`, `dotnet build`, `dotnet test`.
-- Open a PR (`gh pr create`, fill in the template), wait for CI to pass on all three OSes, then **rebase-and-merge** (ADR-017).
+- Open a PR (`gh pr create`, fill in the template), wait for CI to pass, then **rebase-and-merge** (ADR-017). CI runs on PRs only (not on push to `main`) to save Actions minutes, so rebase the branch on current `main` before merging; if `main` moved since the last green run, let CI run again. Docs-only PRs skip CI.
 - Adding a NuGet package updates `packages.lock.json` — commit it.
 
 ## Commands

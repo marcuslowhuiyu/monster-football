@@ -334,13 +334,14 @@ Stamina cost now depends on how far players run, so movement tuning (M1.9/M1.11)
 
 ## ADR-017 — CI Pipeline and Branch/PR Workflow
 
-Status: Accepted
+Status: Accepted; triggers and OS matrix amended 2026-10-07 (see *Amendment: Actions minutes budget* below)
 
 Decision:
 - **Workflow**: all changes go through a short-lived branch (`feat/…`, `fix/…`, `chore/…`, `docs/…`) and a pull request into `main`. `main` is never committed to directly. PRs are merged with **rebase-and-merge** to keep the small, conventional commits (§4.8 of the milestone) on a linear history. Every commit must build.
-- **CI** (`.github/workflows/ci.yml`), on every PR and push to `main`:
+- **CI** (`.github/workflows/ci.yml`), on every PR that changes more than docs (and on demand):
   - `Format` — `dotnet format --verify-no-changes` against `.editorconfig`.
-  - `Build & test` on **Ubuntu, Windows and macOS** — locked restore, Release build (warnings are errors), full test suite with TRX results and coverage uploaded as artifacts.
+  - `Build & test (ubuntu-latest)` — locked restore, Release build of the solution (warnings are errors), full test suite with TRX results and coverage uploaded as artifacts.
+  - `Build & fingerprint` on **Windows and macOS** — locked restore and Release build of the debug runner, then fingerprints.
   - `Cross-platform determinism` — each OS runs `DebugRunner fingerprint` for fixed seeds; the job fails if any OS produced a different match (`MatchFingerprint`, SHA-256 of every event and full-precision final state).
 - **Reproducibility**: `global.json` pins the SDK (patch roll-forward only); `packages.lock.json` files are committed and CI restores in locked mode; `.gitattributes` normalises line endings to LF.
 - **Supply chain**: third-party actions are pinned to commit SHAs (version in a comment); Dependabot proposes weekly NuGet and Actions updates.
@@ -365,6 +366,18 @@ simulation assembly, which first broke the determinism guard only in CI (fixed b
 Rejected alternatives:
 Single-OS CI (cannot detect cross-platform divergence); squash merges (would collapse the small commits the
 milestone asks for); floating action tags such as `@v7` (mutable, supply-chain risk).
+
+Amendment: Actions minutes budget (2026-10-07):
+The private repository has 2 000 Actions minutes a month; macOS minutes bill at 10× and Windows at 2×. By 7 October
+CI had used ≈ 1 820 billable minutes: the macOS test job 1 350 (73 %), Windows 220, and 42 % of everything came from
+re-running CI on push to `main` after each merge. Changes:
+- **No CI on push to `main`.** With rebase-and-merge the merged tree is the PR's tested tree, provided the branch is
+  rebased on current `main` before merging; if `main` moved since the PR's last green run, rebase and let CI run again.
+- **Full tests on Ubuntu only.** Windows and macOS build the debug runner and produce fingerprints — the cross-platform
+  determinism check is what they add (ADR-013). macOS stays: it runs on ARM64, the platform most likely to differ.
+- **Docs-only PRs skip CI** (`docs/**`, `**/*.md`); in-progress runs on a branch are cancelled by newer pushes.
+- Estimated cost per merged PR: ≈ 100 → ≈ 45 billable minutes. If still too high, run macOS on a weekly schedule.
+- Making the repository public would remove the limit.
 
 ---
 
@@ -433,7 +446,7 @@ Status: Accepted
 Decision:
 - `DebugRunner batch [count] [--from SEED]` plays matches in parallel (parallelism stays in the runner, ADR-005), reduces each to a `MatchSummary`, and aggregates a `BatchSummary` in seed order (identical however matches were scheduled).
 - `BatchHealth` checks the aggregate against wide **pathology bands** (not realism targets): goals 0.5–6, shots 6–60, on-target share 0.2–0.6, pass completion 0.6–0.97, home possession 0.45–0.55 and |home win − away win| ≤ 0.1 between equal teams, draws 0.05–0.6, team-matches without a shot ≤ 10 %, ≤ 14 goals in any match, striker share of goals ≤ 85 %, tackles 10–600, outfield distance 5–16 km, outfield stamina at full time 10–95. The command exits non-zero if any band fails.
-- CI runs `batch 1000` on every PR and push to `main` (≈ 2.5 min) and uploads the report.
+- CI runs `batch 1000` on every code PR (≈ 2.5 min) and uploads the report.
 - Tuning in M1.11 used batches, not single matches: arrival slowdown for jogging (`Easy` for the team in possession, a small radius for `Jog`), per-team **shape focus** (the shape follows a moving average of the ball — 3 s for the attacking team, 0.75 s for the defending team), AI weights (`HoldBase` 88, `CarryBase` 42, `ShotBase` 22) and the shot model's on-target bias (−0.7).
 
 Reason:

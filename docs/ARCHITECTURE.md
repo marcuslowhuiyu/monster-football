@@ -108,7 +108,7 @@ Systems may read the event log as well as write it: `StaminaSystem` charges acti
 
 ## 7. Delivery pipeline
 
-Every change reaches `main` through a pull request gated by CI (ADR-017): formatting, a Release build with warnings as errors, and the full test suite on Ubuntu, Windows and macOS, followed by a cross-platform determinism comparison of match fingerprints (`Diagnostics.MatchFingerprint`), plus a 1 000-match batch whose health bands must all pass (ADR-020). Builds are reproducible: pinned SDK (`global.json`) and locked NuGet restores.
+Every change reaches `main` through a pull request gated by CI (ADR-017): formatting, a Release build with warnings as errors and the full test suite on Ubuntu, Release builds on Windows and macOS, a cross-platform determinism comparison of match fingerprints (`Diagnostics.MatchFingerprint`), plus a 1 000-match batch whose health bands must all pass (ADR-020). Builds are reproducible: pinned SDK (`global.json`) and locked NuGet restores.
 
 ## 8. Extension points (documented, not implemented)
 
