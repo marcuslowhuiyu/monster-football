@@ -187,6 +187,13 @@ public sealed class MatchState
         Ball.SetLoose(position);
     }
 
+    /// <summary>The ball is loose at <paramref name="position"/>, rolling on with <paramref name="roll"/>.</summary>
+    internal void SetBallRolling(Vec2 position, Actions.LooseBallMotion roll)
+    {
+        ReleaseHolder();
+        Ball.SetLoose(position, roll);
+    }
+
     internal void LaunchBall(Actions.BallFlight flight)
     {
         ReleaseHolder();

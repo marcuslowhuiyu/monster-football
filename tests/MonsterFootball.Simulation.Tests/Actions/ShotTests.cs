@@ -135,9 +135,9 @@ public class ShotTests
     }
 
     [Fact]
-    public void Saved_shot_does_not_score_and_the_keeper_takes_the_ball()
+    public void Saved_and_held_shot_does_not_score_and_the_keeper_takes_the_ball()
     {
-        var s = Chance(95, 34, random: new ScriptedRandom(0.0, 0.5, 0.0));
+        var s = Chance(95, 34, random: new ScriptedRandom(0.0, 0.5, 0.0, 0.0));
         var keeper = s.State.Slot(TeamSide.Away, PlayingPosition.GK);
 
         StrikeAndFly(s, _resolver.Resolve(s.State, Intent(s), s.Context.Random));
@@ -145,24 +145,87 @@ public class ShotTests
         Assert.Equal(0, s.State.Score.Home);
         Assert.True(s.State.HasBall(keeper.PlayerId));
         Assert.Equal([MatchEventType.ShotTaken, MatchEventType.ShotSaved, MatchEventType.PossessionChanged], s.EventTypes);
+        Assert.Equal("Held", s.Log.Events[1].Metadata["save"]);
         Assert.Equal(PossessionCause.Save, s.Log.Events[^1].GetPossessionCause());
     }
 
     [Fact]
-    public void Missed_shot_does_not_score_goes_wide_and_the_keeper_restarts()
+    public void A_save_parried_behind_is_a_corner()
+    {
+        // on target, placement, saved, not held, behind.
+        var s = Chance(95, 30, random: new ScriptedRandom(0.0, 0.2, 0.0, 0.9999, 0.0));
+        var keeper = s.State.Slot(TeamSide.Away, PlayingPosition.GK);
+
+        StrikeAndFly(s, _resolver.Resolve(s.State, Intent(s), s.Context.Random));
+
+        Assert.Equal("ParriedBehind", s.Log.Events[1].Metadata["save"]);
+        Assert.Equal(new BallTouch(keeper.PlayerId, TeamSide.Away), s.State.LastTouch);
+        var stoppage = s.State.CurrentStoppage!;
+        Assert.Equal((StoppageReason.BallOutOfPlay, RestartType.Corner, TeamSide.Home), (stoppage.Reason, stoppage.Restart, stoppage.AwardedTeam));
+        Assert.Equal(new Vec2(105, 0), stoppage.Location);
+    }
+
+    [Fact]
+    public void A_save_parried_back_into_play_leaves_a_loose_ball_in_front_of_goal()
+    {
+        // on target, placement, saved, not held, not behind, rebound direction (0.5, 0.5 → straight out), distance.
+        var s = Chance(95, 34, random: new ScriptedRandom(0.0, 0.5, 0.0, 0.9999, 0.9999, 0.5, 0.5, 0.5));
+        var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
+
+        StrikeAndFly(s, result);
+
+        Assert.Equal(SaveKind.Parried, result.Save);
+        Assert.Equal(MatchPhase.OpenPlay, s.State.Phase);
+        Assert.True(s.State.Ball.IsLoose);
+        var fromLine = 105 - s.State.Ball.Position.X;
+        Assert.InRange(fromLine, ShotResolver.ReboundMinDistance - 1e-9, ShotResolver.ReboundMaxDistance + 1e-9);
+        Assert.Equal(result.Goalkeeper, s.State.LastTouch?.Player);
+    }
+
+    [Fact]
+    public void Missed_shot_goes_behind_for_a_goal_kick()
     {
         var s = Chance(95, 34, random: new ScriptedRandom(0.9999, 0.2, 0.5));
-        var keeper = s.State.Slot(TeamSide.Away, PlayingPosition.GK);
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
 
         StrikeAndFly(s, result);
 
         Assert.Equal(ShotOutcome.Missed, result.Outcome);
+        Assert.Null(result.DeflectedBy);
         Assert.Equal(0, s.State.Score.Home);
         Assert.True(Math.Abs(result.TargetPosition.Y - 34) > PitchGeometry.GoalWidth / 2);
-        Assert.True(s.State.HasBall(keeper.PlayerId));
-        Assert.Equal([MatchEventType.ShotTaken, MatchEventType.ShotMissed, MatchEventType.PossessionChanged], s.EventTypes);
-        Assert.Equal(PossessionCause.KeeperRestart, s.Log.Events[^1].GetPossessionCause());
+        Assert.Equal([MatchEventType.ShotTaken, MatchEventType.ShotMissed, MatchEventType.PlayStopped], s.EventTypes);
+        var stoppage = s.State.CurrentStoppage!;
+        Assert.Equal((RestartType.GoalKick, TeamSide.Away), (stoppage.Restart, stoppage.AwardedTeam));
+    }
+
+    [Fact]
+    public void A_miss_deflected_by_a_defender_in_the_lane_is_a_corner()
+    {
+        // miss, side, wide, deflected.
+        var s = Chance(90, 34, random: new ScriptedRandom(0.9999, 0.2, 0.5, 0.0));
+        var blocker = s.Place(TeamSide.Away, PlayingPosition.LCB, 95, 34.5);
+        var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
+
+        StrikeAndFly(s, result);
+
+        Assert.Equal(blocker.PlayerId, result.DeflectedBy);
+        Assert.Equal("true", s.Log.Events.Single(e => e.Type == MatchEventType.ShotMissed).Metadata["deflected"]);
+        Assert.Equal((RestartType.Corner, TeamSide.Home), (s.State.CurrentStoppage!.Restart, s.State.CurrentStoppage.AwardedTeam));
+    }
+
+    [Fact]
+    public void Better_keepers_hold_more_shots()
+    {
+        double HoldShare(int keeping)
+        {
+            var s = Chance(95, 34, awayStats: new PlayerStats(5, 5, 5, 5, 5, 5, 5, 5, keeping), random: new MatchRng(5));
+            var saves = Enumerable.Range(0, 4000).Select(_ => _resolver.Resolve(s.State, Intent(s), s.Context.Random))
+                .Where(r => r.Outcome == ShotOutcome.Saved).ToList();
+            return saves.Count(r => r.Save == SaveKind.Held) / (double)saves.Count;
+        }
+
+        Assert.True(HoldShare(9) > HoldShare(2) + 0.2);
     }
 
     [Fact]

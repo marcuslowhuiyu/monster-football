@@ -134,25 +134,28 @@ public sealed class MatchSimulation
 
     /// <summary>
     /// Open-play tick order. Systems never call each other; this method is the only sequencing.
-    /// A goal (a shot arriving in the net) stops play; the rest of that tick is skipped.
+    /// Play can stop mid-tick — a goal, or the ball going out of play from a flight, a tackle or a roll; the rest of
+    /// that tick is then skipped (players start heading for the restart on the next tick).
     /// </summary>
     private void RunOpenPlay()
     {
         _ballFlight.Apply(_context);      // advance a pass or shot in flight; apply its outcome on arrival
         if (State.Phase != MatchPhase.OpenPlay)
-            return;                       // a shot arrived in the net
+            return;                       // goal, or the ball went out
 
         _carry.Apply(_context);           // end finished carries
         _onBallDecision.Apply(_context);  // carrier holds, passes, carries or shoots (utility AI)
 
         _tackle.Apply(_context);          // presser (or another defender) in range may challenge
+        if (State.Phase != MatchPhase.OpenPlay)
+            return;                       // knocked out of play
         _shape.Apply(State,                                  // default targets: shape, presser, pass receiver
             _config.TickSeconds / AttackingShapeFocusSeconds,
             _config.TickSeconds / DefendingShapeFocusSeconds);
         _offBall.Apply(_context);         // off-ball utility AI: support, runs, marking, recovery
         _movement.Apply(State, _config.TickSeconds);
         State.SyncBallToPossessor();
-        _looseBall.Apply(_context);       // collect a loose ball
+        _looseBall.Apply(_context);       // a rolling ball moves on (and may go out); collect a loose ball
         _stamina.Apply(_context);         // drain stamina from movement and this tick's actions
     }
 }

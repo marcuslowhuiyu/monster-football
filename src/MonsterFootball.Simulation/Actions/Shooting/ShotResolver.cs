@@ -49,6 +49,16 @@ internal sealed class ShotResolver
     public const double SaveScale = 0.35;
     public const double SaveBias = 0.74;
 
+    // After the save (D5).
+    public const double HoldBase = 0.6;
+    public const double HoldPerKeeping = 0.05;
+    public const double ParryBehindShare = 0.4;
+    public const double ReboundMinDistance = 4;
+    public const double ReboundMaxDistance = 10;
+
+    /// <summary>Chance a missed shot that passes a defender in the lane is deflected behind for a corner.</summary>
+    public const double DeflectionProbability = 0.35;
+
     // Ball travel.
     public const double BaseShotSpeed = 18;
     public const double ShotSpeedPerPower = 1.2;
@@ -121,18 +131,49 @@ internal sealed class ShotResolver
 
         if (!random.Roll(estimate.OnTargetProbability))
         {
-            // Wide of a post by 0.5–4 m; side chosen at random. No detailed placement (M1 scope).
+            // Wide of a post by 0.5–4 m, over the goal line; side chosen at random. A defender in the lane may
+            // deflect it behind for a corner instead of a goal kick.
             var side = random.Roll(0.5) ? 1 : -1;
             var wide = halfGoal + 0.5 + 3.5 * random.NextDouble();
-            return Result(ShotOutcome.Missed, pitch.Clamp(new Vec2(goalLineX, centreY + side * wide)));
+            var blocker = LaneBlockers(state, shooter, pitch.OpponentGoalCentre(shooter.Team)).FirstOrDefault();
+            var deflected = blocker is not null && random.Roll(DeflectionProbability);
+            return Result(ShotOutcome.Missed, pitch.Clamp(new Vec2(goalLineX, centreY + side * wide))) with
+            {
+                DeflectedBy = deflected ? blocker!.PlayerId : null,
+            };
         }
 
         var onTargetY = centreY + (random.NextDouble() * 2 - 1) * (halfGoal - 0.2);
         var target = new Vec2(goalLineX, onTargetY);
-        return random.Roll(estimate.SaveProbability)
-            ? Result(ShotOutcome.Saved, target)
-            : Result(ShotOutcome.Goal, target);
+        if (!random.Roll(estimate.SaveProbability))
+            return Result(ShotOutcome.Goal, target);
+
+        var hold = Math.Clamp(HoldBase + HoldPerKeeping * (keeper.Definition.Stats.Keeping - 5), 0.2, 0.9);
+        if (random.Roll(hold))
+            return Result(ShotOutcome.Saved, target) with { Save = SaveKind.Held };
+        if (random.Roll(ParryBehindShare))
+            return Result(ShotOutcome.Saved, target) with { Save = SaveKind.ParriedBehind };
+
+        // Back out in front of goal: forward (away from the line) and to either side, without trigonometry.
+        Vec2 direction;
+        do
+        {
+            direction = new Vec2(random.NextDouble(), random.NextDouble() * 2 - 1);
+        } while (direction.LengthSquared is > 1 or < 1e-6);
+
+        var distance = ReboundMinDistance + (ReboundMaxDistance - ReboundMinDistance) * random.NextDouble();
+        var outward = new Vec2(PitchGeometry.AttackDirection(keeper.Team) * direction.X, direction.Y).Normalized();
+        return Result(ShotOutcome.Saved, target) with { Save = SaveKind.Parried, ReboundPosition = target + outward * distance };
     }
+
+    /// <summary>Outfield opponents within <see cref="BlockLaneWidth"/> of the shooting lane, nearest the shooter first.</summary>
+    private static IEnumerable<PlayerMatchState> LaneBlockers(MatchState state, PlayerMatchState shooter, Vec2 goal) =>
+        state.TeamPlayers(shooter.Team.Opponent())
+            .Where(p => !p.Definition.Position.IsGoalkeeper())
+            .Select(p => (Player: p, Point: Vec2.ClosestPointOnSegment(shooter.Position, goal, p.Position, out var t), T: t))
+            .Where(x => x.T is > 0.05 and < 0.95 && x.Player.Position.DistanceTo(x.Point) < BlockLaneWidth)
+            .OrderBy(x => x.T)
+            .Select(x => x.Player);
 
     private static PlayerMatchState OpposingKeeper(MatchState state, PlayerMatchState shooter) =>
         state.TeamPlayers(shooter.Team.Opponent()).Single(p => p.Definition.Position.IsGoalkeeper());
