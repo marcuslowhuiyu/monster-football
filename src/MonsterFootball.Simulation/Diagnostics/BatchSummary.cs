@@ -33,6 +33,9 @@ public sealed record BatchSummary(
     public double AverageGoalKicks { get; init; }
     public double AverageCorners { get; init; }
     public double AverageOffsides { get; init; }
+    public double AverageFouls { get; init; }
+    public double AveragePenalties { get; init; }
+    public double PenaltyConversion { get; init; }
 
     public static BatchSummary From(IReadOnlyList<MatchSummary> summaries)
     {
@@ -72,6 +75,11 @@ public sealed record BatchSummary(
             AverageGoalKicks = ordered.Average(s => s.Statistics.Home.GoalKicks + s.Statistics.Away.GoalKicks),
             AverageCorners = ordered.Average(s => s.Statistics.Home.Corners + s.Statistics.Away.Corners),
             AverageOffsides = ordered.Average(s => s.Statistics.Home.Offsides + s.Statistics.Away.Offsides),
+            AverageFouls = ordered.Average(s => s.Statistics.Home.Fouls + s.Statistics.Away.Fouls),
+            AveragePenalties = ordered.Average(s => s.Statistics.Home.Penalties + s.Statistics.Away.Penalties),
+            PenaltyConversion = ordered.Sum(s => s.Statistics.Home.Penalties + s.Statistics.Away.Penalties) is var taken and > 0
+                ? (double)ordered.Sum(s => s.Statistics.Home.PenaltiesScored + s.Statistics.Away.PenaltiesScored) / taken
+                : 0,
         };
     }
 }

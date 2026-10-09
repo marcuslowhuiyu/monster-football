@@ -223,6 +223,26 @@ public class MatchStatisticsTests
     }
 
     [Fact]
+    public void Fouls_count_for_the_offending_team_and_penalties_for_the_team_taking_them()
+    {
+        static ImmutableSortedDictionary<string, string> M(string key, string value) =>
+            ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>(key, value)]);
+
+        var stats = MatchStatistics.FromEvents(
+        [
+            E(0, MatchEventType.Kickoff, TeamSide.Home),
+            E(50, MatchEventType.FoulCommitted, TeamSide.Away),
+            E(50, MatchEventType.PlayStopped, TeamSide.Home),
+            E(95, MatchEventType.RestartTaken, TeamSide.Home) with { Metadata = M("restart", "Penalty") },
+            E(96, MatchEventType.GoalScored, TeamSide.Home) with { Metadata = M("penalty", "true") },
+            E(200, MatchEventType.MatchFinished),
+        ]);
+
+        Assert.Equal((0, 1), (stats.Home.Fouls, stats.Away.Fouls));
+        Assert.Equal((1, 1), (stats.Home.Penalties, stats.Home.PenaltiesScored));
+    }
+
+    [Fact]
     public void Statistics_are_deterministic_by_seed()
     {
         MatchStatistics Run() => new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), 42)

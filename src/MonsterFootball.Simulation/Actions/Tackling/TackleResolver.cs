@@ -1,14 +1,18 @@
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Fitness;
 using MonsterFootball.Simulation.Players;
+using MonsterFootball.Simulation.Positioning;
 using MonsterFootball.Simulation.Random;
+using MonsterFootball.Simulation.Tactical;
 
 namespace MonsterFootball.Simulation.Actions.Tackling;
 
 /// <summary>
-/// Resolves a challenge in two rolls:
-/// 1. contact — defender rating vs carrier rating → Lost on failure;
-/// 2. clean — Awareness-weighted chance the defender keeps the ball → Won, otherwise LooseBall.
+/// Resolves a challenge in up to three rolls:
+/// 1. contact — defender rating vs carrier rating;
+/// 2. foul (D9, ADR-030) — more likely when the defender missed the ball, is tired, sprinted in or came from behind, less
+///    likely with Defending and inside their own penalty area → Foul;
+/// 3. without contact → Lost; otherwise clean — Awareness-weighted chance the defender keeps the ball → Won, else LooseBall.
 /// Ratings: defender = Defending + 0.3·(Power−5) + 0.3·(Awareness−5);
 ///          carrier  = Technique + 0.3·(Power−5) + 0.3·(Awareness−5).
 /// Reads state; never mutates it.
@@ -23,6 +27,23 @@ internal sealed class TackleResolver
     public const double CleanPerAwareness = 0.03;
     public const double LooseBallMinDistance = 2;
     public const double LooseBallMaxDistance = 5;
+
+    // Fouls.
+    public const double FoulBase = 0.03;
+    public const double FoulMissedBall = 0.06;
+    public const double FoulPerDefending = 0.006;
+    public const double FoulPerTiredness = 0.06;
+    public const double FoulFromBehind = 0.06;
+    public const double FoulSprinting = 0.02;
+    public const double FoulOwnBoxCaution = 0.15;
+    public const double SeverityBase = 0.2;
+    public const double SeverityPerPower = 0.06;
+    public const double SeverityFromBehind = 0.25;
+    public const double SeveritySprinting = 0.15;
+    public const double SeverityMissedBall = 0.15;
+
+    /// <summary>A tackler whose position is this far behind the carrier (in the carrier's attacking direction) challenges from behind.</summary>
+    public const double FromBehindMetres = 0.5;
 
     public static double DefenderRating(PlayerStats s) =>
         s.Defending + PowerWeight * (s.Power - 5) + AwarenessWeight * (s.Awareness - 5);
@@ -55,15 +76,50 @@ internal sealed class TackleResolver
         var clean = CleanProbability(tackler.Definition.Stats);
         var position = carrier.Position;
 
-        if (!random.Roll(contact))
-            return new TackleResult(TackleOutcome.Lost, intent.Tackler, intent.Carrier, position, position, contact, clean);
+        var gotTheBall = random.Roll(contact);
+        var foul = FoulProbability(state, tackler, carrier, gotTheBall);
+        if (random.Roll(foul))
+            return new TackleResult(TackleOutcome.Foul, intent.Tackler, intent.Carrier, position, position, contact, clean)
+            {
+                FoulProbability = foul,
+                Severity = Severity(state, tackler, carrier, gotTheBall),
+            };
+
+        if (!gotTheBall)
+            return new TackleResult(TackleOutcome.Lost, intent.Tackler, intent.Carrier, position, position, contact, clean) { FoulProbability = foul };
 
         if (random.Roll(clean))
-            return new TackleResult(TackleOutcome.Won, intent.Tackler, intent.Carrier, position, tackler.Position, contact, clean);
+            return new TackleResult(TackleOutcome.Won, intent.Tackler, intent.Carrier, position, tackler.Position, contact, clean) { FoulProbability = foul };
 
         var ball = LooseBallLanding(position, random);
-        return new TackleResult(TackleOutcome.LooseBall, intent.Tackler, intent.Carrier, position, ball, contact, clean);
+        return new TackleResult(TackleOutcome.LooseBall, intent.Tackler, intent.Carrier, position, ball, contact, clean) { FoulProbability = foul };
     }
+
+    public static bool FromBehind(MatchState state, PlayerMatchState tackler, PlayerMatchState carrier) =>
+        TeamFrame.Convert(state.Pitch, carrier.Team, tackler.Position).X
+        < TeamFrame.Convert(state.Pitch, carrier.Team, carrier.Position).X - FromBehindMetres;
+
+    public static double FoulProbability(MatchState state, PlayerMatchState tackler, PlayerMatchState carrier, bool gotTheBall)
+    {
+        var p = FoulBase
+                + (gotTheBall ? 0 : FoulMissedBall)
+                - FoulPerDefending * (tackler.Definition.Stats.Defending - 5)
+                + FoulPerTiredness * FatigueModel.Tiredness(tackler.CurrentStamina)
+                + (FromBehind(state, tackler, carrier) ? FoulFromBehind : 0)
+                + (tackler.MovementIntensity == MovementIntensity.Sprint ? FoulSprinting : 0);
+        if (state.Zones.IsIn(tackler.Team, carrier.Position, TacticalAreas.OwnPenaltyArea))
+            p *= FoulOwnBoxCaution;
+        return Math.Clamp(p, 0.005, 0.6);
+    }
+
+    public static double Severity(MatchState state, PlayerMatchState tackler, PlayerMatchState carrier, bool gotTheBall) =>
+        Math.Clamp(
+            SeverityBase
+            + SeverityPerPower * (tackler.Definition.Stats.Power - 5)
+            + (FromBehind(state, tackler, carrier) ? SeverityFromBehind : 0)
+            + (tackler.MovementIntensity == MovementIntensity.Sprint ? SeveritySprinting : 0)
+            + (gotTheBall ? 0 : SeverityMissedBall),
+            0, 1);
 
     /// <summary>2–5 m from the challenge in a random direction; may be beyond a line (the ball then goes out).</summary>
     private static Vec2 LooseBallLanding(Vec2 from, IMatchRandom random)

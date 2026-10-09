@@ -11,6 +11,7 @@ public sealed record PitchGeometry
     public const double PenaltyAreaWidth = 40.32;
     public const double GoalAreaDepth = 5.5;
     public const double GoalAreaWidth = 18.32;
+    public const double PenaltySpotDistance = 11;
 
     public static PitchGeometry Standard { get; } = new(105, 68);
 
@@ -45,6 +46,10 @@ public sealed record PitchGeometry
     public Vec2 OwnGoalCentre(TeamSide side) => new(OwnGoalLineX(side), Width / 2);
 
     public Vec2 OpponentGoalCentre(TeamSide side) => OwnGoalCentre(side.Opponent());
+
+    /// <summary>The penalty spot in front of the goal <paramref name="defendingSide"/> defends.</summary>
+    public Vec2 PenaltySpot(TeamSide defendingSide) =>
+        new(OwnGoalLineX(defendingSide) + AttackDirection(defendingSide) * PenaltySpotDistance, Width / 2);
 
     public bool IsInOwnHalf(Vec2 point, TeamSide side) =>
         side == TeamSide.Home ? point.X <= HalfwayX : point.X >= HalfwayX;

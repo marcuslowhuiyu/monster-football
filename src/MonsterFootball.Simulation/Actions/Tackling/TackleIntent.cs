@@ -16,6 +16,9 @@ public enum TackleOutcome
 
     /// <summary>Ball knocked loose; nobody has it.</summary>
     LooseBall,
+
+    /// <summary>The challenge was a foul: play stops for a free kick or penalty.</summary>
+    Foul,
 }
 
 public sealed record TackleResult(
@@ -25,4 +28,11 @@ public sealed record TackleResult(
     Vec2 Position,
     Vec2 BallPosition,
     double ContactProbability,
-    double CleanProbability);
+    double CleanProbability)
+{
+    /// <summary>Chance the challenge was a foul, as estimated for it.</summary>
+    public double FoulProbability { get; init; }
+
+    /// <summary>How bad the challenge was, 0–1 (Power, pace into the challenge, from behind, missing the ball); for a foul.</summary>
+    public double Severity { get; init; }
+}
