@@ -28,7 +28,7 @@ internal static class ShotExecution
                 new KeyValuePair<string, string>("stamina", Format(state.Player(result.Shooter).CurrentStamina)),
                 new KeyValuePair<string, string>("keeperStamina", Format(state.Player(result.Goalkeeper).CurrentStamina)),
                 new KeyValuePair<string, string>("travel", Format(result.TravelDuration)),
-            ]));
+            ]).SetItems(result.IsPenalty ? [new KeyValuePair<string, string>("penalty", "true")] : []));
         state.LaunchBall(BallFlight.ForShot(result, tick, tick + BallFlight.TravelTicks(result.TravelDuration, context.Config.TickSeconds)));
     }
 
@@ -44,7 +44,7 @@ internal static class ShotExecution
                     metadata: ImmutableSortedDictionary.CreateRange(
                     [
                         new KeyValuePair<string, string>("score", state.Score.ToString()),
-                    ]));
+                    ]).SetItems(result.IsPenalty ? [new KeyValuePair<string, string>("penalty", "true")] : []));
                 context.StopPlay(StoppageReason.Goal, RestartType.Kickoff, result.Team.Opponent(), state.Pitch.Centre);
                 break;
 

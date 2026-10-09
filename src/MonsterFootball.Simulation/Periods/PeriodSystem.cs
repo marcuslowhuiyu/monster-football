@@ -9,7 +9,7 @@ namespace MonsterFootball.Simulation.Periods;
 /// Periods and added time (ADR-024), checked once per tick after the clock advances:
 /// at the end of regular time the period's added time is announced (allowances rounded up to whole minutes);
 /// once regular plus added time is up, the period ends at the first moment play is stopped — a ball in flight is never
-/// cut off — or, if play has not stopped within the safety cap, at the next tick with no ball in flight.
+/// cut off, and a penalty is taken first — or, if play has not stopped within the safety cap, at the next tick with no ball in flight.
 /// The last period's end finishes the match; otherwise the next period starts straight away (half-time takes no
 /// ticks) with a kickoff for the side that did not take the opening one.
 /// </summary>
@@ -26,7 +26,9 @@ internal sealed class PeriodSystem
         if (clock.AddedTimeTicks is not { } added || clock.Tick < clock.RegularEndTick + added)
             return;
 
-        var stopped = state.Phase is MatchPhase.Stopped or MatchPhase.RestartSetup;
+        // A penalty awarded as time runs out is still taken (Law 14): wait for it.
+        var stopped = state.Phase is MatchPhase.Stopped or MatchPhase.RestartSetup
+                      && state.CurrentStoppage?.Restart != RestartType.Penalty;
         var capReached = clock.Tick >= clock.RegularEndTick + added + context.Config.TicksFor(context.Config.AddedTime.SafetyCapSeconds)
                          && !state.Ball.IsInFlight;
         if (stopped || capReached)

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using MonsterFootball.Simulation.Actions.Passing;
+using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
@@ -18,7 +19,7 @@ namespace MonsterFootball.Simulation.Restarts;
 /// opponent respects the law's distance. Kickoffs that start a period skip the walk: the teams are already lined up.
 /// The taker is chosen once, when play stops (<see cref="RestartTakers"/>).
 /// </summary>
-internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights weights)
+internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shotResolver, OnBallWeights weights)
 {
     private readonly TeamShapeSystem _shape = new();
     private Stoppage? _takerStoppage;
@@ -29,7 +30,7 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
     {
         var state = context.State;
         var stoppage = state.CurrentStoppage!;
-        RestartLayout.Assign(state, _shape, context.Config.Restarts, stoppage, Taker(state, stoppage));
+        RestartLayout.Assign(state, _shape, context.Config.Restarts, stoppage, Taker(state, stoppage, context.Config.Restarts));
     }
 
     /// <summary>Dead ball → restart setup → restart taken, as far as the clock and positions allow this tick.</summary>
@@ -46,7 +47,7 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
         if (state.Phase != MatchPhase.RestartSetup)
             return;
 
-        var taker = Taker(state, stoppage);
+        var taker = Taker(state, stoppage, context.Config.Restarts);
         var lineUp = stoppage.Reason is StoppageReason.MatchStart or StoppageReason.PeriodStart;
         var timedOut = elapsed >= deadBall + tuning.SetupTimeoutSeconds - 1e-9;
         if (lineUp || timedOut)
@@ -68,15 +69,16 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
             _ => 0,
         },
         StoppageReason.Offside => tuning.IndirectFreeKickDeadBallSeconds,
+        StoppageReason.Foul => stoppage.Restart == RestartType.Penalty ? tuning.PenaltyDeadBallSeconds : tuning.DirectFreeKickDeadBallSeconds,
         _ => 0,
     };
 
-    private PlayerMatchState Taker(MatchState state, Stoppage stoppage)
+    private PlayerMatchState Taker(MatchState state, Stoppage stoppage, RestartTuning tuning)
     {
         if (!ReferenceEquals(_takerStoppage, stoppage))
         {
             _takerStoppage = stoppage;
-            _taker = RestartTakers.For(state, stoppage).PlayerId;
+            _taker = RestartTakers.For(state, stoppage, tuning).PlayerId;
         }
 
         return state.Player(_taker);
@@ -87,8 +89,12 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
         if (stoppage.Restart == RestartType.Kickoff)
             return state.Players.All(p => p.Position.DistanceTo(p.MovementTarget) <= tuning.InPositionTolerance);
 
-        return taker.Position.DistanceTo(stoppage.Location) <= tuning.InPositionTolerance
-               && state.TeamPlayers(stoppage.AwardedTeam.Opponent())
+        var keeperReady = stoppage.Restart != RestartType.Penalty
+                          || RestartLayout.Keeper(state, stoppage.AwardedTeam.Opponent()) is not { } keeper
+                          || keeper.Position.DistanceTo(keeper.MovementTarget) <= tuning.InPositionTolerance;
+        return keeperReady
+               && taker.Position.DistanceTo(stoppage.Location) <= tuning.InPositionTolerance
+               && state.Players.Where(p => p != taker && RestartLayout.MustRespect(state, stoppage, p))
                    .All(p => RestartLayout.IsLegalForOpponent(state, tuning, stoppage, p.Position));
     }
 
@@ -98,7 +104,8 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
         foreach (var player in state.Players)
         {
             var mustMove = everyone || player == taker
-                || (player.Team != stoppage.AwardedTeam && !RestartLayout.IsLegalForOpponent(state, tuning, stoppage, player.Position));
+                || (stoppage.Restart == RestartType.Penalty && player.Definition.Position.IsGoalkeeper() && player.Team != stoppage.AwardedTeam)
+                || (RestartLayout.MustRespect(state, stoppage, player) && !RestartLayout.IsLegalForOpponent(state, tuning, stoppage, player.Position));
             if (!mustMove)
                 continue;
             player.Position = player.MovementTarget;
@@ -132,8 +139,22 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
             RestartType.ThrowIn => PossessionCause.ThrowIn,
             RestartType.GoalKick => PossessionCause.GoalKick,
             RestartType.Corner => PossessionCause.Corner,
+            RestartType.Penalty => PossessionCause.Penalty,
             _ => PossessionCause.FreeKick,
         });
+
+        if (stoppage.Restart == RestartType.Penalty)
+        {
+            ShotExecution.Strike(context, shotResolver.ResolvePenalty(state, new ShotIntent(taker.PlayerId), context.Random));
+            return;
+        }
+
+        if (RestartTakers.InShootingRange(state, stoppage, context.Config.Restarts)
+            && shotResolver.Estimate(state, new ShotIntent(taker.PlayerId)).GoalProbability >= context.Config.Restarts.FreeKickMinXg)
+        {
+            ShotExecution.Strike(context, shotResolver.Resolve(state, new ShotIntent(taker.PlayerId), context.Random));
+            return;
+        }
 
         // No offside offence directly from a throw-in, goal kick or corner (Law 11); free kicks are judged as any pass.
         var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick or RestartType.Corner);

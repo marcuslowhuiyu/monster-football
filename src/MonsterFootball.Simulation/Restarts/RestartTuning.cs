@@ -20,6 +20,21 @@ public sealed record RestartTuning
     /// <summary>Minimum time between an offside and the indirect free kick (quickly taken, usually by a defender).</summary>
     public double IndirectFreeKickDeadBallSeconds { get; init; } = 12;
 
+    /// <summary>Minimum time between a foul and the direct free kick.</summary>
+    public double DirectFreeKickDeadBallSeconds { get; init; } = 20;
+
+    /// <summary>Minimum time between a foul in the area and the penalty.</summary>
+    public double PenaltyDeadBallSeconds { get; init; } = 45;
+
+    /// <summary>A direct free kick at most this far from the goal centre may be shot, over a wall.</summary>
+    public double FreeKickShootingRange { get; init; } = 32;
+
+    /// <summary>The taker shoots a direct free kick only if its xG (wall included) is at least this.</summary>
+    public double FreeKickMinXg { get; init; } = 0.04;
+
+    /// <summary>Players in the wall for a direct free kick within shooting range.</summary>
+    public int WallSize { get; init; } = 4;
+
     /// <summary>Once the dead-ball time is over, how long the restart waits for players to reach position before
     /// placing any stragglers directly.</summary>
     public double SetupTimeoutSeconds { get; init; } = 30;

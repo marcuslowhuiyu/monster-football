@@ -35,13 +35,18 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     /// Stops play (ADR-023): records the stoppage, clears every player's ongoing action and plan, and emits
     /// PlayStopped (team = awarded team, position = restart location, metadata <c>reason</c> and <c>restart</c>).
     /// </summary>
-    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null)
+    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null)
     {
-        BeginStoppage(reason, restart, awardedTeam, location, offender);
-        if (reason == StoppageReason.Goal && State.Clock.Tick < State.Clock.RegularEndTick)
-            State.AddedTimeAllowanceSeconds += Config.AddedTime.PerGoalSeconds;
+        BeginStoppage(reason, restart, awardedTeam, location, offender, fouled);
+        if (State.Clock.Tick < State.Clock.RegularEndTick)
+        {
+            if (reason == StoppageReason.Goal)
+                State.AddedTimeAllowanceSeconds += Config.AddedTime.PerGoalSeconds;
+            if (restart == RestartType.Penalty)
+                State.AddedTimeAllowanceSeconds += Config.AddedTime.PerPenaltySeconds;
+        }
 
-        Emit(MatchEventType.PlayStopped, actor: offender, team: awardedTeam, position: location,
+        Emit(MatchEventType.PlayStopped, actor: offender, target: fouled, team: awardedTeam, position: location,
             metadata: ImmutableSortedDictionary.CreateRange(
             [
                 new KeyValuePair<string, string>("reason", reason.ToString()),
@@ -50,9 +55,9 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     }
 
     /// <summary>Records a stoppage and clears every player's ongoing action and plan, without emitting an event.</summary>
-    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null)
+    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null)
     {
-        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender });
+        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender, Fouled = fouled });
         foreach (var player in State.Players)
         {
             player.ClearIntent();

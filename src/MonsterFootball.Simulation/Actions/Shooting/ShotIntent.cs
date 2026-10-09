@@ -52,4 +52,7 @@ public sealed record ShotResult(
 
     /// <summary>For a miss: the defender in the shooting lane who deflected it behind (a corner), if any.</summary>
     public PlayerId? DeflectedBy { get; init; }
+
+    /// <summary>A penalty kick (resolved by <see cref="ShotResolver.ResolvePenalty"/>).</summary>
+    public bool IsPenalty { get; init; }
 }

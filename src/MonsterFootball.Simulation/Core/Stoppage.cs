@@ -18,6 +18,9 @@ public enum StoppageReason
 
     /// <summary>A player in an offside position became involved in play.</summary>
     Offside,
+
+    /// <summary>A defender fouled the ball carrier.</summary>
+    Foul,
 }
 
 /// <summary>How play resumes after a stoppage. New restart types are appended as they are implemented.</summary>
@@ -28,6 +31,8 @@ public enum RestartType
     GoalKick,
     Corner,
     IndirectFreeKick,
+    DirectFreeKick,
+    Penalty,
 }
 
 /// <summary>
@@ -36,6 +41,9 @@ public enum RestartType
 /// </summary>
 public sealed record Stoppage(StoppageReason Reason, RestartType Restart, TeamSide AwardedTeam, Vec2 Location, long StoppedAtTick)
 {
-    /// <summary>The player who committed the offence (offside), if any.</summary>
+    /// <summary>The player who committed the offence (offside, foul), if any.</summary>
     public PlayerId? Offender { get; init; }
+
+    /// <summary>The player fouled, for a foul.</summary>
+    public PlayerId? Fouled { get; init; }
 }

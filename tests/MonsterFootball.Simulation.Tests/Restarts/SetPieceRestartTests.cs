@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Actions.Passing;
+using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
@@ -34,7 +35,7 @@ public class SetPieceRestartTests
     /// <summary>Runs the stoppage loop; returns the state of every player on the tick the restart was taken.</summary>
     private static (double Seconds, Dictionary<PlayerId, Vec2> AtRestart) RunUntilTaken(Scenario s)
     {
-        var restarts = new RestartSystem(new PassResolver(), AiTuning.Default.OnBall);
+        var restarts = new RestartSystem(new PassResolver(), new ShotResolver(), AiTuning.Default.OnBall);
         var movement = new MovementSystem();
         var stoppedAt = s.State.Clock.Tick;
         var stoppage = s.State.CurrentStoppage!;
@@ -219,7 +220,7 @@ public class SetPieceRestartTests
     public void Nothing_random_or_eventful_happens_until_the_restart_is_taken()
     {
         var s = Stopped(RestartType.Corner, TeamSide.Home, new Vec2(105, 68), random: new ScriptedRandom()); // throws on any draw
-        var restarts = new RestartSystem(new PassResolver(), AiTuning.Default.OnBall);
+        var restarts = new RestartSystem(new PassResolver(), new ShotResolver(), AiTuning.Default.OnBall);
         var movement = new MovementSystem();
         var events = s.Log.Events.Count;
 
