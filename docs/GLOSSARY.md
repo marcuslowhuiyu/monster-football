@@ -156,6 +156,12 @@
 
 **Indirect free kick** — A free kick that cannot be scored directly; awarded for offside.
 
+**Foul** — A tackle judged illegal; stops play for a direct free kick, or a penalty in the fouling team's own area.
+
+**Severity** — How bad a foul was (0–1); decides cards from M2.7.
+
+**Wall** — Defenders lined up 9.15 m from a direct free kick, across the line to goal; they block the shot like any defender in the lane.
+
 **DOGSO** — Denying an obvious goal-scoring opportunity; a foul that usually means a red card.
 
 **Dismissal** — A player sent off (straight red or second yellow); removed from active play for the rest of the match.
