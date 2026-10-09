@@ -26,15 +26,25 @@ public enum PossessionCause
 
     /// <summary>The kicking side took a kickoff.</summary>
     Kickoff,
+
+    /// <summary>The thrower took a throw-in.</summary>
+    ThrowIn,
+
+    /// <summary>The goalkeeper took a goal kick.</summary>
+    GoalKick,
+
+    /// <summary>The taker took a corner.</summary>
+    Corner,
 }
 
 public static class PossessionCauseExtensions
 {
     public const string MetadataKey = "cause";
 
-    /// <summary>True when the ball was won in open play; false for restarts (kickoffs, keeper restarts).</summary>
+    /// <summary>True when the ball was won in open play; false for restarts (kickoffs, throw-ins, goal kicks, …).</summary>
     public static bool IsOpenPlay(this PossessionCause cause) =>
-        cause is not (PossessionCause.Kickoff or PossessionCause.KeeperRestart);
+        cause is not (PossessionCause.Kickoff or PossessionCause.KeeperRestart
+            or PossessionCause.ThrowIn or PossessionCause.GoalKick or PossessionCause.Corner);
 
     /// <summary>The cause recorded on a possession event, or null if the event carries none.</summary>
     public static PossessionCause? GetPossessionCause(this MatchEvent e) =>

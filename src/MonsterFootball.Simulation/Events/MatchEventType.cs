@@ -25,4 +25,5 @@ public enum MatchEventType
     PlayStopped,
     AddedTimeAnnounced,
     PeriodEnded,
+    RestartTaken,
 }

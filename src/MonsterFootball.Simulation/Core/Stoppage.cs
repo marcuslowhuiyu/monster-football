@@ -10,12 +10,18 @@ public enum StoppageReason
 
     /// <summary>Before the kickoff that starts a later period (the second half).</summary>
     PeriodStart,
+
+    /// <summary>The ball wholly crossed a touchline or goal line without a goal.</summary>
+    BallOutOfPlay,
 }
 
 /// <summary>How play resumes after a stoppage. New restart types are appended as they are implemented.</summary>
 public enum RestartType
 {
     Kickoff,
+    ThrowIn,
+    GoalKick,
+    Corner,
 }
 
 /// <summary>

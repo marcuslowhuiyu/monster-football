@@ -11,11 +11,11 @@ namespace MonsterFootball.Simulation.Tests.TestSupport;
 /// </summary>
 internal sealed class Scenario
 {
-    public Scenario(PlayerStats? homeStats = null, PlayerStats? awayStats = null, IMatchRandom? random = null)
+    public Scenario(PlayerStats? homeStats = null, PlayerStats? awayStats = null, IMatchRandom? random = null, MatchConfig? config = null)
     {
         State = TestTeams.Match(homeStats, awayStats);
         Log = new MatchEventLog();
-        Context = new MatchContext(MatchConfig.Default, State, random ?? new MatchRng(1), Log);
+        Context = new MatchContext(config ?? MatchConfig.Default, State, random ?? new MatchRng(1), Log);
         State.ResumePlay(); // action scenarios take place in open play
 
         var parked = 0;
