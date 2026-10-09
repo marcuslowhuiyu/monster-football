@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Globalization;
+using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 
 namespace MonsterFootball.Simulation.Actions.Passing;
@@ -51,11 +52,25 @@ internal static class PassExecution
                 break;
 
             case PassOutcome.Misplaced:
-                context.State.SetBallLoose(pass.TargetPosition);
+                var state = context.State;
+                var travelled = pass.TargetPosition - pass.StartPosition;
+                var roll = LooseBallMotion.Covering(pass.TargetPosition, travelled, RollOnFraction * travelled.Length, state.Clock.Tick);
+                state.SetBallRolling(pass.TargetPosition, roll);
                 context.Emit(MatchEventType.PassMisplaced, actor: pass.Passer, target: pass.IntendedReceiver,
                     team: pass.Team, position: pass.TargetPosition);
                 break;
         }
+    }
+
+    /// <summary>A misplaced pass rolls on after landing for this fraction of the distance it flew (D4).</summary>
+    public const double RollOnFraction = 0.35;
+
+    /// <summary>A misplaced pass whose flight crosses a line: PassMisplaced at the crossing point, then out of play.</summary>
+    public static void LeavePlay(MatchContext context, PassResult pass, Vec2 crossing, Laws.BoundaryLine line)
+    {
+        context.Emit(MatchEventType.PassMisplaced, actor: pass.Passer, target: pass.IntendedReceiver,
+            team: pass.Team, position: crossing);
+        Laws.OutOfPlay.Stop(context, crossing, line);
     }
 
     private static string Format(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);

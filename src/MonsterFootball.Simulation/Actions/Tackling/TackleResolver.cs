@@ -61,11 +61,12 @@ internal sealed class TackleResolver
         if (random.Roll(clean))
             return new TackleResult(TackleOutcome.Won, intent.Tackler, intent.Carrier, position, tackler.Position, contact, clean);
 
-        var ball = LooseBallLanding(state.Pitch, position, random);
+        var ball = LooseBallLanding(position, random);
         return new TackleResult(TackleOutcome.LooseBall, intent.Tackler, intent.Carrier, position, ball, contact, clean);
     }
 
-    private static Vec2 LooseBallLanding(PitchGeometry pitch, Vec2 from, IMatchRandom random)
+    /// <summary>2–5 m from the challenge in a random direction; may be beyond a line (the ball then goes out).</summary>
+    private static Vec2 LooseBallLanding(Vec2 from, IMatchRandom random)
     {
         Vec2 direction;
         do
@@ -74,6 +75,6 @@ internal sealed class TackleResolver
         } while (direction.LengthSquared is > 1 or < 1e-6);
 
         var distance = LooseBallMinDistance + (LooseBallMaxDistance - LooseBallMinDistance) * random.NextDouble();
-        return pitch.Clamp(from + direction.Normalized() * distance);
+        return from + direction.Normalized() * distance;
     }
 }
