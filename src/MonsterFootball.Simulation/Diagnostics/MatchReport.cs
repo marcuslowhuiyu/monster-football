@@ -23,6 +23,7 @@ public static class MatchReport
         MatchEventType.ShotSaved,
         MatchEventType.ShotMissed,
         MatchEventType.GoalScored,
+        MatchEventType.RestartTaken,
         MatchEventType.AddedTimeAnnounced,
         MatchEventType.PeriodEnded,
         MatchEventType.MatchFinished,
@@ -96,9 +97,12 @@ public static class MatchReport
             MatchEventType.AddedTimeAnnounced => $"Added time: +{e.Metadata.GetValueOrDefault("minutes", "?")}",
             MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
                                           + (e.Metadata.GetValueOrDefault("end") == "SafetyCap" ? " (safety cap: play never stopped)" : ""),
+            MatchEventType.FoulCommitted => $"Foul by {P(e.ActorPlayerId)} on {P(e.TargetPlayerId)}",
             MatchEventType.RestartTaken => $"{Capitalise(RestartName(e.Metadata.GetValueOrDefault("restart", "?")))}: {P(e.ActorPlayerId)}",
             MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "Offside" =>
                 $"Offside — {P(e.ActorPlayerId)}; {RestartName(e.Metadata.GetValueOrDefault("restart", "?"))} to {TeamName(state, e.Team)}",
+            MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "Foul" =>
+                $"{Capitalise(RestartName(e.Metadata.GetValueOrDefault("restart", "?")))} to {TeamName(state, e.Team)}",
             MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "BallOutOfPlay" =>
                 $"Out of play — {RestartName(e.Metadata.GetValueOrDefault("restart", "?"))} to {TeamName(state, e.Team)}",
             MatchEventType.PlayStopped =>
@@ -149,6 +153,9 @@ public static class MatchReport
                 return $"Finishing {s.Finishing} · Technique {s.Technique} · Power {s.Power} · stamina {Num("stamina")} · {Num("distance")} m"
                     + $" · on target {Pct("onTarget")} · save {Pct("save")} · xG {Num("xg", "0.00")}";
 
+            case MatchEventType.FoulCommitted when Stats(e.ActorPlayerId) is { } f:
+                return $"Defending {f.Defending} · Power {f.Power} · foul chance {Pct("chance")} · severity {Num("severity", "0.00")}";
+
             case MatchEventType.ShotSaved when Stats(e.ActorPlayerId) is { } k:
                 return $"Keeping {k.Keeping} · Awareness {k.Awareness}";
 
@@ -176,6 +183,7 @@ public static class MatchReport
             ("Throw-ins", N(stats.Home.ThrowIns), N(stats.Away.ThrowIns)),
             ("Goal kicks", N(stats.Home.GoalKicks), N(stats.Away.GoalKicks)),
             ("Free kicks", N(stats.Home.FreeKicks), N(stats.Away.FreeKicks)),
+            ("Fouls", N(stats.Home.Fouls), N(stats.Away.Fouls)),
             ("Offsides", N(stats.Home.Offsides), N(stats.Away.Offsides)),
             ("Penalties", $"{N(stats.Home.PenaltiesScored)}/{N(stats.Home.Penalties)}", $"{N(stats.Away.PenaltiesScored)}/{N(stats.Away.Penalties)}"),
         };

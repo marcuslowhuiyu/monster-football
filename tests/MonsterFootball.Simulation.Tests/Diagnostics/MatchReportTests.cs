@@ -148,6 +148,10 @@ public class MatchReportTests
         var striker = state.Slot(TeamSide.Home, PlayingPosition.ST);
         Assert.Equal($"Offside — Blue #{striker.Definition.ShirtNumber}; indirect free kick to Red", MatchReport.Describe(state,
             new MatchEvent(new MatchTime(20), MatchEventType.PlayStopped, striker.PlayerId, Team: TeamSide.Away) { Metadata = Meta(("reason", "Offside"), ("restart", "IndirectFreeKick")) }));
+        Assert.Equal($"Foul by Red #{lb.Definition.ShirtNumber} on Blue #{striker.Definition.ShirtNumber}", MatchReport.Describe(state,
+            new MatchEvent(new MatchTime(25), MatchEventType.FoulCommitted, lb.PlayerId, striker.PlayerId, TeamSide.Away)));
+        Assert.Equal("Penalty to Blue", MatchReport.Describe(state,
+            new MatchEvent(new MatchTime(25), MatchEventType.PlayStopped, lb.PlayerId, striker.PlayerId, TeamSide.Home) { Metadata = Meta(("reason", "Foul"), ("restart", "Penalty")) }));
         var keeper = state.Slot(TeamSide.Away, PlayingPosition.GK);
         Assert.Equal("Saved by Red GK — pushed behind", MatchReport.Describe(state,
             new MatchEvent(new MatchTime(30), MatchEventType.ShotSaved, keeper.PlayerId, Team: TeamSide.Away) { Metadata = Meta(("save", "ParriedBehind")) }));

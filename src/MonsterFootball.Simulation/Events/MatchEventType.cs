@@ -26,4 +26,5 @@ public enum MatchEventType
     AddedTimeAnnounced,
     PeriodEnded,
     RestartTaken,
+    FoulCommitted,
 }

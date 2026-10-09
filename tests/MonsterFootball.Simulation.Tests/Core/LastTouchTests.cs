@@ -50,7 +50,7 @@ public class LastTouchTests
     [Fact]
     public void A_tackle_that_knocks_the_ball_loose_was_last_touched_by_the_tackler()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.75, 0.5, 0.5));
+        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.9999, 0.75, 0.5, 0.5));
         s.Place(TeamSide.Home, PlayingPosition.CM, 40, 34);
         var tackler = s.Place(TeamSide.Away, PlayingPosition.CM, 41, 34);
         s.GiveBall(TeamSide.Home, PlayingPosition.CM);

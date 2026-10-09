@@ -183,7 +183,7 @@ public class GoalAndRestartTests
     }
 
     [Fact]
-    public void Every_ball_out_of_play_is_followed_by_its_restart_or_the_end_of_the_half()
+    public void Every_ball_out_foul_or_offside_is_followed_by_its_restart_or_the_end_of_the_half()
     {
         var restarts = 0;
         foreach (var seed in Enumerable.Range(1, 6))
@@ -192,7 +192,8 @@ public class GoalAndRestartTests
             for (var i = 0; i < events.Count; i++)
             {
                 var stop = events[i];
-                if (stop.Type != MatchEventType.PlayStopped || stop.Metadata["reason"] != nameof(StoppageReason.BallOutOfPlay))
+                if (stop.Type != MatchEventType.PlayStopped
+                    || stop.Metadata["reason"] is not (nameof(StoppageReason.BallOutOfPlay) or nameof(StoppageReason.Foul) or nameof(StoppageReason.Offside)))
                     continue;
 
                 var next = events.Skip(i + 1).First(e => e.Type is MatchEventType.RestartTaken or MatchEventType.PeriodEnded);

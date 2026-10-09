@@ -27,7 +27,7 @@ public class TacklingMatchTests
                 continue;
 
             var next = events[i + 1];
-            Assert.Contains(next.Type, new[] { MatchEventType.TackleWon, MatchEventType.TackleLost, MatchEventType.TackleLooseBall });
+            Assert.Contains(next.Type, new[] { MatchEventType.TackleWon, MatchEventType.TackleLost, MatchEventType.TackleLooseBall, MatchEventType.FoulCommitted });
             Assert.Equal(events[i].ActorPlayerId, next.ActorPlayerId);
             Assert.Equal(events[i].TargetPlayerId, next.TargetPlayerId);
         }

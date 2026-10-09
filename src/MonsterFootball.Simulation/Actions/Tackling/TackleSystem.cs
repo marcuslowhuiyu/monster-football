@@ -91,6 +91,21 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
                 tackler.TackleCooldownUntilTick = tick + Ticks(BeatenCooldownSeconds);
                 break;
 
+            case TackleOutcome.Foul:
+                var spot = carrier.Position;
+                context.Emit(MatchEventType.FoulCommitted, actor: tackler.PlayerId, target: carrier.PlayerId,
+                    team: tackler.Team, position: spot,
+                    metadata: ImmutableSortedDictionary.CreateRange(
+                    [
+                        new KeyValuePair<string, string>("chance", result.FoulProbability.ToString("0.###", CultureInfo.InvariantCulture)),
+                        new KeyValuePair<string, string>("severity", result.Severity.ToString("0.###", CultureInfo.InvariantCulture)),
+                    ]));
+                if (state.Zones.IsIn(tackler.Team, spot, Tactical.TacticalAreas.OwnPenaltyArea))
+                    context.StopPlay(StoppageReason.Foul, RestartType.Penalty, carrier.Team, state.Pitch.PenaltySpot(tackler.Team), tackler.PlayerId, carrier.PlayerId);
+                else
+                    context.StopPlay(StoppageReason.Foul, RestartType.DirectFreeKick, carrier.Team, spot, tackler.PlayerId, carrier.PlayerId);
+                break;
+
             case TackleOutcome.LooseBall:
                 state.SetBallLoose(state.Ball.Position);
                 state.RecordTouch(tackler.PlayerId);

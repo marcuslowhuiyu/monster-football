@@ -5,7 +5,7 @@ namespace MonsterFootball.Simulation.Statistics;
 
 /// <summary>
 /// Per-team match statistics. Throw-ins, goal kicks, corners, free kicks and penalties count restarts the team took;
-/// offsides count the team's players caught offside.
+/// offsides and fouls count the team's offences.
 /// </summary>
 public sealed record TeamStatistics(
     int Goals,
@@ -23,6 +23,7 @@ public sealed record TeamStatistics(
     public int Offsides { get; init; }
     public int Penalties { get; init; }
     public int PenaltiesScored { get; init; }
+    public int Fouls { get; init; }
 
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
@@ -116,6 +117,9 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                         Of(e.Team!.Value).PossessionsWon++;
                     SwitchPossession(e.Team!.Value, at);
                     break;
+                case MatchEventType.FoulCommitted:
+                    Of(e.Team!.Value).Fouls++;
+                    break;
                 case MatchEventType.PassAttempted:
                     Of(e.Team!.Value).PassesAttempted++;
                     break;
@@ -160,6 +164,7 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int Offsides;
         public int Penalties;
         public int PenaltiesScored;
+        public int Fouls;
 
         public TeamStatistics ToStatistics() =>
             new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
@@ -171,6 +176,7 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 Offsides = Offsides,
                 Penalties = Penalties,
                 PenaltiesScored = PenaltiesScored,
+                Fouls = Fouls,
             };
     }
 }

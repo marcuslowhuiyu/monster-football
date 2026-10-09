@@ -109,6 +109,8 @@ static string FormatBatch(BatchSummary b) => string.Join('\n',
     string.Create(CultureInfo.InvariantCulture, $"Goal kicks per match       {b.AverageGoalKicks:0.0}"),
     string.Create(CultureInfo.InvariantCulture, $"Corners per match          {b.AverageCorners:0.0}"),
     string.Create(CultureInfo.InvariantCulture, $"Offsides per match         {b.AverageOffsides:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Fouls per match            {b.AverageFouls:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Penalties per match        {b.AveragePenalties:0.00} ({b.PenaltyConversion:P0} scored)"),
     string.Create(CultureInfo.InvariantCulture, $"Added time per half (min)  {b.AverageAddedMinutesPerPeriod:0.0}"),
     string.Create(CultureInfo.InvariantCulture, $"Halves ended by safety cap {b.SafetyCapPeriodShare:P0}"),
 ]);

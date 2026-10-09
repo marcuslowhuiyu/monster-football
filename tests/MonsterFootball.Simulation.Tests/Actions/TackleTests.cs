@@ -64,7 +64,7 @@ public class TackleTests
     [Fact]
     public void Won_tackle_gives_the_defender_the_ball()
     {
-        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0));
+        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.0));
         var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
 
         new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
@@ -80,7 +80,7 @@ public class TackleTests
     [Fact]
     public void Lost_tackle_leaves_the_carrier_with_the_ball_and_the_defender_beaten()
     {
-        var s = Duel(random: new ScriptedRandom(0.0, 0.9999));
+        var s = Duel(random: new ScriptedRandom(0.0, 0.9999, 0.9999));
         var carrier = s.State.Slot(TeamSide.Home, PlayingPosition.CM);
         var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
 
@@ -94,7 +94,7 @@ public class TackleTests
     [Fact]
     public void Loose_ball_tackle_leaves_nobody_in_possession()
     {
-        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.75, 0.5, 0.5));
+        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.9999, 0.75, 0.5, 0.5));
 
         new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
 
@@ -103,6 +103,76 @@ public class TackleTests
         Assert.Equal([MatchEventType.TackleAttempted, MatchEventType.TackleLooseBall], s.EventTypes);
         var distance = s.State.Ball.Position.DistanceTo(new Vec2(40, 34));
         Assert.InRange(distance, TackleResolver.LooseBallMinDistance - 1e-9, TackleResolver.LooseBallMaxDistance + 1e-9);
+    }
+
+    [Fact]
+    public void A_foul_outside_the_area_is_a_direct_free_kick_where_it_happened()
+    {
+        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0));
+        var carrier = s.State.Slot(TeamSide.Home, PlayingPosition.CM);
+        var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
+
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
+
+        Assert.Equal([MatchEventType.TackleAttempted, MatchEventType.FoulCommitted, MatchEventType.PlayStopped], s.EventTypes);
+        var foul = s.Log.Events[1];
+        Assert.Equal((tackler.PlayerId, carrier.PlayerId), (foul.ActorPlayerId!.Value, foul.TargetPlayerId!.Value));
+        Assert.InRange(double.Parse(foul.Metadata["severity"], System.Globalization.CultureInfo.InvariantCulture), 0, 1);
+        var stoppage = s.State.CurrentStoppage!;
+        Assert.Equal((StoppageReason.Foul, RestartType.DirectFreeKick, TeamSide.Home), (stoppage.Reason, stoppage.Restart, stoppage.AwardedTeam));
+        Assert.Equal((tackler.PlayerId, carrier.PlayerId), (stoppage.Offender!.Value, stoppage.Fouled!.Value));
+        Assert.Equal(new Vec2(40, 34), stoppage.Location);
+    }
+
+    [Fact]
+    public void A_foul_in_the_defenders_own_area_is_a_penalty()
+    {
+        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.0));
+        s.Place(TeamSide.Home, PlayingPosition.ST, 95, 34);
+        s.Place(TeamSide.Away, PlayingPosition.LCB, 96, 34);
+        s.GiveBall(TeamSide.Home, PlayingPosition.ST);
+        for (var i = 0; i < 8; i++)
+            s.State.Clock.Advance();
+
+        new TackleSystem(_resolver, AiTuning.Default.OffBall).Apply(s.Context);
+
+        var stoppage = s.State.CurrentStoppage!;
+        Assert.Equal((RestartType.Penalty, TeamSide.Home, new Vec2(94, 34)), (stoppage.Restart, stoppage.AwardedTeam, stoppage.Location));
+    }
+
+    [Fact]
+    public void Fouls_are_likelier_when_the_ball_is_missed_from_behind_by_a_tired_poor_defender()
+    {
+        var s = Duel();
+        var carrier = s.State.Slot(TeamSide.Home, PlayingPosition.CM);
+        var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
+        double P(bool gotBall = true) => TackleResolver.FoulProbability(s.State, tackler, carrier, gotBall);
+
+        var clean = P();
+        Assert.True(P(gotBall: false) > clean);
+        tackler.Position = new Vec2(39, 34); // behind the carrier, who attacks +X
+        Assert.True(P() > clean);
+        Assert.True(TackleResolver.Severity(s.State, tackler, carrier, true) > TackleResolver.SeverityBase);
+        tackler.Position = new Vec2(41, 34);
+        tackler.CurrentStamina = 10;
+        Assert.True(P() > clean);
+
+        var strong = Duel(awayStats: new PlayerStats(5, 5, 5, 9, 5, 5, 5, 5, 5));
+        Assert.True(TackleResolver.FoulProbability(strong.State, strong.State.Slot(TeamSide.Away, PlayingPosition.CM),
+            strong.State.Slot(TeamSide.Home, PlayingPosition.CM), true) < clean);
+    }
+
+    [Fact]
+    public void Defenders_foul_less_in_their_own_area()
+    {
+        var s = new Scenario();
+        var carrier = s.Place(TeamSide.Home, PlayingPosition.ST, 60, 34);
+        var tackler = s.Place(TeamSide.Away, PlayingPosition.LCB, 61, 34);
+        var outside = TackleResolver.FoulProbability(s.State, tackler, carrier, true);
+        carrier.Position = new Vec2(95, 34);
+        tackler.Position = new Vec2(96, 34);
+
+        Assert.True(TackleResolver.FoulProbability(s.State, tackler, carrier, true) < outside);
     }
 
     [Fact]
