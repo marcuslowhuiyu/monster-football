@@ -31,6 +31,10 @@ public static class BatchHealth
         new("Tackles per match", s.AverageTackles, 10, 600),
         new("Outfield distance per player (km)", s.AverageOutfieldDistanceKm, 5, 16),
         new("Outfield stamina at full time", s.AverageOutfieldStaminaAtFullTime, 10, 95),
+        // Restart volumes (MILESTONE_2 §16.4). Throw-ins and ball-in-play time join at the M2.7 calibration
+        // checkpoint, once fouls and offsides add stoppages (ADR-028).
+        new("Goal kicks per match", s.AverageGoalKicks, 8, 35),
+        new("Corners per match", s.AverageCorners, 3, 20),
     ];
 
     public static bool IsHealthy(BatchSummary summary) => Evaluate(summary).All(c => c.Passed);

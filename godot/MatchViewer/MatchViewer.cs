@@ -161,10 +161,14 @@ public partial class MatchViewer : Node2D
         {
             MatchPhase.OpenPlay => "IN PLAY",
             MatchPhase.Finished => "FULL TIME",
-            _ when frame.Stoppage is { } s => $"STOPPED — {s.Reason}: {(s.AwardedTeam == TeamSide.Home ? HomeName : AwayName)} {s.Restart}",
+            _ when frame.Stoppage is { } s => $"STOPPED — {Words(s.Reason.ToString())}: {Words(s.Restart.ToString())} to {(s.AwardedTeam == TeamSide.Home ? HomeName : AwayName)}",
             _ => "STOPPED",
         };
         _status.Modulate = frame.Phase == MatchPhase.OpenPlay ? Colors.LightGreen : Colors.Orange;
         _playButton.Text = _session.Clock.IsPlaying ? "Pause" : "Play";
     }
+
+    /// <summary>An enum name in words: <c>BallOutOfPlay</c> → "ball out of play".</summary>
+    private static string Words(string name) =>
+        string.Concat(name.Select((c, i) => i > 0 && char.IsUpper(c) ? " " + char.ToLowerInvariant(c) : i == 0 ? char.ToLowerInvariant(c).ToString() : c.ToString()));
 }
