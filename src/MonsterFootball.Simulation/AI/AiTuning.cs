@@ -38,6 +38,15 @@ public sealed record OnBallWeights
     public double PassToKeeperPenalty { get; init; } = 15;
     public double MinPassDistance { get; init; } = 4;
 
+    /// <summary>
+    /// How far beyond the offside line a passer with Awareness 1 still sees a teammate as onside; shrinks linearly
+    /// to 0 at Awareness 10 (D8). Deterministic: the referee is perfect, the passer's eye is not.
+    /// </summary>
+    public double OffsideMisjudgeMetres { get; init; } = 1.5;
+
+    /// <summary>The margin beyond the offside line a passer with <paramref name="awareness"/> will still pass into.</summary>
+    public double OffsideMisjudgement(int awareness) => OffsideMisjudgeMetres * (10 - awareness) / 9.0;
+
     // Carry.
     public double CarryBase { get; init; } = 42;
     public double CarryProgressionWeight { get; init; } = 0.8;
@@ -68,6 +77,15 @@ public sealed record OffBallWeights
     public double RunSpaceCap { get; init; } = 20;
     public double RunMinBallX { get; init; } = 35;
     public double RunBeyondLine { get; init; } = 1;
+
+    /// <summary>Until the pass is played, a runner with Awareness 10 holds this far on the onside of the offside line.</summary>
+    public double RunHoldOnside { get; init; } = 0.5;
+
+    /// <summary>How much further forward a runner with Awareness 1 waits than one with Awareness 10 (eagerness).</summary>
+    public double RunEagernessMetres { get; init; } = 1.5;
+
+    /// <summary>Where <paramref name="awareness"/> makes a runner wait, relative to the offside line (negative = onside).</summary>
+    public double RunHoldOffset(int awareness) => RunEagernessMetres * (10 - awareness) / 9.0 - RunHoldOnside;
     public double RunMaxDepthFromGoalLine { get; init; } = 16;
     public double MarkBase { get; init; } = 36;
     public double MarkThreatWeight { get; init; } = 18;

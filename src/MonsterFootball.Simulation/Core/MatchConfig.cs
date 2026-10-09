@@ -41,7 +41,7 @@ public sealed record MatchConfig
     public RestartTuning Restarts { get; init; } = RestartTuning.Default;
 
     /// <summary>Whether offside is enforced (ADR-029).</summary>
-    public bool OffsideEnabled { get; init; }
+    public bool OffsideEnabled { get; init; } = true;
 
     /// <summary>Band and channel splits for the 20 tactical zones (ADR-027).</summary>
     public ZoneBoundaries Zones { get; init; } = ZoneBoundaries.Default;

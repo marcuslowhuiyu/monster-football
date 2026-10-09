@@ -35,6 +35,7 @@ public static class BatchHealth
         // checkpoint, once fouls and offsides add stoppages (ADR-028).
         new("Goal kicks per match", s.AverageGoalKicks, 8, 35),
         new("Corners per match", s.AverageCorners, 3, 20),
+        new("Offsides per match", s.AverageOffsides, 1, 15),
     ];
 
     public static bool IsHealthy(BatchSummary summary) => Evaluate(summary).All(c => c.Passed);

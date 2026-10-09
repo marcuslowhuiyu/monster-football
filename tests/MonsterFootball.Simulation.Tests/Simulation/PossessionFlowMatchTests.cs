@@ -15,12 +15,26 @@ public class PossessionFlowMatchTests
     public void Every_pass_attempt_has_exactly_one_outcome()
     {
         var events = Run().Events;
-        var attempts = events.Count(e => e.Type == MatchEventType.PassAttempted);
-        var outcomes = events.Count(e => e.Type is MatchEventType.PassCompleted or MatchEventType.PassIntercepted or MatchEventType.PassMisplaced);
+        var attempts = 0;
+        var pending = false;
+        foreach (var e in events)
+        {
+            if (e.Type == MatchEventType.PassAttempted)
+            {
+                Assert.False(pending, $"pass at {e.Timestamp} launched while another had no outcome");
+                attempts++;
+                pending = true;
+            }
+            else if (e.Type is MatchEventType.PassCompleted or MatchEventType.PassIntercepted or MatchEventType.PassMisplaced
+                     || (e.Type == MatchEventType.PlayStopped && e.Metadata["reason"] == "Offside" && pending))
+            {
+                Assert.True(pending, $"pass outcome at {e.Timestamp} without a pass");
+                pending = false; // a pass received offside ends in the offside call
+            }
+        }
 
         Assert.True(attempts > 100, $"only {attempts} passes");
-        // The final pass may still be in the air at full time.
-        Assert.InRange(attempts - outcomes, 0, 1);
+        Assert.False(pending, "a pass was still in the air at full time");
     }
 
     [Fact]

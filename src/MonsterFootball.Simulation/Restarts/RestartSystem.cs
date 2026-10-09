@@ -150,8 +150,11 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
     {
         var pitch = state.Pitch;
         var takerX = TeamFrame.Convert(pitch, taker.Team, taker.Position).X;
+        var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick or RestartType.Corner);
+        var misjudge = weights.OffsideMisjudgement(taker.Definition.Stats.Awareness);
         var candidates = state.TeamPlayers(taker.Team)
             .Where(p => p != taker && p.Position.DistanceTo(taker.Position) >= weights.MinPassDistance)
+            .Where(p => !offsideApplies || !Laws.Offside.IsOffsidePosition(state, p, taker.Position, misjudge))
             .Where(p => stoppage.Restart != RestartType.ThrowIn || p.Position.DistanceTo(taker.Position) <= tuning.ThrowInMaxRange)
             .ToList();
         if (stoppage.Restart == RestartType.Corner

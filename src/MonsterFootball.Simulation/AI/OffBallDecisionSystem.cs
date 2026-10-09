@@ -75,6 +75,22 @@ internal sealed class OffBallDecisionSystem(OffBallCandidateGenerator generator,
                 Execute(state, player, plan);
     }
 
+    /// <summary>
+    /// A runner goes beyond the offside line only once a teammate's pass is in the air (offside was judged as it was
+    /// played); until then they wait at the current line, slightly onside for an aware runner and drifting beyond it for an
+    /// eager one (<see cref="OffBallWeights.RunHoldOffset"/>) — the main source of offsides.
+    /// </summary>
+    private Vec2 HoldTheLine(MatchState state, PlayerMatchState runner, Vec2 runTarget)
+    {
+        if (state.Ball.Flight is { Pass: not null } flight && flight.Team == runner.Team)
+            return runTarget;
+
+        var pitch = state.Pitch;
+        var local = Positioning.TeamFrame.Convert(pitch, runner.Team, runTarget);
+        var holdX = Laws.Offside.LineX(state, runner.Team, state.Ball.Position) + generator.Weights.RunHoldOffset(runner.Definition.Stats.Awareness);
+        return local.X <= holdX ? runTarget : Positioning.TeamFrame.Convert(pitch, runner.Team, new Vec2(holdX, local.Y));
+    }
+
     /// <summary>Keeper, carrier, presser and pass receiver: the shape system's sprint assignment marks the latter two.</summary>
     private static bool IsControlledElsewhere(MatchState state, PlayerMatchState player) =>
         player.Definition.Position.IsGoalkeeper()
@@ -95,7 +111,7 @@ internal sealed class OffBallDecisionSystem(OffBallCandidateGenerator generator,
                 player.MovementIntensity = MovementIntensity.Jog;
                 break;
             case ActionKind.MakeForwardRun:
-                player.MovementTarget = plan.Target;
+                player.MovementTarget = HoldTheLine(state, player, plan.Target);
                 player.MovementIntensity = MovementIntensity.Sprint;
                 break;
             case ActionKind.DefendGoalSide:
