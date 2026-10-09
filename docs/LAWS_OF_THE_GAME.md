@@ -1,7 +1,6 @@
 # Laws of the Game (as simulated)
 
-The simplified laws the simulation implements. Grows through M2.6–M2.7 (fouls, free kicks, penalties,
-discipline, reduced teams); only implemented laws are listed. Details and numbers: `MATCH_SIMULATION.md`.
+The simplified laws the simulation implements. Grows in M2.7 (discipline, reduced teams); only implemented laws are listed. Details and numbers: `MATCH_SIMULATION.md`.
 
 ## Match flow (implemented, M2.1)
 
@@ -44,7 +43,17 @@ behind (a corner).
 - Simplifications: no interfering with an opponent or passive offside; shots are not judged (a rebound off the
   keeper is a fresh touch).
 
-## Restarts (implemented, M2.1 kickoffs; M2.4–M2.5 the rest)
+## Fouls (implemented, M2.6)
+
+- Only **tackles** can be fouls (no handball, off-ball fouls or diving; D9). Whether a challenge is a foul depends
+  on the challenge and the players: missing the ball, coming from behind, sprinting in and tiredness make it
+  likelier; a better Defending rating makes it less likely; defenders are much more careful in their own area.
+- A foul stops play at once (no advantage, D7): a **direct free kick** where it happened, or a **penalty** if it
+  happened inside the fouling team's own penalty area.
+- Each foul has a severity (Power, from behind, pace, missing the ball), used for cards from M2.7.
+- Added time: 45 s for each penalty awarded in regular time (on top of 45 s per goal).
+
+## Restarts (implemented, M2.1 kickoffs; M2.4–M2.6 the rest)
 
 | Restart | Taker | Law respected before it is taken | Minimum dead ball |
 |---|---|---|---|
@@ -53,16 +62,20 @@ behind (a corner).
 | Goal kick | goalkeeper | opponents outside the penalty area | 15 s |
 | Corner | best passer (not a centre-back or the striker) | opponents ≥ 9.15 m | 20 s |
 | Indirect free kick (offside) | nearest defender | opponents ≥ 9.15 m | 12 s |
+| Direct free kick | best finisher within 32 m of goal, otherwise nearest defender or midfielder | opponents ≥ 9.15 m; a four-man wall within 32 m | 20 s |
+| Penalty | best finisher | keeper on the line; everyone else outside the area and the arc | 45 s |
 
 - During a stoppage nobody decides, tackles or collects the ball, and nothing random happens. Players walk (jog) to
   restart positions, which still costs stamina.
 - If the restart is not ready 30 s after the dead-ball time, the taker and any offending opponents are placed.
 - Execution reuses passing: the taker passes at once to the best option (a throw within 25 m; a corner to an attacker
   in the box, who may then shoot as in open play; a free kick to a teammate judged onside). An indirect free kick
-  cannot be scored directly. Throw-ins use the ordinary pass model.
+  cannot be scored directly. A direct free kick within 32 m is shot over the wall when worth it (xG ≥ 0.04).
+  A penalty is a dedicated shot from the spot (≈ 74 % scored between equal players); a period waits for it.
+  Throw-ins use the ordinary pass model.
 - Routine restarts add no added time.
 
 ## Not yet simulated
 
-Fouls, direct free kicks and penalties (M2.6); cards, dismissals and reduced teams (M2.7); advantage (not in
+Cards, dismissals and reduced teams (M2.7); advantage (not in
 M2, D7); headers, set-piece routines, short corners, long throws.

@@ -719,3 +719,30 @@ Consequences:
 Fingerprint change (ledger #7). Batch of 1,000: offsides 2.8 per match (real ≈ 3–4); goals 2.73 → 2.64; other figures
 within noise. Sweep (200 matches): eagerness 1.0 / 1.5 / 2.0 m → 1.8 / 2.7 / 3.8 offsides.
 
+---
+
+## ADR-030 — Fouls Come From Tackles; Free Kicks and Penalties Reuse the Shot Model
+
+Status: Accepted (M2.6). Implements D9 (tackles only); D7 stands (no advantage).
+
+Decision:
+- `TackleResolver` rolls a foul after the contact roll: p = 0.03 + 0.06 (missed the ball) − 0.006 × (Defending − 5)
+  + 0.06 × tiredness + 0.06 (from behind) + 0.02 (sprinting), × 0.15 inside the tackler's own penalty area. A foul
+  carries a deterministic severity 0–1 (Power, from behind, sprinting, missed ball) for M2.7's cards.
+- A foul emits `FoulCommitted` and stops play (`Foul`, `Stoppage.Offender` / `Fouled`): a direct free kick at the
+  carrier's position, or a penalty if inside the fouling team's area.
+- Direct free kick (20 s): within 32 m of goal the best finisher takes it with a wall of four placed across the
+  shooting lane — the ordinary shot model counts them as blockers, so no special wall maths — and shoots if xG ≥ 0.04;
+  otherwise it is passed like any restart.
+- Penalty (45 s, +45 s added time): `ShotResolver.ResolvePenalty` (on target ≈ 0.92, saved ≈ 0.20 between equals),
+  then the usual placement, hold and parry. A period does not end while a penalty is pending.
+
+Reason:
+Milestone §12–§13. One shot model for open play, free kicks and penalties keeps calibration in one place.
+
+Consequences:
+Fingerprint change (ledger #8). Batch of 1,000 (before → after): fouls 22.7 per match (real ≈ 21); penalties 0.31,
+77 % scored (real ≈ 0.3, ≈ 76 %); goals 2.64 → 2.88; ball in play 84.3 → 77.0 min; halves ended by the safety cap
+60 % → 39 %; outfield distance 14.9 → 13.9 km. A first try (4 % base, ×0.5 in the box) gave 27.9 fouls and 1.3
+penalties per match.
+

@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -70,17 +70,20 @@ A new match is `Stopped` with a `MatchStart` stoppage; a goal stops play with a 
 
 ## Stoppages (implemented)
 
-- `MatchState.CurrentStoppage` (`Stoppage`): `Reason` (`MatchStart`, `Goal`, `PeriodStart`, `BallOutOfPlay`, `Offside`), `Restart` (`Kickoff`, `ThrowIn`, `GoalKick`, `Corner`, `IndirectFreeKick`), `AwardedTeam`, `Location`, `StoppedAtTick`, `Offender` (offside). Present exactly while play is stopped. Reasons and restart types are appended as laws are added (M2.6).
+- `MatchState.CurrentStoppage` (`Stoppage`): `Reason` (`MatchStart`, `Goal`, `PeriodStart`, `BallOutOfPlay`, `Offside`, `Foul`), `Restart` (`Kickoff`, `ThrowIn`, `GoalKick`, `Corner`, `IndirectFreeKick`, `DirectFreeKick`, `Penalty`), `AwardedTeam`, `Location`, `StoppedAtTick`, `Offender` (offside, foul), `Fouled`. Present exactly while play is stopped.
 - `MatchContext.StopPlay` records it, makes the ball dead (nobody holds it), clears every player's intent, carry, off-ball plan and tackle cooldown, and emits `PlayStopped` (team = awarded team, position = restart location, metadata `reason`, `restart`).
-- The taker is chosen once, when play stops (`RestartTakers`; ties → earlier player): kickoff — the ST; throw-in — the nearest full-back or winger; goal kick — the goalkeeper; corner — the highest Passing (then Technique) outfielder other than the centre-backs and striker; indirect free kick — the nearest defender. Each falls back to any outfield player.
+- The taker is chosen once, when play stops (`RestartTakers`; ties → earlier player): kickoff — the ST; throw-in — the nearest full-back or winger; goal kick — the goalkeeper; corner — the highest Passing (then Technique) outfielder other than the centre-backs and striker; indirect free kick — the nearest defender; direct free kick — the best finisher within 32 m of goal, otherwise the nearest defender or midfielder; penalty — the best finisher (then Technique, Power). Each falls back to any outfield player.
 - Each stopped tick, `RestartSystem.Position` gives every player a restart target at `Jog` (`RestartLayout`):
   - kickoff — the 4-3-3 kickoff layout (everyone in their own half, opponents outside the centre circle), the taker on the ball;
-  - throw-in, goal kick and indirect free kick — both shapes built around the restart spot (awarded side attacking, the other defending, nobody pressing);
+  - throw-in, goal kick and free kicks — both shapes built around the restart spot (awarded side attacking, the other defending, nobody pressing);
   - corner — the same, then set slots go into the box (attack: ST, both CBs, a winger at the far post, CM on the edge; defence: CBs, a full-back on each post, three midfielders, wingers, ST up at 25 m);
+  - direct free kick within 32 m — a wall of four (LCM, CM, RCM, then wingers/ST) 0.7 m apart across the line to goal, just beyond 9.15 m; the shot model counts them as lane blockers;
+  - penalty — the defending keeper on the goal line; everyone else outside the penalty area and the arc (9.15 m from the spot);
   - then the taker's target is the ball, and opponents' targets are moved 0.5 m beyond the law's limit: 2 m from a throw-in, 9.15 m from a corner or free kick, outside the penalty area for a goal kick.
-- `RestartSystem.Advance`: once the minimum dead-ball time has passed (`MatchConfig.Restarts`: goal 45 s, throw-in 8 s, goal kick 15 s, corner 20 s, offside free kick 12 s; 0 at the start of a period) the phase becomes `RestartSetup`. A kickoff is taken when everyone is within 1 m of their target; any other restart when the taker is within 1 m of the ball and every opponent respects the law. After `SetupTimeoutSeconds` (30 s) the taker and any opponent breaking the law (everyone, for a kickoff) are placed directly and the restart is taken. A kickoff that starts a period is taken at once with the teams placed (they line up before the whistle).
+- `RestartSystem.Advance`: once the minimum dead-ball time has passed (`MatchConfig.Restarts`: goal 45 s, throw-in 8 s, goal kick 15 s, corner 20 s, offside free kick 12 s, direct free kick 20 s, penalty 45 s; 0 at the start of a period) the phase becomes `RestartSetup`. A kickoff is taken when everyone is within 1 m of their target; any other restart when the taker is within 1 m of the ball and every opponent respects the law. After `SetupTimeoutSeconds` (30 s) the taker and any opponent breaking the law (everyone, for a kickoff) are placed directly and the restart is taken. A kickoff that starts a period is taken at once with the teams placed (they line up before the whistle).
 - Kickoff: the taker is placed on the spot, shape focus resets to it, play resumes, `Kickoff` is emitted and the taker gets the ball (`PossessionChanged`, cause `Kickoff`, after a goal).
-- Throw-in, goal kick, corner, free kick: the same, emitting `RestartTaken` (actor = taker, team, position, metadata `restart`) and giving the taker the ball (cause `ThrowIn` / `GoalKick` / `Corner` / `FreeKick`, not open play). The taker then passes at once (`PassResolver`, as any pass) to the teammate with the best on-ball pass utility — no randomness in the choice: within 25 m for a throw-in, among attackers in the opposition penalty area for a corner, judged onside (as in open play) for a free kick. A free kick is judged for offside like any pass; throw-ins, goal kicks and corners are not. With nobody eligible the taker keeps the ball and open play takes over.
+- A penalty is struck at once (`ShotResolver.ResolvePenalty`). A direct free kick within 32 m is shot if its xG (wall included) is ≥ 0.04, otherwise passed.
+- Throw-in, goal kick, corner, free kick, penalty: the same, emitting `RestartTaken` (actor = taker, team, position, metadata `restart`) and giving the taker the ball (cause `ThrowIn` / `GoalKick` / `Corner` / `FreeKick` / `Penalty`, not open play). The taker then passes at once (`PassResolver`, as any pass) to the teammate with the best on-ball pass utility — no randomness in the choice: within 25 m for a throw-in, among attackers in the opposition penalty area for a corner, judged onside (as in open play) for a free kick. A free kick is judged for offside like any pass; throw-ins, goal kicks and corners are not. With nobody eligible the taker keeps the ball and open play takes over.
 - No decisions, tackles or random draws happen while play is stopped.
 
 ## Offside (implemented)
@@ -182,13 +185,15 @@ OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassInten
 `TackleIntent(Tackler, Carrier)` → `TackleResolver.Resolve` → `TackleResult` (ADR-014):
 
 - Defender rating = Defending + 0.3·(Power − 5) + 0.3·(Awareness − 5). Carrier rating = Technique + 0.3·(Power − 5) + 0.3·(Awareness − 5).
-- Roll contact `Sigmoid(0.3·(def − car) + 0.15)` (≈ 0.57 between equals) → fail = **Lost**.
+- Roll contact `Sigmoid(0.3·(def − car) + 0.15)` (≈ 0.57 between equals).
+- Roll **foul** (ADR-030, D9): p = 0.03 + 0.06 if contact failed − 0.006·(Defending − 5) + 0.06 × tiredness + 0.06 from behind (tackler > 0.5 m behind the carrier in the carrier's attacking direction) + 0.02 if sprinting; × 0.15 in the tackler's own penalty area; clamped to [0.005, 0.6] → **Foul**. Severity (for discipline) = clamp(0.2 + 0.06·(Power − 5) + 0.25 from behind + 0.15 sprinting + 0.15 missed ball, 0, 1).
+- Without contact → **Lost**.
 - Roll clean `clamp(0.6 + 0.03·(tackler Awareness − 5), 0.1, 0.9)` → **Won**, otherwise **LooseBall** (ball 2–5 m away, random direction; if that path crosses a line the ball is out of play off the tackler).
 - Pace matters indirectly: faster defenders reach challenge range sooner.
 
 `TackleSystem`: the nearest outfield opponent within 1.8 m of a carrier who has held the ball ≥ 0.75 s commits with probability rate × tick length, rate = `TackleBaseRatePerSecond` (0.17) × (contact chance ÷ an even duel's) × (1 + `TackleDangerBonus`, default 1) when the carrier is in its `FinalThird` (the defender's own third, a 35 m strip; ADR-027). Cooldowns: 1.5 s after any attempt, 3 s after being beaten (Lost), 2 s for a dispossessed carrier. Goalkeepers do not tackle.
 
-Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`, `clean`, `stamina`, `carrierStamina`) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went).
+Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`, `clean`, `stamina`, `carrierStamina`) then one of `TackleWon` (+ `PossessionChanged`), `TackleLost`, `TackleLooseBall` (position = where the ball went), `FoulCommitted` (metadata `chance`, `severity`) + `PlayStopped` — a direct free kick at the carrier's position, or a penalty if that is inside the tackler's own penalty area.
 
 ## Shooting and goalkeeping (implemented)
 
@@ -213,6 +218,8 @@ Events: `TackleAttempted` (actor = tackler, target = carrier; metadata `contact`
 - **Goal** — ball loose at the target, score +1, emit `GoalScored` (metadata `score`), then stop play: `Goal` stoppage, kickoff to the conceding side.
 - **Saved** — emit `ShotSaved` (actor = keeper, target = shooter, metadata `save` = `Held` / `Parried` / `ParriedBehind`). Held: the keeper gets the ball (`PossessionChanged`, cause `Save`). Parried: the keeper touches it and the ball is knocked loose to the rebound spot. Parried behind: out of play off the keeper, 1 m outside the post — a corner.
 - **Missed** — emit `ShotMissed` (target and metadata `deflected` = `true` when deflected); the ball is out over the goal line: a goal kick, or a corner when a defender deflected it.
+
+**Penalty** (`ResolvePenalty`): on target `Sigmoid(0.5·(ability − 5) + 1.55)` (≈ 0.92), save `Sigmoid(0.35·(keeper rating − shot power) − 0.75)` (≈ 0.20), with ability, keeper rating and shot power as above without distance, angle or pressure; then the same placement, hold and parry draws. `ShotTaken` and `GoalScored` carry metadata `penalty`. A period waits for an awarded penalty to be taken; each penalty in regular time adds 45 s.
 
 **Goalkeepers in possession**: cannot be tackled inside their own penalty area; never shoot or carry; distribute by passing.
 
@@ -265,6 +272,8 @@ ADR-019. `MatchStatistics.FromEvents` derives everything from the event log:
 | Possessions won | `PossessionChanged` whose `cause` is open play (not restarts) |
 | Throw-ins / goal kicks / corners / free kicks | `RestartTaken` by type, for the team taking it |
 | Offsides | `PlayStopped` with reason `Offside`, for the offender's team |
+| Fouls | `FoulCommitted`, for the offender's team |
+| Penalties / scored | `RestartTaken` `Penalty`; `GoalScored` with `penalty` |
 | Ball-in-play seconds | each `Kickoff` or `RestartTaken` → next `PlayStopped`, `PeriodEnded` or `MatchFinished` |
 | Possession seconds | ball-in-play time only, switching at each restart and `PossessionChanged`; loose and in-flight time counts for the last team in control |
 
@@ -274,25 +283,25 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
-Current defaults, 1 000 matches between all-5 teams (after M2.5 offside):
+Current defaults, 1 000 matches between all-5 teams (after M2.6 fouls):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 2.64 (max 9) |
-| Shots / on target per match | 26.9 / 8.3 (31 %) |
-| Passes per match, completion | 1 551, 82 % |
-| Home win / draw / away win | 34.0 % / 28.0 % / 38.0 % |
-| Home possession | 50.0 % |
-| Tackles / carries / possession changes | 282 / 185 / 361 |
-| Striker share of goals | 74 % |
-| Outfield distance, stamina at full time | 14.9 km, 50.7 |
-| Throw-ins / goal kicks / corners / offsides per match | 8.6 / 15.6 / 6.3 / 2.8 |
-| Ball in play; added time per half; halves ended by the safety cap | 84.3 min; 1.2 min; 60 % |
+| Goals per match | 2.88 (max 9) |
+| Shots / on target per match | 26.5 / 8.6 (32 %) |
+| Passes per match, completion | 1 427, 82 % |
+| Home win / draw / away win | 38.4 % / 27.3 % / 34.3 % |
+| Home possession | 50.1 % |
+| Tackles / carries / possession changes | 262 / 165 / 325 |
+| Striker share of goals | 69 % |
+| Outfield distance, stamina at full time | 13.9 km, 54.3 |
+| Throw-ins / goal kicks / corners / offsides per match | 8.1 / 14.9 / 6.1 / 2.5 |
+| Fouls; penalties (scored) per match | 22.7; 0.31 (77 %) |
+| Ball in play; added time per half; halves ended by the safety cap | 77.0 min; 1.5 min; 39 % |
 
-Health bands also cover goal kicks (8–35), corners (3–20) and offsides (1–15) per match. Throw-ins (real ≈ 40) are far below
-real football because play rarely reaches the touchlines (no crosses, clearances or long switches), and with few
-stoppages the ball is in play ~85 of ~93 minutes (real ≈ 55–60); the throw-in and ball-in-play bands join at the M2.7
-calibration checkpoint, after fouls and offsides (D6 clearances are considered there).
+Health bands also cover goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45) and penalties (≤ 0.8) per match. Throw-ins (real ≈ 40) are far below
+real football because play rarely reaches the touchlines (no crosses, clearances or long switches), and the ball is in play ~77 of ~93 minutes (real ≈ 55–60); the throw-in and ball-in-play bands join at the M2.7
+calibration checkpoint (D6 clearances are considered there).
 
 ## Observation (implemented)
 
@@ -409,7 +418,8 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 - **Volume**: ~1 560 passes, ~285 tackles and ~360 possession changes per match (~85 minutes of ball in play) — busy compared with real football.
 - **Distance**: 15.0 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
-- Few stoppages: ~31 ball-out restarts per match (8.7 throw-ins), so ~64 % of halves still end at the interim 60 s safety cap; revisit at the M2.7 calibration checkpoint.
+- Few stoppages: ~29 ball-out restarts (8.1 throw-ins), ~23 fouls and ~2.5 offsides per match, so ~39 % of halves still end at the interim 60 s safety cap; revisit at the M2.7 calibration checkpoint.
+- No advantage (D7): every foul stops play. No cards yet (M2.7).
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; corners are a pass into the box; no headers, routines or short corners.
 - No blocks as events or posts; deflections only send misses behind.
 - Presentation snaps (measured over 20 matches, M2.2): passes land exactly on the receiver or interceptor (max 0.4 m),

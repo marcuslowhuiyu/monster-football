@@ -155,8 +155,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 
 | PR | Branch | Scope | FP |
 |---|---|---|---|
-| 6a | `feat/m2-6-free-kicks-penalties` | direct free kick (shoot with wall penalty or pass), indirect enforcement, penalty shot resolution; dormant | no |
-| 6b | `feat/m2-6-fouls` | foul outcome + severity in tackle resolution; foul → stoppage → free kick / penalty. ADR-027. | yes |
+| 6a+6b | `feat/m2-6-fouls` | One PR (CI budget), stacked on M2.5: direct free kicks (wall, shoot or pass) and penalties (dedicated resolution, period waits) — dormant; then fouls from tackles with severity (D9). ADR-030. | yes (second commit) |
 
 ### M2.7 — Discipline, reduced teams, calibration
 
@@ -214,7 +213,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 | 5 | 3b | tackle danger area |
 | 6 | 4 | ball out of play, rolling, parries, deflections |
 | 7 | 5 | offside and offside-aware AI |
-| 8 | 6b | fouls |
+| 8 | 6 | fouls |
 | 9 | 7b | cards and dismissals |
 | 10 | 7c | calibration (only if tuned) |
 

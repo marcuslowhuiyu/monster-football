@@ -5,28 +5,29 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.5 offside and indirect free kicks (ADR-029) — on branch `feat/m2-5-offside`, PR to open after the Actions quota resets (1 Nov); next M2.6 fouls, free kicks, penalties
+M2.5 offside (ADR-029, branch `feat/m2-5-offside`) and M2.6 fouls, free kicks, penalties (ADR-030, branch `feat/m2-6-fouls`, stacked) — PRs to open after the Actions quota resets (1 Nov); next M2.7 discipline, reduced teams, calibration
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, stamina/fatigue, utility AI on and off the ball
 - Match flow (M2.1): possession causes, shots in flight, stoppages and restarts (kickoffs), two halves with added time ending at a stoppage, ball-in-play statistics
+- Fouls (M2.6): fouls from tackles with severity, direct free kicks (wall, shoot or pass), penalties
 - Offside (M2.5): judged at the pass, penalised on involvement, indirect free kicks; offside-aware passing and runs
 - Ball out of play (M2.4): last touch, straight-path crossings, rolling misplaced passes, held/parried saves, deflections; throw-ins, goal kicks and corners (`docs/LAWS_OF_THE_GAME.md`)
 - Tactical zones (M2.3): 20 team-relative zones and overlapping areas (`MatchState.Zones`, `docs/TACTICAL_ANALYSIS.md`)
 - Observation and viewer (M2.2): immutable `MatchFrame`s, `MonsterFootball.Playback`, Godot developer viewer (`tools/viewer.sh`)
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 419 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-029
+- 430 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-030
 
 In progress:
 - nothing
 
 Known issues (calibration, all within health bands):
-- Strikers score ~75 % of goals
-- ~1,560 passes and ~285 tackles per match (busy)
-- 15.0 km per outfield player (real ≈ 10–12 km)
+- Strikers score ~69 % of goals
+- ~1,430 passes and ~260 tackles per match (busy)
+- 13.9 km per outfield player (real ≈ 10–12 km)
 - Shot volume is steep in `ShotBase`
-- Few stoppages: 8.7 throw-ins (real ≈ 40), 16.2 goal kicks, 6.4 corners per match; ball in play ~85 min (real 55–60); ~64 % of halves still end at the interim 60 s safety cap — calibration checkpoint at M2.7 (D6 clearances, wider play)
+- Few stoppages: 8.1 throw-ins (real ≈ 40) per match; ball in play ~77 min (real 55–60); ~39 % of halves still end at the interim 60 s safety cap — calibration checkpoint at M2.7 (D6 clearances, wider play)
 - Test suite with coverage takes ~4.5 min in CI
 
 Environment notes:
@@ -41,7 +42,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 
 Next recommended work:
 - Watch matches: `tools/viewer.sh --seed=7 --autoplay`
-- Open the M2.5 PR after the quota reset; continue with M2.6 fouls, free kicks, penalties
+- Open the M2.5 then M2.6 PRs after the quota reset (merge in order); continue with M2.7
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
