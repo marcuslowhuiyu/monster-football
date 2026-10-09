@@ -75,7 +75,7 @@ internal sealed class TeamShapeSystem
         var pitch = state.Pitch;
         var ballLocal = TeamFrame.Convert(pitch, side, state.ShapeFocus(side));
         var defensiveLineX = DefensiveLineX(pitch, ballLocal);
-        var opponentLastLineX = OpponentLastLineX(state, side);
+        var offsideLineX = OffsideLineX(state, side);
 
         foreach (var player in state.TeamPlayers(side))
         {
@@ -99,7 +99,7 @@ internal sealed class TeamShapeSystem
             var local = slot.IsGoalkeeper()
                 ? GoalkeeperPositioning.Target(pitch, ballLocal, player.Definition.Stats.Awareness, inPossession)
                 : inPossession
-                    ? AttackingTarget(pitch, slot, ballLocal, opponentLastLineX)
+                    ? AttackingTarget(pitch, slot, ballLocal, offsideLineX)
                     : DefendingTarget(pitch, slot, ballLocal, defensiveLineX);
 
             player.MovementTarget = TeamFrame.Convert(pitch, side, local);
@@ -110,7 +110,7 @@ internal sealed class TeamShapeSystem
             AssignPresser(state, side);
     }
 
-    private static Vec2 AttackingTarget(PitchGeometry pitch, PlayingPosition slot, Vec2 ballLocal, double opponentLastLineX)
+    private static Vec2 AttackingTarget(PitchGeometry pitch, PlayingPosition slot, Vec2 ballLocal, double offsideLineX)
     {
         var anchor = Formation433.InPossession(pitch, slot);
         var x = anchor.X + AttackShiftX * (ballLocal.X - pitch.HalfwayX);
@@ -121,8 +121,8 @@ internal sealed class TeamShapeSystem
         if (slot.Group() == PositionGroup.Forward)
             x = Math.Min(x, pitch.Length - ForwardMaxDepthFromGoalLine);
 
-        // Positional discipline (not an offside rule): stay level with the opponents' last outfield line.
-        x = Math.Min(x, Math.Max(opponentLastLineX, ballLocal.X));
+        // Stay onside: no further forward than the offside line (the second-last opponent) unless behind the ball.
+        x = Math.Min(x, Math.Max(offsideLineX, ballLocal.X));
 
         return ClampOutfield(pitch, new Vec2(x, y));
     }
@@ -148,11 +148,8 @@ internal sealed class TeamShapeSystem
         return ClampOutfield(pitch, target);
     }
 
-    /// <summary>The opponents' deepest outfield player, in <paramref name="side"/>'s team frame (their largest X).</summary>
-    internal static double OpponentLastLineX(MatchState state, TeamSide side) =>
-        state.TeamPlayers(side.Opponent())
-            .Where(p => !p.Definition.Position.IsGoalkeeper())
-            .Max(p => TeamFrame.Convert(state.Pitch, side, p.Position).X);
+    /// <summary>The second-last opponent — the offside line (ADR-029) — in <paramref name="side"/>'s team frame.</summary>
+    internal static double OffsideLineX(MatchState state, TeamSide side) => Laws.Offside.SecondLastOpponentX(state, side);
 
     /// <summary>One shared X for the back four: follows the ball but stays goal-side of it.</summary>
     private static double DefensiveLineX(PitchGeometry pitch, Vec2 ballLocal)

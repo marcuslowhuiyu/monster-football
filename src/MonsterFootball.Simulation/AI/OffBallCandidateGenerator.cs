@@ -14,6 +14,8 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
 {
     private OffBallWeights W { get; } = weights;
 
+    public OffBallWeights Weights => W;
+
     // Eight compass directions (team frame) without trigonometry.
     private static readonly Vec2[] Directions =
     [
@@ -108,10 +110,9 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
 
     private void AddForwardRun(PitchGeometry pitch, PlayerMatchState player, List<PlayerMatchState> opponents, List<ActionCandidate> candidates)
     {
-        // The opponents' last outfield line, in our frame, is their largest X.
-        var lineX = opponents
-            .Where(o => !o.Definition.Position.IsGoalkeeper())
-            .Max(o => TeamFrame.Convert(pitch, player.Team, o.Position).X);
+        // The offside line: the second-last opponent (usually the last outfield defender), in our frame.
+        var xs = opponents.Select(o => TeamFrame.Convert(pitch, player.Team, o.Position).X).OrderByDescending(x => x).ToList();
+        var lineX = xs.Count >= 2 ? xs[1] : xs.FirstOrDefault();
 
         var centreY = pitch.Width / 2;
         var laneY = player.Definition.Position switch

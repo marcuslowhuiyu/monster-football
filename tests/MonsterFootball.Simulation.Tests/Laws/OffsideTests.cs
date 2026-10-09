@@ -189,7 +189,7 @@ public class OffsideTests
     [Fact]
     public void No_judgement_when_offside_is_disabled()
     {
-        var s = Attack(MatchConfig.Default);
+        var s = Attack(MatchConfig.Default with { OffsideEnabled = false });
         var st = s.Place(TeamSide.Home, PlayingPosition.ST, 75, 30);
 
         Pass(s, st);

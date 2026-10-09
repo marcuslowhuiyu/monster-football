@@ -11,6 +11,7 @@ namespace MonsterFootball.Simulation.AI;
 /// Scores every option for the ball carrier (ADR-018). Utilities use resolver estimates, so the AI
 /// judges options with the same maths that decides outcomes. Rough scale: a safe square pass ≈ 45,
 /// a progressive pass ≈ 55–70, an open carry ≈ 55–60, a shot ≈ 22 + 318 × xG (offered from xG 0.03). Values live in OnBallWeights.
+/// No pass is offered to a teammate the carrier judges offside (Awareness-dependent margin, D8).
 /// </summary>
 internal sealed class OnBallCandidateGenerator(
     OnBallWeights weights,
@@ -44,6 +45,8 @@ internal sealed class OnBallCandidateGenerator(
         {
             if (receiver == carrier || receiver.Position.DistanceTo(carrier.Position) < W.MinPassDistance)
                 continue;
+            if (Laws.Offside.IsOffsidePosition(state, receiver, carrier.Position, W.OffsideMisjudgement(carrier.Definition.Stats.Awareness)))
+                continue; // the passer sees them offside
 
             var intent = new PassIntent(carrier.PlayerId, receiver.PlayerId);
             var success = passResolver.Estimate(state, intent).SuccessProbability;

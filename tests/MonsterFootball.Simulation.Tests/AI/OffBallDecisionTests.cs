@@ -45,7 +45,7 @@ public class OffBallDecisionTests
     {
         var s = HomeAttacking(new Vec2(60, 34));
         var striker = s.State.Slot(TeamSide.Home, PlayingPosition.ST);
-        var lastLine = TeamShapeSystem.OpponentLastLineX(s.State, TeamSide.Home);
+        var lastLine = TeamShapeSystem.OffsideLineX(s.State, TeamSide.Home);
 
         var run = Assert.Single(Candidates(s, striker, attacking: true), c => c.Kind == ActionKind.MakeForwardRun);
         Assert.True(run.Target!.Value.X > 60, "run should go beyond the ball");
