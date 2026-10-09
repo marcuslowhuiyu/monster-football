@@ -3,7 +3,10 @@ using MonsterFootball.Simulation.Events;
 
 namespace MonsterFootball.Simulation.Statistics;
 
-/// <summary>Per-team match statistics. Throw-ins, goal kicks and corners count restarts the team took.</summary>
+/// <summary>
+/// Per-team match statistics. Throw-ins, goal kicks, corners and free kicks count restarts the team took; offsides
+/// count the team's players caught offside.
+/// </summary>
 public sealed record TeamStatistics(
     int Goals,
     int Shots,
@@ -16,6 +19,8 @@ public sealed record TeamStatistics(
     public int ThrowIns { get; init; }
     public int GoalKicks { get; init; }
     public int Corners { get; init; }
+    public int FreeKicks { get; init; }
+    public int Offsides { get; init; }
 
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
@@ -87,6 +92,7 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                         case nameof(RestartType.ThrowIn): Of(e.Team.Value).ThrowIns++; break;
                         case nameof(RestartType.GoalKick): Of(e.Team.Value).GoalKicks++; break;
                         case nameof(RestartType.Corner): Of(e.Team.Value).Corners++; break;
+                        case nameof(RestartType.IndirectFreeKick): Of(e.Team.Value).FreeKicks++; break;
                     }
 
                     if (!inPlay)
@@ -98,6 +104,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                     break;
                 case MatchEventType.PlayStopped or MatchEventType.PeriodEnded:
                     StopPlay(at);
+                    if (e.Type == MatchEventType.PlayStopped && e.Metadata.GetValueOrDefault("reason") == nameof(StoppageReason.Offside))
+                        Of(e.Team!.Value.Opponent()).Offsides++;
                     break;
                 case MatchEventType.PossessionChanged:
                     possessionChanges++;
@@ -143,6 +151,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int ThrowIns;
         public int GoalKicks;
         public int Corners;
+        public int FreeKicks;
+        public int Offsides;
 
         public TeamStatistics ToStatistics() =>
             new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
@@ -150,6 +160,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 ThrowIns = ThrowIns,
                 GoalKicks = GoalKicks,
                 Corners = Corners,
+                FreeKicks = FreeKicks,
+                Offsides = Offsides,
             };
     }
 }

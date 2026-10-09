@@ -8,11 +8,17 @@ namespace MonsterFootball.Simulation.Actions.Passing;
 /// <summary>Applies a resolved pass: launches the ball, and later lands it with the decided outcome.</summary>
 internal static class PassExecution
 {
-    public static void Launch(MatchContext context, PassResult result)
+    /// <summary>
+    /// Launches the pass. Unless <paramref name="offsideApplies"/> is false (throw-ins, goal kicks, corners), who is in an
+    /// offside position is judged now, as the ball is played (ADR-029).
+    /// </summary>
+    public static void Launch(MatchContext context, PassResult result, bool offsideApplies = true)
     {
         var state = context.State;
         var tick = state.Clock.Tick;
         state.LaunchBall(BallFlight.ForPass(result, tick, tick + BallFlight.TravelTicks(result.TravelDuration, context.Config.TickSeconds)));
+        if (offsideApplies && context.Config.OffsideEnabled)
+            state.Offside = Laws.Offside.Judge(state, state.Player(result.Passer));
 
         context.Emit(MatchEventType.PassAttempted,
             actor: result.Passer,
@@ -35,7 +41,8 @@ internal static class PassExecution
         switch (pass.Outcome)
         {
             case PassOutcome.Completed:
-                context.GiveBall(pass.IntendedReceiver, PossessionCause.Reception);
+                if (!context.GiveBall(pass.IntendedReceiver, PossessionCause.Reception))
+                    break; // offside
                 context.Emit(MatchEventType.PassCompleted, actor: pass.Passer, target: pass.IntendedReceiver,
                     team: pass.Team, position: context.State.Ball.Position);
                 break;

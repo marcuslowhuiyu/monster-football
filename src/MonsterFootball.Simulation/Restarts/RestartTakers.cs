@@ -13,7 +13,8 @@ internal static class RestartTakers
 
     /// <summary>
     /// Kickoff: the striker. Throw-in: the nearest full-back or winger. Goal kick: the goalkeeper. Corner: the best
-    /// passer outside the centre-backs and striker (who go up for it). Each falls back to any outfield player.
+    /// passer outside the centre-backs and striker (who go up for it). Indirect free kick (offside): the nearest defender.
+    /// Each falls back to any outfield player.
     /// </summary>
     public static PlayerMatchState For(MatchState state, Stoppage stoppage)
     {
@@ -24,6 +25,7 @@ internal static class RestartTakers
             RestartType.Kickoff => Nearest(Prefer(outfield, p => p.Definition.Position == PlayingPosition.ST), stoppage.Location),
             RestartType.ThrowIn => Nearest(Prefer(outfield, p => WidePlayers.Contains(p.Definition.Position)), stoppage.Location),
             RestartType.GoalKick => team.FirstOrDefault(p => p.Definition.Position.IsGoalkeeper()) ?? Nearest(outfield, stoppage.Location),
+            RestartType.IndirectFreeKick => Nearest(Prefer(outfield, p => p.Definition.Position.Group() == PositionGroup.Defender), stoppage.Location),
             RestartType.Corner => BestPasser(Prefer(outfield, p => p.Definition.Position is not (PlayingPosition.LCB or PlayingPosition.RCB or PlayingPosition.ST))),
             _ => throw new ArgumentOutOfRangeException(nameof(stoppage), stoppage.Restart, "No taker rule for this restart."),
         };

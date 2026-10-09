@@ -35,13 +35,13 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     /// Stops play (ADR-023): records the stoppage, clears every player's ongoing action and plan, and emits
     /// PlayStopped (team = awarded team, position = restart location, metadata <c>reason</c> and <c>restart</c>).
     /// </summary>
-    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location)
+    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null)
     {
-        BeginStoppage(reason, restart, awardedTeam, location);
+        BeginStoppage(reason, restart, awardedTeam, location, offender);
         if (reason == StoppageReason.Goal && State.Clock.Tick < State.Clock.RegularEndTick)
             State.AddedTimeAllowanceSeconds += Config.AddedTime.PerGoalSeconds;
 
-        Emit(MatchEventType.PlayStopped, team: awardedTeam, position: location,
+        Emit(MatchEventType.PlayStopped, actor: offender, team: awardedTeam, position: location,
             metadata: ImmutableSortedDictionary.CreateRange(
             [
                 new KeyValuePair<string, string>("reason", reason.ToString()),
@@ -50,9 +50,9 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     }
 
     /// <summary>Records a stoppage and clears every player's ongoing action and plan, without emitting an event.</summary>
-    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location)
+    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null)
     {
-        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick));
+        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender });
         foreach (var player in State.Players)
         {
             player.ClearIntent();
@@ -63,10 +63,19 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
 
     /// <summary>
     /// Gives the ball to a player, emitting PossessionChanged (with its <paramref name="cause"/>) if control passes
-    /// to the other team.
+    /// to the other team. If the player was in an offside position when the ball was last played, they are instead
+    /// penalised (ADR-029): play stops for an indirect free kick where they are, and this returns false.
     /// </summary>
-    public void GiveBall(PlayerId playerId, PossessionCause cause)
+    public bool GiveBall(PlayerId playerId, PossessionCause cause)
     {
+        if (State.Offside is { } judgement && judgement.OffsidePlayers.Contains(playerId))
+        {
+            var offender = State.Player(playerId);
+            State.SetBallLoose(offender.Position);
+            StopPlay(StoppageReason.Offside, RestartType.IndirectFreeKick, offender.Team.Opponent(), offender.Position, playerId);
+            return false;
+        }
+
         var previousTeam = State.LastPossessionTeam;
         State.GiveBallTo(playerId);
         var player = State.Player(playerId);
@@ -76,5 +85,7 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
                 [
                     new KeyValuePair<string, string>(PossessionCauseExtensions.MetadataKey, cause.ToString()),
                 ]));
+
+        return true;
     }
 }

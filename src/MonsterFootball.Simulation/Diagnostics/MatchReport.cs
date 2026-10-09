@@ -80,7 +80,7 @@ public static class MatchReport
             {
                 PossessionCause.Kickoff => $"{TeamName(state, e.Team)} have the ball (kickoff)",
                 PossessionCause.KeeperRestart => $"{TeamName(state, e.Team)} have the ball (keeper restart)",
-                PossessionCause.ThrowIn or PossessionCause.GoalKick or PossessionCause.Corner =>
+                PossessionCause.ThrowIn or PossessionCause.GoalKick or PossessionCause.Corner or PossessionCause.FreeKick =>
                     $"{TeamName(state, e.Team)} have the ball ({RestartName(e.GetPossessionCause().ToString()!)})",
                 _ => $"{TeamName(state, e.Team)} win the ball",
             },
@@ -97,6 +97,8 @@ public static class MatchReport
             MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
                                           + (e.Metadata.GetValueOrDefault("end") == "SafetyCap" ? " (safety cap: play never stopped)" : ""),
             MatchEventType.RestartTaken => $"{Capitalise(RestartName(e.Metadata.GetValueOrDefault("restart", "?")))}: {P(e.ActorPlayerId)}",
+            MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "Offside" =>
+                $"Offside — {P(e.ActorPlayerId)}; {RestartName(e.Metadata.GetValueOrDefault("restart", "?"))} to {TeamName(state, e.Team)}",
             MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "BallOutOfPlay" =>
                 $"Out of play — {RestartName(e.Metadata.GetValueOrDefault("restart", "?"))} to {TeamName(state, e.Team)}",
             MatchEventType.PlayStopped =>
@@ -173,6 +175,8 @@ public static class MatchReport
             ("Corners", N(stats.Home.Corners), N(stats.Away.Corners)),
             ("Throw-ins", N(stats.Home.ThrowIns), N(stats.Away.ThrowIns)),
             ("Goal kicks", N(stats.Home.GoalKicks), N(stats.Away.GoalKicks)),
+            ("Free kicks", N(stats.Home.FreeKicks), N(stats.Away.FreeKicks)),
+            ("Offsides", N(stats.Home.Offsides), N(stats.Away.Offsides)),
         };
 
         var labelWidth = rows.Max(r => r.Label.Length);
@@ -199,6 +203,8 @@ public static class MatchReport
         "ThrowIn" => "throw-in",
         "GoalKick" => "goal kick",
         "Corner" => "corner",
+        "IndirectFreeKick" => "indirect free kick",
+        "FreeKick" => "free kick",
         "Kickoff" => "kickoff",
         _ => restart,
     };

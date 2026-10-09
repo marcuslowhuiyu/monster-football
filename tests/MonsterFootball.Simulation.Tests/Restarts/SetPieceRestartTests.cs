@@ -164,6 +164,45 @@ public class SetPieceRestartTests
     }
 
     [Fact]
+    public void Offside_free_kick_is_taken_by_the_nearest_defender_and_judged_for_offside()
+    {
+        var spot = new Vec2(35, 30);
+        var config = MatchConfig.Default with { OffsideEnabled = true };
+        var s = new Scenario(config: config);
+        foreach (var player in s.State.Players)
+        {
+            player.Position = TestTeams.KickoffLayout(player.Team, player.Definition);
+            player.MovementTarget = player.Position;
+        }
+
+        s.GiveBall(TeamSide.Away, PlayingPosition.ST);
+        s.Context.StopPlay(StoppageReason.Offside, RestartType.IndirectFreeKick, TeamSide.Home, spot);
+
+        var (seconds, at) = RunUntilTaken(s);
+
+        var taken = Taken(s);
+        var taker = s.State.Player(taken.ActorPlayerId!.Value);
+        Assert.Equal(PositionGroup.Defender, taker.Definition.Position.Group());
+        Assert.Equal("IndirectFreeKick", taken.Metadata["restart"]);
+        Assert.True(seconds >= Tuning.IndirectFreeKickDeadBallSeconds - 1e-9);
+        Assert.All(s.State.TeamPlayers(TeamSide.Away), p => Assert.True(at[p.PlayerId].DistanceTo(spot) >= Tuning.FreeKickExclusionRadius - 1e-9, $"{p} too close"));
+        Assert.Equal(PossessionCause.FreeKick, s.Log.Events.Single(e => e.Type == MatchEventType.PossessionChanged && e.Team == TeamSide.Home).GetPossessionCause());
+        Assert.Equal(MatchEventType.PassAttempted, s.Log.Events[^1].Type);
+        Assert.NotNull(s.State.Offside);
+    }
+
+    [Fact]
+    public void A_throw_in_to_a_player_beyond_the_line_is_not_offside()
+    {
+        var config = MatchConfig.Default with { OffsideEnabled = true };
+        var s = Stopped(RestartType.ThrowIn, TeamSide.Home, new Vec2(80, 68), config);
+
+        RunUntilTaken(s);
+
+        Assert.Null(s.State.Offside);
+    }
+
+    [Fact]
     public void After_the_setup_timeout_stragglers_are_placed_and_the_restart_is_taken()
     {
         var config = MatchConfig.Default with { Restarts = RestartTuning.Default with { SetupTimeoutSeconds = 0 } };

@@ -7,7 +7,7 @@ namespace MonsterFootball.Simulation.Restarts;
 
 /// <summary>
 /// Where players stand for a restart (MILESTONE_2 §11.1). Kickoffs use the 4-3-3 kickoff layout. Throw-ins and
-/// goal kicks use both team shapes built around the restart spot; corners send set slots into the box. Then the taker
+/// goal kicks and free kicks use both team shapes built around the restart spot; corners send set slots into the box. Then the taker
 /// stands on the ball and opponents are moved out of any area the law keeps them from.
 /// </summary>
 internal static class RestartLayout
@@ -77,6 +77,8 @@ internal static class RestartLayout
                 return OutsideRadius(state.Pitch, stoppage.Location, position, tuning.ThrowInExclusionRadius, margin);
             case RestartType.Corner:
                 return OutsideRadius(state.Pitch, stoppage.Location, position, tuning.CornerExclusionRadius, margin);
+            case RestartType.IndirectFreeKick:
+                return OutsideRadius(state.Pitch, stoppage.Location, position, tuning.FreeKickExclusionRadius, margin);
             case RestartType.GoalKick:
                 if (!state.Zones.IsIn(stoppage.AwardedTeam, position, TacticalAreas.OwnPenaltyArea))
                     return position;
