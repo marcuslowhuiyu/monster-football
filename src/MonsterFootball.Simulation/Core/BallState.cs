@@ -22,6 +22,9 @@ public sealed class BallState
 
     public bool IsInFlight => Flight is not null;
 
+    /// <summary>The roll of a loose ball still moving, if any (D4). Null once it stops or anyone has the ball.</summary>
+    public LooseBallMotion? Roll { get; private set; }
+
     /// <summary>Nobody has the ball and it is not travelling: anyone may pick it up.</summary>
     public bool IsLoose => PossessorId is null && Flight is null;
 
@@ -29,13 +32,15 @@ public sealed class BallState
     {
         PossessorId = playerId;
         Flight = null;
+        Roll = null;
         Position = position;
     }
 
-    internal void SetLoose(Vec2 position)
+    internal void SetLoose(Vec2 position, LooseBallMotion? roll = null)
     {
         PossessorId = null;
         Flight = null;
+        Roll = roll;
         Position = position;
     }
 
@@ -43,6 +48,7 @@ public sealed class BallState
     {
         PossessorId = null;
         Flight = flight;
+        Roll = null;
         Position = flight.StartPosition;
     }
 

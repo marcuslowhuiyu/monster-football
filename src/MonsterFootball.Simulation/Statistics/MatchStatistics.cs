@@ -17,10 +17,10 @@ public sealed record TeamStatistics(
 }
 
 /// <summary>
-/// Match statistics derived entirely from the event log (ADR-019). Ball-in-play time runs from each kickoff to the
-/// next stoppage (<see cref="MatchEventType.PlayStopped"/>, <see cref="MatchEventType.PeriodEnded"/> or
+/// Match statistics derived entirely from the event log (ADR-019). Ball-in-play time runs from each restart (kickoff or
+/// <see cref="MatchEventType.RestartTaken"/>) to the next stoppage (<see cref="MatchEventType.PlayStopped"/>, <see cref="MatchEventType.PeriodEnded"/> or
 /// <see cref="MatchEventType.MatchFinished"/>). Possession time is ball-in-play time credited to the team that last had
-/// the ball under control — including while a pass is in flight or the ball is loose — switching at each kickoff and
+/// the ball under control — including while a pass is in flight or the ball is loose — switching at each restart and
 /// <see cref="MatchEventType.PossessionChanged"/>.
 /// Possessions won count only changes whose cause is open play (<see cref="PossessionCauseExtensions.IsOpenPlay"/>);
 /// kickoffs and keeper restarts change possession without anyone winning the ball.
@@ -76,7 +76,7 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
             var at = e.Timestamp.Seconds;
             switch (e.Type)
             {
-                case MatchEventType.Kickoff:
+                case MatchEventType.Kickoff or MatchEventType.RestartTaken:
                     SwitchPossession(e.Team!.Value, at);
                     if (!inPlay)
                     {

@@ -92,11 +92,13 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
                 break;
 
             case TackleOutcome.LooseBall:
-                state.SetBallLoose(result.BallPosition);
+                state.SetBallLoose(state.Ball.Position);
                 state.RecordTouch(tackler.PlayerId);
+                var crossing = Laws.OutOfPlay.Crossing(state.Pitch, state.Ball.Position, result.BallPosition);
                 context.Emit(MatchEventType.TackleLooseBall, actor: tackler.PlayerId, target: carrier.PlayerId,
-                    team: tackler.Team, position: result.BallPosition);
+                    team: tackler.Team, position: crossing?.Point ?? result.BallPosition);
                 carrier.TackleCooldownUntilTick = tick + Ticks(DispossessedCooldownSeconds);
+                Laws.OutOfPlay.MoveLoose(context, result.BallPosition);
                 break;
         }
     }

@@ -34,6 +34,7 @@ public class PossessionFlowMatchTests
             switch (e.Type)
             {
                 case MatchEventType.Kickoff:
+                case MatchEventType.RestartTaken:
                 case MatchEventType.PassIntercepted:
                 case MatchEventType.TackleWon:
                 case MatchEventType.PossessionChanged:

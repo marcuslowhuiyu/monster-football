@@ -122,7 +122,7 @@ internal sealed class PassResolver
 
         if (!random.Roll(estimate.AccuracyProbability))
         {
-            var landing = MisplacedLanding(state.Pitch, intendedTarget, estimate.Distance, random);
+            var landing = MisplacedLanding(intendedTarget, estimate.Distance, random);
             return WithOdds(new PassResult(PassOutcome.Misplaced, passer.Team, intent.Passer, intent.Receiver, null,
                 start, intendedTarget, landing, TravelDuration(start.DistanceTo(landing)), estimate.AccuracyProbability));
         }
@@ -148,8 +148,11 @@ internal sealed class PassResolver
         return distance / speed;
     }
 
-    /// <summary>Lands the ball 3–(3 + 0.3 × distance) m from the intended target in a random direction, kept on the pitch.</summary>
-    private static Vec2 MisplacedLanding(PitchGeometry pitch, Vec2 intendedTarget, double distance, IMatchRandom random)
+    /// <summary>
+    /// Lands the ball 3–(3 + 0.3 × distance) m from the intended target in a random direction. The landing may be
+    /// beyond a line: the flight then goes out of play where it crosses (ADR-028).
+    /// </summary>
+    private static Vec2 MisplacedLanding(Vec2 intendedTarget, double distance, IMatchRandom random)
     {
         // Uniform direction without trigonometry: rejection-sample the unit disc.
         Vec2 direction;
@@ -159,6 +162,6 @@ internal sealed class PassResolver
         } while (direction.LengthSquared is > 1 or < 1e-6);
 
         var error = 3 + 0.3 * distance * random.NextDouble();
-        return pitch.Clamp(intendedTarget + direction.Normalized() * error);
+        return intendedTarget + direction.Normalized() * error;
     }
 }

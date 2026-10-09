@@ -181,4 +181,30 @@ public class GoalAndRestartTests
         foreach (var e in result.Events.Where(e => e.Type is MatchEventType.ShotTaken or MatchEventType.CarryStarted))
             Assert.False(result.FinalState.Player(e.ActorPlayerId!.Value).Definition.Position.IsGoalkeeper());
     }
+
+    [Fact]
+    public void Every_ball_out_of_play_is_followed_by_its_restart_or_the_end_of_the_half()
+    {
+        var restarts = 0;
+        foreach (var seed in Enumerable.Range(1, 6))
+        {
+            var events = NewSimulation(seed).RunToCompletion().Events;
+            for (var i = 0; i < events.Count; i++)
+            {
+                var stop = events[i];
+                if (stop.Type != MatchEventType.PlayStopped || stop.Metadata["reason"] != nameof(StoppageReason.BallOutOfPlay))
+                    continue;
+
+                var next = events.Skip(i + 1).First(e => e.Type is MatchEventType.RestartTaken or MatchEventType.PeriodEnded);
+                if (next.Type == MatchEventType.PeriodEnded)
+                    continue;
+                Assert.Equal(stop.Metadata["restart"], next.Metadata["restart"]);
+                Assert.Equal(stop.Team, next.Team);
+                Assert.Equal(stop.Position, next.Position);
+                restarts++;
+            }
+        }
+
+        Assert.True(restarts > 6 * 10, $"only {restarts} restarts from the ball going out in 6 matches");
+    }
 }
