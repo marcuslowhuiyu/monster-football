@@ -3,7 +3,7 @@ using MonsterFootball.Simulation.Events;
 
 namespace MonsterFootball.Simulation.Statistics;
 
-/// <summary>Per-team match statistics.</summary>
+/// <summary>Per-team match statistics. Throw-ins, goal kicks and corners count restarts the team took.</summary>
 public sealed record TeamStatistics(
     int Goals,
     int Shots,
@@ -13,6 +13,10 @@ public sealed record TeamStatistics(
     int PossessionsWon,
     double PossessionSeconds)
 {
+    public int ThrowIns { get; init; }
+    public int GoalKicks { get; init; }
+    public int Corners { get; init; }
+
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
 
@@ -78,6 +82,13 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
             {
                 case MatchEventType.Kickoff or MatchEventType.RestartTaken:
                     SwitchPossession(e.Team!.Value, at);
+                    switch (e.Metadata.GetValueOrDefault("restart"))
+                    {
+                        case nameof(RestartType.ThrowIn): Of(e.Team.Value).ThrowIns++; break;
+                        case nameof(RestartType.GoalKick): Of(e.Team.Value).GoalKicks++; break;
+                        case nameof(RestartType.Corner): Of(e.Team.Value).Corners++; break;
+                    }
+
                     if (!inPlay)
                     {
                         inPlay = true;
@@ -129,8 +140,16 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int PassesCompleted;
         public int PossessionsWon;
         public double PossessionSeconds;
+        public int ThrowIns;
+        public int GoalKicks;
+        public int Corners;
 
         public TeamStatistics ToStatistics() =>
-            new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds);
+            new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
+            {
+                ThrowIns = ThrowIns,
+                GoalKicks = GoalKicks,
+                Corners = Corners,
+            };
     }
 }

@@ -29,6 +29,10 @@ public sealed record BatchSummary(
     double AverageAddedMinutesPerPeriod,
     double SafetyCapPeriodShare)
 {
+    public double AverageThrowIns { get; init; }
+    public double AverageGoalKicks { get; init; }
+    public double AverageCorners { get; init; }
+
     public static BatchSummary From(IReadOnlyList<MatchSummary> summaries)
     {
         if (summaries.Count == 0)
@@ -61,6 +65,11 @@ public sealed record BatchSummary(
             ordered.Average(s => s.OutfieldStaminaAtFullTime),
             ordered.Average(s => s.Statistics.BallInPlaySeconds) / 60,
             (double)ordered.Sum(s => s.AddedMinutes) / ordered.Sum(s => s.Periods),
-            (double)ordered.Sum(s => s.SafetyCapPeriods) / ordered.Sum(s => s.Periods));
+            (double)ordered.Sum(s => s.SafetyCapPeriods) / ordered.Sum(s => s.Periods))
+        {
+            AverageThrowIns = ordered.Average(s => s.Statistics.Home.ThrowIns + s.Statistics.Away.ThrowIns),
+            AverageGoalKicks = ordered.Average(s => s.Statistics.Home.GoalKicks + s.Statistics.Away.GoalKicks),
+            AverageCorners = ordered.Average(s => s.Statistics.Home.Corners + s.Statistics.Away.Corners),
+        };
     }
 }
