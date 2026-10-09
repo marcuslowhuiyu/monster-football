@@ -29,6 +29,9 @@ public class MatchReportTests
     [InlineData(PossessionCause.Tackle, "Red win the ball")]
     [InlineData(PossessionCause.Kickoff, "Red have the ball (kickoff)")]
     [InlineData(PossessionCause.KeeperRestart, "Red have the ball (keeper restart)")]
+    [InlineData(PossessionCause.ThrowIn, "Red have the ball (throw-in)")]
+    [InlineData(PossessionCause.GoalKick, "Red have the ball (goal kick)")]
+    [InlineData(PossessionCause.Corner, "Red have the ball (corner)")]
     public void Possession_changes_say_whether_the_ball_was_won_or_awarded(PossessionCause cause, string expected)
     {
         var state = TestTeams.Match();
@@ -128,6 +131,20 @@ public class MatchReportTests
         Assert.Contains(lines, l => System.Text.RegularExpressions.Regex.IsMatch(l,
             @"^ {6}Finishing \d+ · Technique \d+ · Power \d+ · stamina \d+ · \d+ m · on target \d+% · save \d+% · xG \d\.\d\d · [A-Za-z]+ / [A-Za-z]+$"));
         Assert.Contains(lines, l => l.StartsWith("      Defending", StringComparison.Ordinal) && l.Contains(" vs Technique", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Describes_ball_out_of_play_and_the_restart()
+    {
+        var state = TestTeams.Match();
+        var lb = state.Slot(TeamSide.Away, PlayingPosition.LB);
+        static System.Collections.Immutable.ImmutableSortedDictionary<string, string> Meta(params (string, string)[] pairs) =>
+            System.Collections.Immutable.ImmutableSortedDictionary.CreateRange(pairs.Select(p => new KeyValuePair<string, string>(p.Item1, p.Item2)));
+
+        Assert.Equal("Out of play — throw-in to Red", MatchReport.Describe(state,
+            new MatchEvent(new MatchTime(10), MatchEventType.PlayStopped, Team: TeamSide.Away) { Metadata = Meta(("reason", "BallOutOfPlay"), ("restart", "ThrowIn")) }));
+        Assert.Equal($"Throw-in: Red #{lb.Definition.ShirtNumber}", MatchReport.Describe(state,
+            new MatchEvent(new MatchTime(18), MatchEventType.RestartTaken, lb.PlayerId, Team: TeamSide.Away) { Metadata = Meta(("restart", "ThrowIn")) }));
     }
 
     [Fact]

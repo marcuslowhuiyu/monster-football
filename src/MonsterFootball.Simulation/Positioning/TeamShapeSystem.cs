@@ -53,10 +53,26 @@ internal sealed class TeamShapeSystem
         }
     }
 
-    private static void AssignTeam(MatchState state, TeamSide side)
+    /// <summary>
+    /// Shape targets while play is stopped for a restart at <paramref name="ball"/>: both shapes are built around the
+    /// restart spot, <paramref name="awardedTeam"/> in its attacking shape and the other in its defending shape.
+    /// Nobody presses a dead ball.
+    /// </summary>
+    public void ApplyForRestart(MatchState state, TeamSide awardedTeam, Vec2 ball)
+    {
+        foreach (var side in Enum.GetValues<TeamSide>())
+        {
+            state.SetShapeFocus(side, ball);
+            AssignTeam(state, side, side == awardedTeam, press: false);
+        }
+    }
+
+    private static void AssignTeam(MatchState state, TeamSide side) =>
+        AssignTeam(state, side, state.AttackingTeam == side, press: true);
+
+    private static void AssignTeam(MatchState state, TeamSide side, bool inPossession, bool press)
     {
         var pitch = state.Pitch;
-        var inPossession = state.AttackingTeam == side;
         var ballLocal = TeamFrame.Convert(pitch, side, state.ShapeFocus(side));
         var defensiveLineX = DefensiveLineX(pitch, ballLocal);
         var opponentLastLineX = OpponentLastLineX(state, side);
@@ -90,7 +106,7 @@ internal sealed class TeamShapeSystem
             player.MovementIntensity = inPossession ? MovementIntensity.Easy : MovementIntensity.Jog;
         }
 
-        if (!inPossession)
+        if (!inPossession && press)
             AssignPresser(state, side);
     }
 
