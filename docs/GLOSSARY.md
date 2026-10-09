@@ -108,7 +108,17 @@
 
 **MatchStatistics** — Per-team goals, shots, shots on target, passes, possessions won and possession time, derived from the event log.
 
-**Possession cause** — Why a player has the ball, recorded on `PossessionChanged`: won in open play (interception, tackle, loose ball, save, reception) or awarded by a restart (kickoff, keeper restart). Only open-play causes count as possessions won.
+**Possession cause** — Why a player has the ball, recorded on `PossessionChanged`: won in open play (interception, tackle, loose ball, save, reception) or awarded by a restart (kickoff, throw-in, goal kick, corner). Only open-play causes count as possessions won.
+
+**Last touch** — The player (and team) who last touched the ball; decides the restart when it goes out of play.
+
+**Out of play** — The ball's path wholly crossed a touchline or goal line; play stops at the crossing point for a throw-in, goal kick or corner.
+
+**Roll** — A loose ball still moving after a misplaced pass lands (`LooseBallMotion`), slowing to a stop; it can run out of play.
+
+**Parry** — A save the keeper does not hold: pushed back into play (a loose ball) or behind for a corner.
+
+**Restart taker** — The player who takes a restart, chosen once when play stops (striker, nearest wide player, goalkeeper, best passer).
 
 **Possession time** — Ball-in-play seconds credited to the team last in control of the ball, including while its pass is in flight or the ball is loose.
 

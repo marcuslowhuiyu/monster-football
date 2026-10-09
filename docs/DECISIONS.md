@@ -291,6 +291,8 @@ the resolution model above is unchanged.
 
 ## ADR-015 — Shots Resolve Immediately; Keeper Restarts After Saves and Misses
 
+> Timing superseded by ADR-022; keeper restarts after misses superseded by ADR-028 (goal kicks, held/parried saves).
+
 Status: Accepted; timing superseded by ADR-022 (shots now travel and apply on arrival)
 
 Decision:
@@ -650,3 +652,40 @@ Consequences:
 Fingerprint change (ledger #5). Batch of 1,000 stays healthy: goals 2.91 → 2.80, shots 28.3 → 27.7, tackles
 301 → 307; other figures within noise. The zones on a shared boundary are not exact complements for the two teams
 (each team's boundary point goes forward for it); no current reader depends on that.
+
+---
+
+## ADR-028 — The Ball Goes Out of Play Along Straight Paths; Set Pieces Reuse Passing
+
+Status: Accepted (M2.4). Implements D4 and D5; supersedes the keeper restart after a miss (ADR-015).
+
+Decision:
+- `MatchState.LastTouch` records every touch (possession, strike, tackle knock, parry, deflection).
+- No ball path is clamped to the pitch any more. Each path is a straight segment — a flight, a tackle knock (2–5 m),
+  a parry rebound, or the roll a misplaced pass makes after landing (`LooseBallMotion`: closed-form, constant
+  3 m/s² deceleration, 0.35 × the distance flown). `Laws.OutOfPlay` finds where a segment first leaves the pitch
+  (a corner counts as the goal line), puts the ball there and stops play with the restart decided by line and last
+  touch: throw-in, goal kick or corner. No physics engine.
+- Missed shots go behind: a goal kick, or a corner when an outfield defender within 1.5 m of the lane deflects it
+  (35 %). Saves are held (0.6 + 0.05 × (Keeping − 5)), else parried behind for a corner (40 %), else parried back into
+  play 4–10 m. All decided at the strike, like every shot outcome (ADR-022).
+- `RestartSystem` dispatches on `RestartType`: per-type dead-ball minimums; set-piece layouts from both team shapes
+  around the spot (corners add fixed box spots); opponents kept outside the law's distance; a set piece is ready when
+  the taker is on the ball and every opponent complies, otherwise placed after the setup timeout. Takers are chosen
+  deterministically once per stoppage. The restart is a pass to the receiver with the best on-ball pass utility,
+  without randomness; outcomes use the ordinary `PassResolver`.
+- `RestartTaken` (appended) marks non-kickoff restarts; ball-in-play time resumes at it. New possession causes
+  `ThrowIn`, `GoalKick`, `Corner` are restarts, not possessions won.
+- New health bands: goal kicks 8–35 and corners 3–20 per match. Throw-in and ball-in-play bands wait for M2.7.
+
+Reason:
+Milestone §9 and §11. Straight segments give exact, deterministic crossing points with only basic arithmetic and
+`Math.Sqrt`. Reusing passing keeps one model of ball delivery and lets later passing changes apply to set pieces.
+
+Consequences:
+Fingerprint change (ledger #6). Batch of 1,000 (before → after): goals 2.80 → 2.73; passes 1,704 → 1,557; ball in play
+92.5 → 84.7 min; halves ended by the safety cap 96 % → 64 %; per match 8.7 throw-ins, 16.2 goal kicks, 6.4 corners.
+Throw-ins are far below real football (~40) because play rarely reaches the touchlines; a longer tackle knock (2–9 m)
+added only ~1 per match and was rejected. Clearances (D6), crosses and wider play are candidates at the M2.7
+calibration checkpoint, alongside the safety cap.
+

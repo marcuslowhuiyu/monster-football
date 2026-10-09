@@ -5,26 +5,27 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.3 20-zone tactical model and tackle danger area (ADR-027) — done in PR; next M2.4 ball out of play and restarts
+M2.4 ball out of play, throw-ins, goal kicks and corners (ADR-028) — done in PR; next M2.5 offside
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, stamina/fatigue, utility AI on and off the ball
 - Match flow (M2.1): possession causes, shots in flight, stoppages and restarts (kickoffs), two halves with added time ending at a stoppage, ball-in-play statistics
+- Ball out of play (M2.4): last touch, straight-path crossings, rolling misplaced passes, held/parried saves, deflections; throw-ins, goal kicks and corners (`docs/LAWS_OF_THE_GAME.md`)
 - Tactical zones (M2.3): 20 team-relative zones and overlapping areas (`MatchState.Zones`, `docs/TACTICAL_ANALYSIS.md`)
 - Observation and viewer (M2.2): immutable `MatchFrame`s, `MonsterFootball.Playback`, Godot developer viewer (`tools/viewer.sh`)
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 357 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
-- Decisions ADR-001 – ADR-027
+- 396 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- Decisions ADR-001 – ADR-028
 
 In progress:
 - nothing
 
 Known issues (calibration, all within health bands):
-- Strikers score ~82 % of goals
-- ~1,670 passes and ~295 tackles per 90 continuous minutes (busy)
-- 15.3 km per outfield player (real ≈ 10–12 km)
+- Strikers score ~75 % of goals
+- ~1,560 passes and ~285 tackles per match (busy)
+- 15.0 km per outfield player (real ≈ 10–12 km)
 - Shot volume is steep in `ShotBase`
-- The ball never goes out of play; misses go to the keeper — so ~96 % of halves end at the (interim, 60 s) safety cap and outfield distance (15.8 km) is close to its 16 km band
+- Few stoppages: 8.7 throw-ins (real ≈ 40), 16.2 goal kicks, 6.4 corners per match; ball in play ~85 min (real 55–60); ~64 % of halves still end at the interim 60 s safety cap — calibration checkpoint at M2.7 (D6 clearances, wider play)
 - Test suite with coverage takes ~4.5 min in CI
 
 Environment notes:
@@ -39,7 +40,7 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 
 Next recommended work:
 - Watch matches: `tools/viewer.sh --seed=7 --autoplay`
-- Continue the M2 plan: M2.4 ball out of play and restarts
+- Continue the M2 plan: M2.5 offside
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:

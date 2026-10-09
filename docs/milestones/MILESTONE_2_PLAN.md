@@ -143,12 +143,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 
 | PR | Branch | Scope | FP |
 |---|---|---|---|
-| 4a | `feat/m2-4-last-touch` | `LastTouch` tracking on every touch path | no |
-| 4b | `feat/m2-4-restart-positioning` | setup positions per restart type, exclusion distances, readiness, setup timeout | no |
-| 4c | `feat/m2-4-throw-in` | throw-in taker and execution (pass with throw range) | no |
-| 4d | `feat/m2-4-goal-kick` | goal kick (keeper distribution, opponents out of the area) | no |
-| 4e | `feat/m2-4-corner` | corner delivery into the box, immediate shot/header via shot model | no |
-| 4f | `feat/m2-4-out-of-play` | remove pitch clamps on ball paths; `LooseBallMotion`; crossing → stoppage; keeper held/parried and lane deflections (D4, D5). ADR-024, ADR-025. | yes |
+| 4a–4f | `feat/m2-4-out-of-play` | One PR, five commits (CI budget): last touch; throw-in, goal kick and corner handlers (unreachable, fingerprints identical); the ball goes out of play — unclamped paths, `LooseBallMotion`, `Laws.OutOfPlay`, held/parried saves, lane deflections (D4, D5); restart statistics and health bands; docs incl. `LAWS_OF_THE_GAME.md`. ADR-028. | yes (third commit) |
 
 ### M2.5 — Offside
 
@@ -218,7 +213,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 | 3 | 1c | goals become stoppages with dead-ball time |
 | 4 | 1d | periods, half-time kickoff, added time |
 | 5 | 3b | tackle danger area |
-| 6 | 4f | ball out of play, rolling, parries, deflections |
+| 6 | 4 | ball out of play, rolling, parries, deflections |
 | 7 | 5b | offside and offside-aware AI |
 | 8 | 6b | fouls |
 | 9 | 7b | cards and dismissals |
