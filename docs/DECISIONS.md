@@ -689,3 +689,33 @@ Throw-ins are far below real football (~40) because play rarely reaches the touc
 added only ~1 per match and was rejected. Clearances (D6), crosses and wider play are candidates at the M2.7
 calibration checkpoint, alongside the safety cap.
 
+---
+
+## ADR-029 — Offside Is Judged at the Pass and Penalised on Involvement
+
+Status: Accepted (M2.5). Implements D8.
+
+Decision:
+- `Laws.Offside`: offside line = furthest of halfway, the ball and the second-last opponent (keeper included), in the
+  attacking team's frame; strictly beyond it is offside, level is onside.
+- `PassExecution.Launch` records `MatchState.Offside` (`OffsideJudgement`: team, the teammates offside, tick) — not
+  for throw-ins, goal kicks or corners. `MatchState.RecordTouch` clears it on any touch; `MatchContext.GiveBall` is
+  the one place involvement is checked: an offside player gaining the ball stops play (`Offside`, indirect free kick
+  to the defenders at the offender's position, `Stoppage.Offender`, `PlayStopped` actor) and `GiveBall` returns false.
+- Indirect free kick: 12 s dead ball, nearest defender takes, opponents 9.15 m, a pass judged for offside.
+- AI (deterministic): passers ignore teammates they see as offside, seeing up to 1.5 × (10 − Awareness) ÷ 9 m too
+  little; runners wait at the line until a teammate's pass is in the air, at 1.5 × (10 − Awareness) ÷ 9 − 0.5 m
+  relative to it; the attacking shape and runs use the second-last opponent.
+- `MatchConfig.OffsideEnabled` (default true) exists so the rules could land dormant and for tests.
+- Health band: offsides 1–15 per match.
+
+Reason:
+Milestone §10. Separating "offside at the pass" from "became involved" leaves room for interfering/passive offside.
+Without any AI change offside already gave 4.2 per match (the shape stayed level with the last outfield line); with a
+perfect hold it fell to 0.3, and the passer's margin alone barely mattered because nobody stood in it. Runner
+eagerness is what produces realistic marginal offsides, and ties them to Awareness.
+
+Consequences:
+Fingerprint change (ledger #7). Batch of 1,000: offsides 2.8 per match (real ≈ 3–4); goals 2.73 → 2.64; other figures
+within noise. Sweep (200 matches): eagerness 1.0 / 1.5 / 2.0 m → 1.8 / 2.7 / 3.8 offsides.
+
