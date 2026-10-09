@@ -88,6 +88,7 @@ public sealed class MatchState
     /// <summary>Stops play with the given stoppage. Nobody holds a dead ball.</summary>
     internal void StopPlay(Stoppage stoppage)
     {
+        Offside = null;
         if (Ball.PossessorId is not null)
             SetBallLoose(Ball.Position);
         CurrentStoppage = stoppage;
@@ -179,7 +180,15 @@ public sealed class MatchState
     /// </summary>
     public BallTouch? LastTouch { get; private set; }
 
-    internal void RecordTouch(PlayerId id) => LastTouch = new BallTouch(id, Player(id).Team);
+    internal void RecordTouch(PlayerId id)
+    {
+        LastTouch = new BallTouch(id, Player(id).Team);
+        Offside = null; // any touch ends the judgement made when the ball was last played
+    }
+
+    /// <summary>Who was offside when the ball was last passed (ADR-029); null once anyone touches it, or after a restart
+    /// with no offside (throw-in, goal kick, corner).</summary>
+    public Laws.OffsideJudgement? Offside { get; internal set; }
 
     internal void SetBallLoose(Vec2 position)
     {

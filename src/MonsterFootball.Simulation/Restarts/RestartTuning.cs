@@ -17,6 +17,9 @@ public sealed record RestartTuning
     /// <summary>Minimum time between the ball going out and the corner (players go up for it).</summary>
     public double CornerDeadBallSeconds { get; init; } = 20;
 
+    /// <summary>Minimum time between an offside and the indirect free kick (quickly taken, usually by a defender).</summary>
+    public double IndirectFreeKickDeadBallSeconds { get; init; } = 12;
+
     /// <summary>Once the dead-ball time is over, how long the restart waits for players to reach position before
     /// placing any stragglers directly.</summary>
     public double SetupTimeoutSeconds { get; init; } = 30;
@@ -32,6 +35,9 @@ public sealed record RestartTuning
 
     /// <summary>At a corner, opponents stay at least this far from the ball.</summary>
     public double CornerExclusionRadius { get; init; } = 9.15;
+
+    /// <summary>At a free kick, opponents stay at least this far from the ball (Law 13).</summary>
+    public double FreeKickExclusionRadius { get; init; } = 9.15;
 
     /// <summary>Furthest teammate a thrower will throw to.</summary>
     public double ThrowInMaxRange { get; init; } = 25;

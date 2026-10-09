@@ -67,6 +67,7 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
             RestartType.Corner => tuning.CornerDeadBallSeconds,
             _ => 0,
         },
+        StoppageReason.Offside => tuning.IndirectFreeKickDeadBallSeconds,
         _ => 0,
     };
 
@@ -130,11 +131,14 @@ internal sealed class RestartSystem(PassResolver passResolver, OnBallWeights wei
         {
             RestartType.ThrowIn => PossessionCause.ThrowIn,
             RestartType.GoalKick => PossessionCause.GoalKick,
-            _ => PossessionCause.Corner,
+            RestartType.Corner => PossessionCause.Corner,
+            _ => PossessionCause.FreeKick,
         });
 
+        // No offside offence directly from a throw-in, goal kick or corner (Law 11); free kicks are judged as any pass.
+        var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick or RestartType.Corner);
         if (ChooseReceiver(state, context.Config.Restarts, stoppage, taker) is { } receiver)
-            PassExecution.Launch(context, passResolver.Resolve(state, new PassIntent(taker.PlayerId, receiver.PlayerId), context.Random));
+            PassExecution.Launch(context, passResolver.Resolve(state, new PassIntent(taker.PlayerId, receiver.PlayerId), context.Random), offsideApplies);
     }
 
     /// <summary>

@@ -202,6 +202,27 @@ public class MatchStatisticsTests
     }
 
     [Fact]
+    public void Offsides_count_for_the_offending_team_and_free_kicks_for_the_team_taking_them()
+    {
+        var stats = MatchStatistics.FromEvents(
+        [
+            E(0, MatchEventType.Kickoff, TeamSide.Home),
+            E(100, MatchEventType.PlayStopped, TeamSide.Away) with
+            {
+                Metadata = ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>("reason", "Offside"), new KeyValuePair<string, string>("restart", "IndirectFreeKick")]),
+            },
+            E(112, MatchEventType.RestartTaken, TeamSide.Away) with
+            {
+                Metadata = ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>("restart", "IndirectFreeKick")]),
+            },
+            E(200, MatchEventType.MatchFinished),
+        ]);
+
+        Assert.Equal((1, 0), (stats.Home.Offsides, stats.Away.Offsides));
+        Assert.Equal((0, 1), (stats.Home.FreeKicks, stats.Away.FreeKicks));
+    }
+
+    [Fact]
     public void Statistics_are_deterministic_by_seed()
     {
         MatchStatistics Run() => new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), 42)

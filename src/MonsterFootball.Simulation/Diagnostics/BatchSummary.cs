@@ -32,6 +32,7 @@ public sealed record BatchSummary(
     public double AverageThrowIns { get; init; }
     public double AverageGoalKicks { get; init; }
     public double AverageCorners { get; init; }
+    public double AverageOffsides { get; init; }
 
     public static BatchSummary From(IReadOnlyList<MatchSummary> summaries)
     {
@@ -70,6 +71,7 @@ public sealed record BatchSummary(
             AverageThrowIns = ordered.Average(s => s.Statistics.Home.ThrowIns + s.Statistics.Away.ThrowIns),
             AverageGoalKicks = ordered.Average(s => s.Statistics.Home.GoalKicks + s.Statistics.Away.GoalKicks),
             AverageCorners = ordered.Average(s => s.Statistics.Home.Corners + s.Statistics.Away.Corners),
+            AverageOffsides = ordered.Average(s => s.Statistics.Home.Offsides + s.Statistics.Away.Offsides),
         };
     }
 }
