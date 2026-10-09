@@ -85,8 +85,13 @@ public static class MatchReport
                 _ => $"{TeamName(state, e.Team)} win the ball",
             },
             MatchEventType.ShotTaken => $"{P(e.ActorPlayerId)} shoots",
-            MatchEventType.ShotSaved => $"Saved by {P(e.ActorPlayerId)}",
-            MatchEventType.ShotMissed => "Wide",
+            MatchEventType.ShotSaved => $"Saved by {P(e.ActorPlayerId)}" + e.Metadata.GetValueOrDefault("save") switch
+            {
+                "Parried" => " — parried",
+                "ParriedBehind" => " — pushed behind",
+                _ => "",
+            },
+            MatchEventType.ShotMissed => e.Metadata.ContainsKey("deflected") ? $"Deflected behind by {P(e.TargetPlayerId)}" : "Wide",
             MatchEventType.GoalScored => $"GOAL — {P(e.ActorPlayerId)} ({e.Metadata.GetValueOrDefault("score", "")})",
             MatchEventType.AddedTimeAnnounced => $"Added time: +{e.Metadata.GetValueOrDefault("minutes", "?")}",
             MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
