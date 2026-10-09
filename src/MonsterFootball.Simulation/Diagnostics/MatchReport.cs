@@ -165,6 +165,9 @@ public static class MatchReport
             ("Pass completion", Pct(stats.Home.PassCompletion), Pct(stats.Away.PassCompletion)),
             ("Possession", Pct(stats.PossessionShare(TeamSide.Home)), Pct(stats.PossessionShare(TeamSide.Away))),
             ("Possessions won", N(stats.Home.PossessionsWon), N(stats.Away.PossessionsWon)),
+            ("Corners", N(stats.Home.Corners), N(stats.Away.Corners)),
+            ("Throw-ins", N(stats.Home.ThrowIns), N(stats.Away.ThrowIns)),
+            ("Goal kicks", N(stats.Home.GoalKicks), N(stats.Away.GoalKicks)),
         };
 
         var labelWidth = rows.Max(r => r.Label.Length);

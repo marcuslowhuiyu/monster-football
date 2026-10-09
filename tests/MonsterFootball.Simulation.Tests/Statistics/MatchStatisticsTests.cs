@@ -176,6 +176,32 @@ public class MatchStatisticsTests
     }
 
     [Fact]
+    public void Play_resumes_at_each_restart_and_restarts_are_counted_for_the_team_taking_them()
+    {
+        MatchEvent Restart(double seconds, TeamSide team, RestartType type) => E(seconds, MatchEventType.RestartTaken, team) with
+        {
+            Metadata = ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>("restart", type.ToString())]),
+        };
+
+        var stats = MatchStatistics.FromEvents(
+        [
+            E(0, MatchEventType.Kickoff, TeamSide.Home),
+            E(100, MatchEventType.PlayStopped, TeamSide.Away),
+            Restart(108, TeamSide.Away, RestartType.ThrowIn),
+            E(200, MatchEventType.PlayStopped, TeamSide.Home),
+            Restart(220, TeamSide.Home, RestartType.Corner),
+            E(250, MatchEventType.PlayStopped, TeamSide.Away),
+            Restart(265, TeamSide.Away, RestartType.GoalKick),
+            E(300, MatchEventType.MatchFinished),
+        ]);
+
+        Assert.Equal(100 + 92 + 30 + 35, stats.BallInPlaySeconds, 9);
+        Assert.Equal(100 + 30, stats.Home.PossessionSeconds, 9);
+        Assert.Equal((0, 1, 0), (stats.Home.ThrowIns, stats.Home.Corners, stats.Home.GoalKicks));
+        Assert.Equal((1, 0, 1), (stats.Away.ThrowIns, stats.Away.Corners, stats.Away.GoalKicks));
+    }
+
+    [Fact]
     public void Statistics_are_deterministic_by_seed()
     {
         MatchStatistics Run() => new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), 42)
