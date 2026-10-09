@@ -149,8 +149,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 
 | PR | Branch | Scope | FP |
 |---|---|---|---|
-| 5a | `feat/m2-5-offside-rules` | `OffsideRules` (position at the pass, second-last opponent), offside snapshot at each open-play pass, involvement on receive/collect, reset on opponent touch, restart exceptions, indirect free kick handler; dormant | no |
-| 5b | `feat/m2-5-offside-enabled` | enable offside; shape caps at the second-last opponent; runs hold the line and go on the pass; passers judge the line with an Awareness-dependent margin (deterministic, D8). ADR-026. | yes |
+| 5a+5b | `feat/m2-5-offside` | One PR (CI budget): offside rules, judgement at the pass, involvement in `GiveBall`, restart exceptions, indirect free kick — dormant behind `MatchConfig.OffsideEnabled`; then enabled with offside-aware AI (passer margin and runner eagerness by Awareness, D8). ADR-029. | yes (second commit) |
 
 ### M2.6 — Fouls, free kicks, penalties
 
@@ -214,7 +213,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 | 4 | 1d | periods, half-time kickoff, added time |
 | 5 | 3b | tackle danger area |
 | 6 | 4 | ball out of play, rolling, parries, deflections |
-| 7 | 5b | offside and offside-aware AI |
+| 7 | 5 | offside and offside-aware AI |
 | 8 | 6b | fouls |
 | 9 | 7b | cards and dismissals |
 | 10 | 7c | calibration (only if tuned) |

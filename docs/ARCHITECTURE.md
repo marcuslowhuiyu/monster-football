@@ -66,7 +66,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |
 | `Restarts` | `RestartSystem` (dispatch on restart type: dead ball → setup → restart), `RestartLayout` (restart positions, law distances), `RestartTakers`, `RestartTuning` | M1.7, M2.1c, M2.4 |
-| `Laws` | `OutOfPlay` (segment–boundary crossing, restart from line and last touch), `BoundaryLine` | M2.4 |
+| `Laws` | `OutOfPlay` (segment–boundary crossing, restart from line and last touch), `BoundaryLine`; `Offside` (line, position, judgement at the pass), `OffsideJudgement` | M2.4–M2.5 |
 | `AI` | `ActionCandidate`/`ActionKind`, `UtilitySelector`, `IUtilityModifier`, `AiTuning`/`OnBallWeights`/`OffBallWeights` (weights), `OnBallCandidateGenerator` + `OnBallDecisionSystem`, `OffBallCandidateGenerator` + `OffBallDecisionSystem` + `OffBallPlan` | M1.9 |
 | `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
 | root | `MatchContext` | M1.5 |

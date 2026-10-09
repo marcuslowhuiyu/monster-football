@@ -152,6 +152,10 @@
 
 **Second-last opponent** — The offside line: normally the last outfield defender, the keeper being last.
 
+**Offside judgement** — Who was in an offside position when a pass was played; the first of them to get the ball is penalised, any other touch clears it.
+
+**Indirect free kick** — A free kick that cannot be scored directly; awarded for offside.
+
 **DOGSO** — Denying an obvious goal-scoring opportunity; a foul that usually means a red card.
 
 **Dismissal** — A player sent off (straight red or second yellow); removed from active play for the rest of the match.
