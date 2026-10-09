@@ -62,10 +62,11 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Periods` | `PeriodSystem` (added time, end of a period at a stoppage, half-time, full time) | M2.1d |
 | `Tactical` | `LongitudinalBand`, `VerticalChannel`, `TacticalZone`, `TacticalAreas`, `ZoneBoundaries`, `TacticalZones` (`MatchState.Zones`) | M2.3 |
 | `Observation` | `MatchFrame`, `PlayerFrame`, `BallFrame`, `BallFlightFrame` (immutable per-tick copies for observers) | M2.2 |
-| `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`; `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
+| `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`, `LooseBallMotion` (rolling ball, M2.4); `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |
-| `Restarts` | `RestartSystem` (stoppage positioning, dead ball → setup → restart), `RestartTuning` | M1.7, M2.1c |
+| `Restarts` | `RestartSystem` (dispatch on restart type: dead ball → setup → restart), `RestartLayout` (restart positions, law distances), `RestartTakers`, `RestartTuning` | M1.7, M2.1c, M2.4 |
+| `Laws` | `OutOfPlay` (segment–boundary crossing, restart from line and last touch), `BoundaryLine` | M2.4 |
 | `AI` | `ActionCandidate`/`ActionKind`, `UtilitySelector`, `IUtilityModifier`, `AiTuning`/`OnBallWeights`/`OffBallWeights` (weights), `OnBallCandidateGenerator` + `OnBallDecisionSystem`, `OffBallCandidateGenerator` + `OffBallDecisionSystem` + `OffBallPlan` | M1.9 |
 | `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
 | root | `MatchContext` | M1.5 |
