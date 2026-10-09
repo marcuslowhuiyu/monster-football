@@ -93,6 +93,7 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
 
             case TackleOutcome.LooseBall:
                 state.SetBallLoose(result.BallPosition);
+                state.RecordTouch(tackler.PlayerId);
                 context.Emit(MatchEventType.TackleLooseBall, actor: tackler.PlayerId, target: carrier.PlayerId,
                     team: tackler.Team, position: result.BallPosition);
                 carrier.TackleCooldownUntilTick = tick + Ticks(DispossessedCooldownSeconds);
