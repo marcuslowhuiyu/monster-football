@@ -36,7 +36,7 @@ public sealed class MatchSimulation
     private readonly MovementSystem _movement = new();
     private readonly LooseBallSystem _looseBall = new();
     private readonly StaminaSystem _stamina = new();
-    private readonly RestartSystem _restart = new();
+    private readonly RestartSystem _restart;
     private readonly PeriodSystem _periods = new();
     private bool _started;
 
@@ -61,6 +61,7 @@ public sealed class MatchSimulation
         _context = new MatchContext(config, State, random, _log);
 
         var passResolver = new PassResolver();
+        _restart = new RestartSystem(passResolver, config.Ai.OnBall);
         var selector = new UtilitySelector();
         _tackle = new TackleSystem(new TackleResolver(), config.Ai.OffBall);
         _offBall = new OffBallDecisionSystem(new OffBallCandidateGenerator(config.Ai.OffBall), selector);
@@ -122,7 +123,7 @@ public sealed class MatchSimulation
     /// </summary>
     private void RunStoppage()
     {
-        _restart.Position(State);         // restart targets for everyone
+        _restart.Position(_context);      // restart targets for everyone
         _restart.Advance(_context);       // dead ball → setup → restart taken
         if (State.Phase == MatchPhase.OpenPlay)
             return;

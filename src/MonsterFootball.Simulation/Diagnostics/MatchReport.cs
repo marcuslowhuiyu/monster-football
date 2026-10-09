@@ -80,6 +80,8 @@ public static class MatchReport
             {
                 PossessionCause.Kickoff => $"{TeamName(state, e.Team)} have the ball (kickoff)",
                 PossessionCause.KeeperRestart => $"{TeamName(state, e.Team)} have the ball (keeper restart)",
+                PossessionCause.ThrowIn or PossessionCause.GoalKick or PossessionCause.Corner =>
+                    $"{TeamName(state, e.Team)} have the ball ({RestartName(e.GetPossessionCause().ToString()!)})",
                 _ => $"{TeamName(state, e.Team)} win the ball",
             },
             MatchEventType.ShotTaken => $"{P(e.ActorPlayerId)} shoots",
@@ -89,6 +91,9 @@ public static class MatchReport
             MatchEventType.AddedTimeAnnounced => $"Added time: +{e.Metadata.GetValueOrDefault("minutes", "?")}",
             MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
                                           + (e.Metadata.GetValueOrDefault("end") == "SafetyCap" ? " (safety cap: play never stopped)" : ""),
+            MatchEventType.RestartTaken => $"{Capitalise(RestartName(e.Metadata.GetValueOrDefault("restart", "?")))}: {P(e.ActorPlayerId)}",
+            MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "BallOutOfPlay" =>
+                $"Out of play — {RestartName(e.Metadata.GetValueOrDefault("restart", "?"))} to {TeamName(state, e.Team)}",
             MatchEventType.PlayStopped =>
                 $"Play stopped ({e.Metadata.GetValueOrDefault("reason", "?")}) — {TeamName(state, e.Team)} to restart: {e.Metadata.GetValueOrDefault("restart", "?")}",
             _ => null,
@@ -179,6 +184,18 @@ public static class MatchReport
             ? $"{team} GK"
             : $"{team} #{player.Definition.ShirtNumber}";
     }
+
+    /// <summary>A restart type in words: <c>ThrowIn</c> → "throw-in".</summary>
+    private static string RestartName(string restart) => restart switch
+    {
+        "ThrowIn" => "throw-in",
+        "GoalKick" => "goal kick",
+        "Corner" => "corner",
+        "Kickoff" => "kickoff",
+        _ => restart,
+    };
+
+    private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     private static string TeamName(MatchState state, TeamSide? side) => side is { } s ? state.Team(s).Name : "?";
 }
