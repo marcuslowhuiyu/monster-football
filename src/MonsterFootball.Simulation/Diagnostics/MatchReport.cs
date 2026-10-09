@@ -84,7 +84,7 @@ public static class MatchReport
                     $"{TeamName(state, e.Team)} have the ball ({RestartName(e.GetPossessionCause().ToString()!)})",
                 _ => $"{TeamName(state, e.Team)} win the ball",
             },
-            MatchEventType.ShotTaken => $"{P(e.ActorPlayerId)} shoots",
+            MatchEventType.ShotTaken => $"{P(e.ActorPlayerId)} shoots" + (e.Metadata.ContainsKey("penalty") ? " (penalty)" : ""),
             MatchEventType.ShotSaved => $"Saved by {P(e.ActorPlayerId)}" + e.Metadata.GetValueOrDefault("save") switch
             {
                 "Parried" => " — parried",
@@ -92,7 +92,7 @@ public static class MatchReport
                 _ => "",
             },
             MatchEventType.ShotMissed => e.Metadata.ContainsKey("deflected") ? $"Deflected behind by {P(e.TargetPlayerId)}" : "Wide",
-            MatchEventType.GoalScored => $"GOAL — {P(e.ActorPlayerId)} ({e.Metadata.GetValueOrDefault("score", "")})",
+            MatchEventType.GoalScored => $"GOAL — {P(e.ActorPlayerId)}{(e.Metadata.ContainsKey("penalty") ? " (penalty)" : "")} ({e.Metadata.GetValueOrDefault("score", "")})",
             MatchEventType.AddedTimeAnnounced => $"Added time: +{e.Metadata.GetValueOrDefault("minutes", "?")}",
             MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
                                           + (e.Metadata.GetValueOrDefault("end") == "SafetyCap" ? " (safety cap: play never stopped)" : ""),
@@ -177,6 +177,7 @@ public static class MatchReport
             ("Goal kicks", N(stats.Home.GoalKicks), N(stats.Away.GoalKicks)),
             ("Free kicks", N(stats.Home.FreeKicks), N(stats.Away.FreeKicks)),
             ("Offsides", N(stats.Home.Offsides), N(stats.Away.Offsides)),
+            ("Penalties", $"{N(stats.Home.PenaltiesScored)}/{N(stats.Home.Penalties)}", $"{N(stats.Away.PenaltiesScored)}/{N(stats.Away.Penalties)}"),
         };
 
         var labelWidth = rows.Max(r => r.Label.Length);
@@ -204,6 +205,8 @@ public static class MatchReport
         "GoalKick" => "goal kick",
         "Corner" => "corner",
         "IndirectFreeKick" => "indirect free kick",
+        "DirectFreeKick" => "free kick",
+        "Penalty" => "penalty",
         "FreeKick" => "free kick",
         "Kickoff" => "kickoff",
         _ => restart,

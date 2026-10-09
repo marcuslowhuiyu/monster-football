@@ -107,12 +107,42 @@ internal sealed class ShotResolver
         return new ShotEstimate(ability, distance, pressure, anglePenalty, onTarget, save);
     }
 
-    public ShotResult Resolve(MatchState state, ShotIntent intent, IMatchRandom random)
+    public ShotResult Resolve(MatchState state, ShotIntent intent, IMatchRandom random) =>
+        Resolve(state, intent, Estimate(state, intent), random, penalty: false);
+
+    /// <summary>
+    /// A penalty from the spot (MILESTONE_2 §13): on target = Sigmoid(0.5·(ability − 5) + 1.55) (≈ 0.92 between equals),
+    /// save = Sigmoid(0.35·(keeper rating − shot power) − 0.75) (≈ 0.20); then placement, hold or parry as any shot.
+    /// Ability and keeper rating as in <see cref="Estimate"/>, without distance, angle or pressure.
+    /// </summary>
+    public ShotResult ResolvePenalty(MatchState state, ShotIntent intent, IMatchRandom random) =>
+        Resolve(state, intent, PenaltyEstimate(state, intent), random, penalty: true);
+
+    public const double PenaltyOnTargetScale = 0.5;
+    public const double PenaltyOnTargetBias = 1.55;
+    public const double PenaltySaveBias = -0.75;
+
+    public ShotEstimate PenaltyEstimate(MatchState state, ShotIntent intent)
+    {
+        var shooter = state.Player(intent.Shooter);
+        var keeper = OpposingKeeper(state, shooter);
+        var stats = shooter.Definition.Stats;
+        var ability = (stats.Finishing + TechniqueWeight * (stats.Technique - 5) + PowerWeight * (stats.Power - 5))
+            * FatigueModel.EffectivenessFactor(shooter);
+        var onTarget = Curves.Sigmoid(PenaltyOnTargetScale * (ability - 5) + PenaltyOnTargetBias);
+        var keeperStats = keeper.Definition.Stats;
+        var keeperRating = (keeperStats.Keeping + KeeperAwarenessWeight * (keeperStats.Awareness - 5)) * FatigueModel.EffectivenessFactor(keeper);
+        var shotPower = 0.5 * stats.Finishing + 0.5 * stats.Power;
+        var save = Curves.Sigmoid(SaveScale * (keeperRating - shotPower) + PenaltySaveBias);
+        var distance = shooter.Position.DistanceTo(state.Pitch.OpponentGoalCentre(shooter.Team));
+        return new ShotEstimate(ability, distance, 0, 0, onTarget, save);
+    }
+
+    private ShotResult Resolve(MatchState state, ShotIntent intent, ShotEstimate estimate, IMatchRandom random, bool penalty)
     {
         if (!state.HasBall(intent.Shooter))
             throw new ArgumentException($"{state.Player(intent.Shooter)} cannot shoot without the ball.", nameof(intent));
 
-        var estimate = Estimate(state, intent);
         var shooter = state.Player(intent.Shooter);
         var keeper = OpposingKeeper(state, shooter);
         var pitch = state.Pitch;
@@ -127,6 +157,7 @@ internal sealed class ShotResolver
         {
             SaveProbability = estimate.SaveProbability,
             Distance = estimate.Distance,
+            IsPenalty = penalty,
         };
 
         if (!random.Roll(estimate.OnTargetProbability))
@@ -135,7 +166,7 @@ internal sealed class ShotResolver
             // deflect it behind for a corner instead of a goal kick.
             var side = random.Roll(0.5) ? 1 : -1;
             var wide = halfGoal + 0.5 + 3.5 * random.NextDouble();
-            var blocker = LaneBlockers(state, shooter, pitch.OpponentGoalCentre(shooter.Team)).FirstOrDefault();
+            var blocker = penalty ? null : LaneBlockers(state, shooter, pitch.OpponentGoalCentre(shooter.Team)).FirstOrDefault();
             var deflected = blocker is not null && random.Roll(DeflectionProbability);
             return Result(ShotOutcome.Missed, pitch.Clamp(new Vec2(goalLineX, centreY + side * wide))) with
             {

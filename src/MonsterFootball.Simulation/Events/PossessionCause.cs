@@ -38,6 +38,9 @@ public enum PossessionCause
 
     /// <summary>The taker took a free kick.</summary>
     FreeKick,
+
+    /// <summary>The taker took a penalty.</summary>
+    Penalty,
 }
 
 public static class PossessionCauseExtensions
@@ -47,7 +50,7 @@ public static class PossessionCauseExtensions
     /// <summary>True when the ball was won in open play; false for restarts (kickoffs, throw-ins, goal kicks, free kicks, …).</summary>
     public static bool IsOpenPlay(this PossessionCause cause) =>
         cause is not (PossessionCause.Kickoff or PossessionCause.KeeperRestart
-            or PossessionCause.ThrowIn or PossessionCause.GoalKick or PossessionCause.Corner or PossessionCause.FreeKick);
+            or PossessionCause.ThrowIn or PossessionCause.GoalKick or PossessionCause.Corner or PossessionCause.FreeKick or PossessionCause.Penalty);
 
     /// <summary>The cause recorded on a possession event, or null if the event carries none.</summary>
     public static PossessionCause? GetPossessionCause(this MatchEvent e) =>

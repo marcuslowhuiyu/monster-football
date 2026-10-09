@@ -61,12 +61,12 @@ public sealed class MatchSimulation
         _context = new MatchContext(config, State, random, _log);
 
         var passResolver = new PassResolver();
-        _restart = new RestartSystem(passResolver, config.Ai.OnBall);
         var selector = new UtilitySelector();
         _tackle = new TackleSystem(new TackleResolver(), config.Ai.OffBall);
         _offBall = new OffBallDecisionSystem(new OffBallCandidateGenerator(config.Ai.OffBall), selector);
         var carryResolver = new CarryResolver();
         var shotResolver = new ShotResolver();
+        _restart = new RestartSystem(passResolver, shotResolver, config.Ai.OnBall);
         _onBallDecision = new OnBallDecisionSystem(
             new OnBallCandidateGenerator(config.Ai.OnBall, passResolver, carryResolver, shotResolver),
             selector,

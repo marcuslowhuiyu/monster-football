@@ -4,8 +4,8 @@ using MonsterFootball.Simulation.Events;
 namespace MonsterFootball.Simulation.Statistics;
 
 /// <summary>
-/// Per-team match statistics. Throw-ins, goal kicks, corners and free kicks count restarts the team took; offsides
-/// count the team's players caught offside.
+/// Per-team match statistics. Throw-ins, goal kicks, corners, free kicks and penalties count restarts the team took;
+/// offsides count the team's players caught offside.
 /// </summary>
 public sealed record TeamStatistics(
     int Goals,
@@ -21,6 +21,8 @@ public sealed record TeamStatistics(
     public int Corners { get; init; }
     public int FreeKicks { get; init; }
     public int Offsides { get; init; }
+    public int Penalties { get; init; }
+    public int PenaltiesScored { get; init; }
 
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
@@ -92,7 +94,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                         case nameof(RestartType.ThrowIn): Of(e.Team.Value).ThrowIns++; break;
                         case nameof(RestartType.GoalKick): Of(e.Team.Value).GoalKicks++; break;
                         case nameof(RestartType.Corner): Of(e.Team.Value).Corners++; break;
-                        case nameof(RestartType.IndirectFreeKick): Of(e.Team.Value).FreeKicks++; break;
+                        case nameof(RestartType.IndirectFreeKick) or nameof(RestartType.DirectFreeKick): Of(e.Team.Value).FreeKicks++; break;
+                        case nameof(RestartType.Penalty): Of(e.Team.Value).Penalties++; break;
                     }
 
                     if (!inPlay)
@@ -128,6 +131,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                     break;
                 case MatchEventType.GoalScored:
                     Of(e.Team!.Value).Goals++;
+                    if (e.Metadata.ContainsKey("penalty"))
+                        Of(e.Team.Value).PenaltiesScored++;
                     Of(e.Team.Value).ShotsOnTarget++;
                     break;
                 case MatchEventType.MatchFinished:
@@ -153,6 +158,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int Corners;
         public int FreeKicks;
         public int Offsides;
+        public int Penalties;
+        public int PenaltiesScored;
 
         public TeamStatistics ToStatistics() =>
             new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
@@ -162,6 +169,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 Corners = Corners,
                 FreeKicks = FreeKicks,
                 Offsides = Offsides,
+                Penalties = Penalties,
+                PenaltiesScored = PenaltiesScored,
             };
     }
 }
