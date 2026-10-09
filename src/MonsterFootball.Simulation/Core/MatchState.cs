@@ -169,7 +169,17 @@ public sealed class MatchState
         Ball.GiveTo(id, player.Position);
         LastPossessionTeam = player.Team;
         PossessionStartTick = Clock.Tick;
+        RecordTouch(id);
     }
+
+    /// <summary>
+    /// The player who last touched the ball, and their team (MILESTONE_2 §9.1): decides throw-ins, goal kicks and
+    /// corners. Every possession counts as a touch; so do a pass or shot strike, a tackle that knocks the ball loose,
+    /// a parry and a deflection. Null before the first kickoff.
+    /// </summary>
+    public BallTouch? LastTouch { get; private set; }
+
+    internal void RecordTouch(PlayerId id) => LastTouch = new BallTouch(id, Player(id).Team);
 
     internal void SetBallLoose(Vec2 position)
     {
@@ -181,6 +191,7 @@ public sealed class MatchState
     {
         ReleaseHolder();
         Ball.Launch(flight);
+        RecordTouch(flight.Pass?.Passer ?? flight.Shot!.Shooter);
     }
 
     /// <summary>A player who loses the ball also loses any action that needed it (e.g. a carry).</summary>
