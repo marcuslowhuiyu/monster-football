@@ -213,7 +213,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 | 7 | 5 | offside and offside-aware AI |
 | 8 | 6 | fouls |
 | 9 | 7b | cards and dismissals |
-| 10 | 7c | calibration (only if tuned) |
+| 10 | 7 | calibration: safety cap 180 s |
 
 Each is verified cross-platform by CI and recorded in its ADR. Any other PR that changes a fingerprint is a bug.
 

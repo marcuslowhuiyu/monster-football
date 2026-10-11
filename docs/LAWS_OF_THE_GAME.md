@@ -10,7 +10,7 @@ The simplified laws the simulation implements; only implemented laws are listed.
 - Added time for what happens in regular time — 45 s per goal, 45 s per penalty, 20 s per card, 30 s per dismissal —
   rounded up to whole minutes and announced when regular time ends.
 - **A half ends only when play stops** after regular plus added time — a ball in flight is never cut off. If play
-  never stops, the half ends at an interim safety cap (60 s past added time).
+  never stops, the half ends at a safety cap 3 minutes past added time (about one half in ten until clearances, D6).
 - Simplification: teams do not change ends at half-time (D1).
 
 ## Ball out of play (implemented, M2.4)

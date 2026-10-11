@@ -30,7 +30,7 @@ ADR-024, `PeriodSystem`, checked every tick after the clock advances:
 
 - **Allowances**: in a period's regular time, each goal adds `AddedTime.PerGoalSeconds` (45 s), each penalty `PerPenaltySeconds` (45 s), each card `PerCardSeconds` (20 s) and each dismissal `PerDismissalSeconds` (30 s; a second yellow counts as a card and a dismissal).
 - **Announcement**: at the end of regular time, `AddedTimeAnnounced` (metadata `minutes`, `period`) with the allowance rounded **up** to whole minutes.
-- **End of a period**: once regular + added time is up, the period ends at the first tick on which play is stopped. A ball in flight is never cut off: a struck shot always lands. If play has not stopped `AddedTime.SafetyCapSeconds` after that (interim 60 s; see *Current limitations*), the period ends at the next tick with no ball in flight. `PeriodEnded` (metadata `period`, `end` = `Stoppage` or `SafetyCap`).
+- **End of a period**: once regular + added time is up, the period ends at the first tick on which play is stopped. A ball in flight is never cut off: a struck shot always lands. If play has not stopped `AddedTime.SafetyCapSeconds` after that (180 s, ADR-033; see *Current limitations*), the period ends at the next tick with no ball in flight. `PeriodEnded` (metadata `period`, `end` = `Stoppage` or `SafetyCap`).
 - **Half-time** takes no ticks: the second period starts at once with a `PeriodStart` stoppage and a kickoff for the side that did not take the opening one; teams line up (placed) and kick off on the next tick. No stamina recovery.
 - **Full time**: the last period's `PeriodEnded` is followed by `MatchFinished`.
 
@@ -295,25 +295,28 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
-Current defaults, 1 000 matches between all-5 teams (after M2.6 fouls):
+Current defaults, 1 000 matches between all-5 teams (after the M2.7 calibration checkpoint):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 2.88 (max 9) |
-| Shots / on target per match | 26.5 / 8.6 (32 %) |
-| Passes per match, completion | 1 427, 82 % |
-| Home win / draw / away win | 38.4 % / 27.3 % / 34.3 % |
+| Goals per match | 2.89 (max 9) |
+| Shots / on target per match | 27.4 / 8.7 (32 %) |
+| Passes per match, completion | 1 471, 82 % |
+| Home win / draw / away win | 37.9 % / 24.6 % / 37.5 % |
 | Home possession | 50.1 % |
-| Tackles / carries / possession changes | 262 / 165 / 325 |
-| Striker share of goals | 69 % |
-| Outfield distance, stamina at full time | 13.9 km, 54.3 |
-| Throw-ins / goal kicks / corners / offsides per match | 8.1 / 14.9 / 6.1 / 2.5 |
-| Fouls; penalties (scored) per match | 22.7; 0.31 (77 %) |
-| Ball in play; added time per half; halves ended by the safety cap | 77.0 min; 1.5 min; 39 % |
+| Tackles / carries / possession changes | 270 / 170 / 335 |
+| Striker share of goals | 70 % |
+| Outfield distance, stamina at full time | 14.2 km, 53.1 |
+| Throw-ins / goal kicks / corners / offsides per match | 8.1 / 15.2 / 6.4 / 2.5 |
+| Fouls; penalties (scored) per match | 22.0; 0.31 (72 %) |
+| Yellow / red cards per match; abandoned | 3.26 / 0.13; 0 % |
+| Ball in play; added time per half; halves ended by the safety cap | 79.4 min; 2.1 min; 10 % |
 
-Health bands also cover goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45) and penalties (≤ 0.8) per match. Throw-ins (real ≈ 40) are far below
-real football because play rarely reaches the touchlines (no crosses, clearances or long switches), and the ball is in play ~77 of ~93 minutes (real ≈ 55–60); the throw-in and ball-in-play bands join at the M2.7
-calibration checkpoint (D6 clearances are considered there).
+Health bands also cover, per match, goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45), penalties
+(≤ 0.8), yellow cards (0.5–8), red cards (≤ 0.6), added minutes per period (0–10) and abandoned matches (≤ 0.1 %).
+Throw-ins (real ≈ 40) are far below real football because play rarely reaches the touchlines (no crosses, clearances
+or long switches), and the ball is in play ~79 of ~95 minutes (real ≈ 55–60). Until clearances (D6) land, three bands
+are interim (ADR-033): ball in play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
 
 ## Observation (implemented)
 
@@ -427,11 +430,11 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 
 ## Current limitations
 
-- **Striker dominance**: strikers score ~75 % of goals; wingers and midfielders rarely finish moves.
-- **Volume**: ~1 560 passes, ~285 tackles and ~360 possession changes per match (~85 minutes of ball in play) — busy compared with real football.
-- **Distance**: 15.0 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
+- **Striker dominance**: strikers score ~70 % of goals; wingers and midfielders rarely finish moves.
+- **Volume**: ~1 470 passes, ~270 tackles and ~335 possession changes per match (~79 minutes of ball in play) — busy compared with real football.
+- **Distance**: 14.2 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
-- Few stoppages: ~29 ball-out restarts (8.1 throw-ins), ~23 fouls and ~2.5 offsides per match, so ~39 % of halves still end at the interim 60 s safety cap; revisit at the M2.7 calibration checkpoint.
+- Few stoppages: ~30 ball-out restarts (8.1 throw-ins), ~22 fouls and ~2.5 offsides per match, so ~10 % of halves still end at the 180 s safety cap; defensive clearances (D6, triggered at the M2.7 checkpoint) are next.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; corners are a pass into the box; no headers, routines or short corners.
 - No blocks as events or posts; deflections only send misses behind.

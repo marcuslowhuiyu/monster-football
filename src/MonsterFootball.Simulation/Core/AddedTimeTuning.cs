@@ -22,8 +22,8 @@ public sealed record AddedTimeTuning
 
     /// <summary>
     /// A period ends at the first stoppage after regular plus added time; if play has not stopped this long after
-    /// that, it ends at the next tick with no ball in flight. Interim value until the ball can go out of play (M2.4),
-    /// when goals are the only stoppages; revisit at the M2.7 calibration checkpoint.
+    /// that, it ends at the next tick with no ball in flight. 180 s (D2, ADR-033): about one half in ten still reaches it
+    /// until clearances (D6) bring more stoppages.
     /// </summary>
-    public double SafetyCapSeconds { get; init; } = 60;
+    public double SafetyCapSeconds { get; init; } = 180;
 }
