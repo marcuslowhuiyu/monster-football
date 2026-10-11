@@ -158,13 +158,27 @@
 
 **Foul** — A tackle judged illegal; stops play for a direct free kick, or a penalty in the fouling team's own area.
 
-**Severity** — How bad a foul was (0–1); decides cards from M2.7.
+**Severity** — How bad a foul was (0–1); the likelihood of a card rises with it.
 
 **Wall** — Defenders lined up 9.15 m from a direct free kick, across the line to goal; they block the shot like any defender in the lane.
 
 **DOGSO** — Denying an obvious goal-scoring opportunity; a foul that usually means a red card.
 
 **Dismissal** — A player sent off (straight red or second yellow); removed from active play for the rest of the match.
+
+**Yellow card (caution)** — For a reckless foul or stopping a promising attack; a second yellow is a red.
+
+**Red card** — For serious foul play, most denials of an obvious goal-scoring opportunity, or a second yellow; the player is sent off.
+
+**Serious foul play** — A challenge so severe it is a straight red.
+
+**Promising attack** — An attack in the final third with at most one outfield defender goal-side; stopping it with a foul is a yellow.
+
+**Reduced team** — A side playing on after a dismissal; it re-forms into a smaller shape (4-4-1 with ten, and so on).
+
+**Abandoned match** — A match ended early because a team fell below seven players; the score stands.
+
+**Role** — The 4-3-3 slot a player fills now; changes when the team re-forms after a dismissal.
 
 **MatchFrame** — Immutable copy of observable match state at the end of a tick; what analysis and the viewer read (implemented, M2.2).
 
