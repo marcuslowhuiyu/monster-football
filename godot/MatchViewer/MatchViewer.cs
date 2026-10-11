@@ -83,6 +83,8 @@ public partial class MatchViewer : Node2D
         for (var i = 0; i < frame.Players.Length; i++)
         {
             var player = frame.Players[i];
+            if (!player.IsActive)
+                continue; // sent off
             var centre = transform.ToScreen(_view.PlayerPositions[i]);
             var colour = player.Team == TeamSide.Home ? HomeColour : AwayColour;
             if (player.Slot == PlayingPosition.GK)

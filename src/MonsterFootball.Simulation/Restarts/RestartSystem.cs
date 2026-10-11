@@ -87,24 +87,24 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
     private static bool IsReady(MatchState state, RestartTuning tuning, Stoppage stoppage, PlayerMatchState taker)
     {
         if (stoppage.Restart == RestartType.Kickoff)
-            return state.Players.All(p => p.Position.DistanceTo(p.MovementTarget) <= tuning.InPositionTolerance);
+            return state.ActivePlayers.All(p => p.Position.DistanceTo(p.MovementTarget) <= tuning.InPositionTolerance);
 
         var keeperReady = stoppage.Restart != RestartType.Penalty
                           || RestartLayout.Keeper(state, stoppage.AwardedTeam.Opponent()) is not { } keeper
                           || keeper.Position.DistanceTo(keeper.MovementTarget) <= tuning.InPositionTolerance;
         return keeperReady
                && taker.Position.DistanceTo(stoppage.Location) <= tuning.InPositionTolerance
-               && state.Players.Where(p => p != taker && RestartLayout.MustRespect(state, stoppage, p))
+               && state.ActivePlayers.Where(p => p != taker && RestartLayout.MustRespect(state, stoppage, p))
                    .All(p => RestartLayout.IsLegalForOpponent(state, tuning, stoppage, p.Position));
     }
 
     /// <summary>Places the taker on the ball and every opponent breaking the law at their target (or everyone, for kickoffs).</summary>
     private static void PlaceStragglers(MatchState state, RestartTuning tuning, Stoppage stoppage, PlayerMatchState taker, bool everyone)
     {
-        foreach (var player in state.Players)
+        foreach (var player in state.ActivePlayers)
         {
             var mustMove = everyone || player == taker
-                || (stoppage.Restart == RestartType.Penalty && player.Definition.Position.IsGoalkeeper() && player.Team != stoppage.AwardedTeam)
+                || (stoppage.Restart == RestartType.Penalty && player.Role.IsGoalkeeper() && player.Team != stoppage.AwardedTeam)
                 || (RestartLayout.MustRespect(state, stoppage, player) && !RestartLayout.IsLegalForOpponent(state, tuning, stoppage, player.Position));
             if (!mustMove)
                 continue;
@@ -190,7 +190,7 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
             return weights.PassSuccessWeight * success
                    + weights.PassProgressionWeight * progression
                    + weights.PassGoalProximityWeight * goalProximity
-                   - (receiver.Definition.Position.IsGoalkeeper() ? weights.PassToKeeperPenalty : 0);
+                   - (receiver.Role.IsGoalkeeper() ? weights.PassToKeeperPenalty : 0);
         }
 
         return candidates.MaxBy(Utility);

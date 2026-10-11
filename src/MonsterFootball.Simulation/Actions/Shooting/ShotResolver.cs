@@ -78,7 +78,7 @@ internal sealed class ShotResolver
         var anglePenalty = Math.Min(MaxAnglePenalty, AnglePenaltyScale * lateral / toGoalLine);
 
         var outfieldOpponents = state.TeamPlayers(shooter.Team.Opponent())
-            .Where(p => !p.Definition.Position.IsGoalkeeper())
+            .Where(p => !p.Role.IsGoalkeeper())
             .ToList();
         var nearestOpponent = outfieldOpponents.Min(p => p.Position.DistanceTo(shooter.Position));
         var blockers = outfieldOpponents.Count(p =>
@@ -200,12 +200,12 @@ internal sealed class ShotResolver
     /// <summary>Outfield opponents within <see cref="BlockLaneWidth"/> of the shooting lane, nearest the shooter first.</summary>
     private static IEnumerable<PlayerMatchState> LaneBlockers(MatchState state, PlayerMatchState shooter, Vec2 goal) =>
         state.TeamPlayers(shooter.Team.Opponent())
-            .Where(p => !p.Definition.Position.IsGoalkeeper())
+            .Where(p => !p.Role.IsGoalkeeper())
             .Select(p => (Player: p, Point: Vec2.ClosestPointOnSegment(shooter.Position, goal, p.Position, out var t), T: t))
             .Where(x => x.T is > 0.05 and < 0.95 && x.Player.Position.DistanceTo(x.Point) < BlockLaneWidth)
             .OrderBy(x => x.T)
             .Select(x => x.Player);
 
     private static PlayerMatchState OpposingKeeper(MatchState state, PlayerMatchState shooter) =>
-        state.TeamPlayers(shooter.Team.Opponent()).Single(p => p.Definition.Position.IsGoalkeeper());
+        state.Goalkeeper(shooter.Team.Opponent()) ?? throw new InvalidOperationException($"{shooter.Team.Opponent()} has no goalkeeper.");
 }

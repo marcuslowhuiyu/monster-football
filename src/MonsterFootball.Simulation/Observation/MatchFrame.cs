@@ -42,18 +42,22 @@ public sealed record MatchFrame(
             [.. state.Players.Select(p => new PlayerFrame(
                 p.PlayerId,
                 p.Team,
-                p.Definition.Position,
+                p.Role,
                 p.Definition.ShirtNumber,
                 p.Position,
                 p.MovementTarget,
                 p.MovementIntensity,
                 p.CurrentStamina,
                 p.OffBallPlan?.Kind,
-                p.ActiveCarry is not null))]);
+                p.ActiveCarry is not null,
+                p.IsActive))]);
     }
 }
 
-/// <summary>One player at the end of a tick. <see cref="Players"/> order is the match's stable player order.</summary>
+/// <summary>
+/// One player at the end of a tick. <see cref="Players"/> order is the match's stable player order and includes sent-off
+/// players (<see cref="IsActive"/> false, off the pitch). <see cref="Slot"/> is the player's current role.
+/// </summary>
 public sealed record PlayerFrame(
     PlayerId Id,
     TeamSide Team,
@@ -64,7 +68,8 @@ public sealed record PlayerFrame(
     MovementIntensity Intensity,
     double Stamina,
     ActionKind? OffBallPlan,
-    bool IsCarrying);
+    bool IsCarrying,
+    bool IsActive = true);
 
 public sealed record BallFrame(Vec2 Position, PlayerId? PossessorId, BallFlightFrame? Flight);
 

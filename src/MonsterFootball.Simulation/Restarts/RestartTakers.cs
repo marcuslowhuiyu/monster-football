@@ -21,19 +21,19 @@ internal static class RestartTakers
     public static PlayerMatchState For(MatchState state, Stoppage stoppage, RestartTuning tuning)
     {
         var team = state.TeamPlayers(stoppage.AwardedTeam).ToList();
-        var outfield = team.Where(p => !p.Definition.Position.IsGoalkeeper()).ToList();
+        var outfield = team.Where(p => !p.Role.IsGoalkeeper()).ToList();
         return stoppage.Restart switch
         {
-            RestartType.Kickoff => Nearest(Prefer(outfield, p => p.Definition.Position == PlayingPosition.ST), stoppage.Location),
-            RestartType.ThrowIn => Nearest(Prefer(outfield, p => WidePlayers.Contains(p.Definition.Position)), stoppage.Location),
-            RestartType.GoalKick => team.FirstOrDefault(p => p.Definition.Position.IsGoalkeeper()) ?? Nearest(outfield, stoppage.Location),
+            RestartType.Kickoff => Nearest(Prefer(outfield, p => p.Role == PlayingPosition.ST), stoppage.Location),
+            RestartType.ThrowIn => Nearest(Prefer(outfield, p => WidePlayers.Contains(p.Role)), stoppage.Location),
+            RestartType.GoalKick => state.Goalkeeper(stoppage.AwardedTeam) ?? Nearest(outfield, stoppage.Location),
             RestartType.Penalty => outfield.OrderByDescending(p => p.Definition.Stats.Finishing)
                 .ThenByDescending(p => p.Definition.Stats.Technique).ThenByDescending(p => p.Definition.Stats.Power).First(),
             RestartType.DirectFreeKick when InShootingRange(state, stoppage, tuning) => outfield.OrderByDescending(p => p.Definition.Stats.Finishing)
                 .ThenByDescending(p => p.Definition.Stats.Technique).First(),
-            RestartType.DirectFreeKick => Nearest(Prefer(outfield, p => p.Definition.Position.Group() is PositionGroup.Defender or PositionGroup.Midfielder), stoppage.Location),
-            RestartType.IndirectFreeKick => Nearest(Prefer(outfield, p => p.Definition.Position.Group() == PositionGroup.Defender), stoppage.Location),
-            RestartType.Corner => BestPasser(Prefer(outfield, p => p.Definition.Position is not (PlayingPosition.LCB or PlayingPosition.RCB or PlayingPosition.ST))),
+            RestartType.DirectFreeKick => Nearest(Prefer(outfield, p => p.Role.Group() is PositionGroup.Defender or PositionGroup.Midfielder), stoppage.Location),
+            RestartType.IndirectFreeKick => Nearest(Prefer(outfield, p => p.Role.Group() == PositionGroup.Defender), stoppage.Location),
+            RestartType.Corner => BestPasser(Prefer(outfield, p => p.Role is not (PlayingPosition.LCB or PlayingPosition.RCB or PlayingPosition.ST))),
             _ => throw new ArgumentOutOfRangeException(nameof(stoppage), stoppage.Restart, "No taker rule for this restart."),
         };
     }

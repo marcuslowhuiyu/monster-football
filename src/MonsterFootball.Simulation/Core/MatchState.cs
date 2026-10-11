@@ -9,7 +9,11 @@ using MonsterFootball.Simulation.Tactical;
 /// </summary>
 public sealed class MatchState
 {
-    public const int ActivePlayerCount = TeamDefinition.PlayersPerTeam * 2;
+    /// <summary>Both starting elevens (no substitutes).</summary>
+    public const int SquadPlayerCount = TeamDefinition.PlayersPerTeam * 2;
+
+    /// <summary>A team reduced below this many players cannot continue: the match is abandoned (Law 3, D12).</summary>
+    public const int MinimumPlayers = 7;
 
     private readonly Dictionary<PlayerId, PlayerMatchState> _playersById;
 
@@ -29,6 +33,7 @@ public sealed class MatchState
         AwayTeam = awayTeam;
         Players = players;
         _playersById = players.ToDictionary(p => p.PlayerId);
+        _active = [.. players];
         Ball = new BallState(pitch.Centre);
         CurrentStoppage = new Stoppage(StoppageReason.MatchStart, RestartType.Kickoff, TeamSide.Home, pitch.Centre, 0);
         _homeShapeFocus = pitch.Centre;
@@ -154,7 +159,39 @@ public sealed class MatchState
 
     public TeamDefinition Team(TeamSide side) => side == TeamSide.Home ? HomeTeam : AwayTeam;
 
-    public IEnumerable<PlayerMatchState> TeamPlayers(TeamSide side) => Players.Where(p => p.Team == side);
+    /// <summary>Players still taking part (not sent off), in the stable <see cref="Players"/> order.</summary>
+    public IReadOnlyList<PlayerMatchState> ActivePlayers => _active;
+
+    /// <summary>A side's active players, in stable order. Football systems iterate these, never sent-off players.</summary>
+    public IEnumerable<PlayerMatchState> TeamPlayers(TeamSide side) => _active.Where(p => p.Team == side);
+
+    /// <summary>The side's active goalkeeper (by role); null only in an abandoned match.</summary>
+    public PlayerMatchState? Goalkeeper(TeamSide side) => _active.FirstOrDefault(p => p.Team == side && p.Role.IsGoalkeeper());
+
+    private List<PlayerMatchState> _active = [];
+
+    /// <summary>Where sent-off players stand: off the pitch beside the halfway line.</summary>
+    public Vec2 TouchlineExit => new(Pitch.HalfwayX, -3);
+
+    /// <summary>
+    /// Sends a player off (ADR-031): they leave the pitch, lose any action and the ball, and their team re-forms
+    /// (<see cref="Positioning.ShapeTemplates.Reform"/>), putting an outfielder in goal if it was the keeper.
+    /// </summary>
+    internal void SendOff(PlayerId id)
+    {
+        var player = Player(id);
+        if (!player.IsActive)
+            return;
+        if (HasBall(id))
+            SetBallLoose(Ball.Position);
+        player.ClearIntent();
+        player.OffBallPlan = null;
+        player.Status = PlayerStatus.SentOff;
+        player.Position = TouchlineExit;
+        player.MovementTarget = player.Position;
+        _active = Players.Where(p => p.IsActive).ToList();
+        Positioning.ShapeTemplates.Reform(this, player.Team);
+    }
 
     public PlayerMatchState Player(PlayerId id) =>
         _playersById.TryGetValue(id, out var player)

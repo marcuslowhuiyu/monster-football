@@ -52,7 +52,7 @@ internal sealed class MovementSystem
 
     public void Apply(MatchState state, double tickSeconds)
     {
-        foreach (var player in state.Players)
+        foreach (var player in state.ActivePlayers)
         {
             var previous = player.Position;
             var next = player.Position.MoveTowards(player.MovementTarget, Speed(player) * tickSeconds);
