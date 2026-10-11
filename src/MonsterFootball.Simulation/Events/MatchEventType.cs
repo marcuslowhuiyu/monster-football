@@ -27,4 +27,7 @@ public enum MatchEventType
     PeriodEnded,
     RestartTaken,
     FoulCommitted,
+    YellowCard,
+    RedCard,
+    MatchAbandoned,
 }

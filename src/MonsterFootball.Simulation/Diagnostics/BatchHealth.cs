@@ -38,6 +38,9 @@ public static class BatchHealth
         new("Offsides per match", s.AverageOffsides, 1, 15),
         new("Fouls per match", s.AverageFouls, 8, 45),
         new("Penalties per match", s.AveragePenalties, 0, 0.8),
+        new("Yellow cards per match", s.AverageYellowCards, 0.5, 8),
+        new("Red cards per match", s.AverageRedCards, 0, 0.6),
+        new("Abandoned matches", s.AbandonedShare, 0, 0.001),
     ];
 
     public static bool IsHealthy(BatchSummary summary) => Evaluate(summary).All(c => c.Passed);

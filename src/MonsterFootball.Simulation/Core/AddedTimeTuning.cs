@@ -14,6 +14,12 @@ public sealed record AddedTimeTuning
     /// <summary>Time added for each penalty awarded in a period's regular time (D3).</summary>
     public double PerPenaltySeconds { get; init; } = 45;
 
+    /// <summary>Time added for each caution in a period's regular time (D3).</summary>
+    public double PerCardSeconds { get; init; } = 20;
+
+    /// <summary>Time added for each dismissal in a period's regular time (D3).</summary>
+    public double PerDismissalSeconds { get; init; } = 30;
+
     /// <summary>
     /// A period ends at the first stoppage after regular plus added time; if play has not stopped this long after
     /// that, it ends at the next tick with no ball in flight. Interim value until the ball can go out of play (M2.4),

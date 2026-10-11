@@ -20,6 +20,8 @@ public sealed record MatchSummary(
     int SafetyCapPeriods,
     int AddedMinutes)
 {
+    public bool Abandoned { get; init; }
+
     public static MatchSummary From(MatchResult result)
     {
         var state = result.FinalState;
@@ -39,6 +41,9 @@ public sealed record MatchSummary(
             result.Events.Count(e => e.Type == MatchEventType.PeriodEnded),
             result.Events.Count(e => e.Type == MatchEventType.PeriodEnded && e.Metadata.GetValueOrDefault("end") == "SafetyCap"),
             result.Events.Where(e => e.Type == MatchEventType.AddedTimeAnnounced)
-                .Sum(e => int.Parse(e.Metadata["minutes"], CultureInfo.InvariantCulture)));
+                .Sum(e => int.Parse(e.Metadata["minutes"], CultureInfo.InvariantCulture)))
+        {
+            Abandoned = result.Abandoned,
+        };
     }
 }

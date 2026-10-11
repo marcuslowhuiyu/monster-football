@@ -11,7 +11,7 @@ namespace MonsterFootball.Simulation.Actions.Tackling;
 /// Resolves a challenge in up to three rolls:
 /// 1. contact — defender rating vs carrier rating;
 /// 2. foul (D9, ADR-030) — more likely when the defender missed the ball, is tired, sprinted in or came from behind, less
-///    likely with Defending and inside their own penalty area → Foul;
+///    likely with Defending, inside their own penalty area and once booked → Foul;
 /// 3. without contact → Lost; otherwise clean — Awareness-weighted chance the defender keeps the ball → Won, else LooseBall.
 /// Ratings: defender = Defending + 0.3·(Power−5) + 0.3·(Awareness−5);
 ///          carrier  = Technique + 0.3·(Power−5) + 0.3·(Awareness−5).
@@ -36,6 +36,9 @@ internal sealed class TackleResolver
     public const double FoulFromBehind = 0.06;
     public const double FoulSprinting = 0.02;
     public const double FoulOwnBoxCaution = 0.15;
+
+    /// <summary>A player already booked tackles more carefully.</summary>
+    public const double FoulBookedCaution = 0.6;
     public const double SeverityBase = 0.2;
     public const double SeverityPerPower = 0.06;
     public const double SeverityFromBehind = 0.25;
@@ -81,6 +84,7 @@ internal sealed class TackleResolver
         if (random.Roll(foul))
             return new TackleResult(TackleOutcome.Foul, intent.Tackler, intent.Carrier, position, position, contact, clean)
             {
+                ContactMade = gotTheBall,
                 FoulProbability = foul,
                 Severity = Severity(state, tackler, carrier, gotTheBall),
             };
@@ -109,6 +113,8 @@ internal sealed class TackleResolver
                 + (tackler.MovementIntensity == MovementIntensity.Sprint ? FoulSprinting : 0);
         if (state.Zones.IsIn(tackler.Team, carrier.Position, TacticalAreas.OwnPenaltyArea))
             p *= FoulOwnBoxCaution;
+        if (tackler.YellowCards > 0)
+            p *= FoulBookedCaution;
         return Math.Clamp(p, 0.005, 0.6);
     }
 

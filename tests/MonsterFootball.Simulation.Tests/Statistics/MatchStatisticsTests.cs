@@ -239,6 +239,8 @@ public class MatchStatisticsTests
         ]);
 
         Assert.Equal((0, 1), (stats.Home.Fouls, stats.Away.Fouls));
+        var cards = MatchStatistics.FromEvents([E(10, MatchEventType.YellowCard, TeamSide.Away), E(20, MatchEventType.YellowCard, TeamSide.Away), E(20, MatchEventType.RedCard, TeamSide.Away)]);
+        Assert.Equal((2, 1), (cards.Away.YellowCards, cards.Away.RedCards));
         Assert.Equal((1, 1), (stats.Home.Penalties, stats.Home.PenaltiesScored));
     }
 

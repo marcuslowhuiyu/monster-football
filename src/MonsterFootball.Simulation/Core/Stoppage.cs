@@ -46,4 +46,20 @@ public sealed record Stoppage(StoppageReason Reason, RestartType Restart, TeamSi
 
     /// <summary>The player fouled, for a foul.</summary>
     public PlayerId? Fouled { get; init; }
+
+    /// <summary>The card shown to the offender, if any.</summary>
+    public DisciplinaryOutcome Discipline { get; init; }
+}
+
+/// <summary>The card shown for a foul.</summary>
+public enum DisciplinaryOutcome
+{
+    None,
+    Yellow,
+
+    /// <summary>A second caution: the player is sent off.</summary>
+    SecondYellow,
+
+    /// <summary>A straight red: the player is sent off.</summary>
+    Red,
 }

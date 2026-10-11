@@ -170,6 +170,9 @@ public sealed class MatchState
 
     private List<PlayerMatchState> _active = [];
 
+    /// <summary>The match was abandoned (a team fell below <see cref="MinimumPlayers"/>, D12).</summary>
+    public bool Abandoned { get; internal set; }
+
     /// <summary>Where sent-off players stand: off the pitch beside the halfway line.</summary>
     public Vec2 TouchlineExit => new(Pitch.HalfwayX, -3);
 
