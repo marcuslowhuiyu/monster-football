@@ -25,7 +25,7 @@ internal sealed class LooseBallSystem
         }
 
         var ball = state.Ball.Position;
-        var collector = state.Players
+        var collector = state.ActivePlayers
             .Where(p => p.Position.DistanceTo(ball) <= ControlRadius)
             .MinBy(p => p.Position.DistanceTo(ball));
 

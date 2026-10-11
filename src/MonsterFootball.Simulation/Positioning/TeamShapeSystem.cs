@@ -95,7 +95,7 @@ internal sealed class TeamShapeSystem
                 continue;
             }
 
-            var slot = player.Definition.Position;
+            var slot = player.Role;
             var local = slot.IsGoalkeeper()
                 ? GoalkeeperPositioning.Target(pitch, ballLocal, player.Definition.Stats.Awareness, inPossession)
                 : inPossession
@@ -174,7 +174,7 @@ internal sealed class TeamShapeSystem
     {
         var ball = state.Ball.Position;
         var presser = state.TeamPlayers(side)
-            .Where(p => !p.Definition.Position.IsGoalkeeper())
+            .Where(p => !p.Role.IsGoalkeeper())
             .MinBy(p => p.Position.DistanceTo(ball) * (1 + TiredPressDistancePenalty * FatigueModel.Tiredness(p.CurrentStamina)));
 
         if (presser is null)

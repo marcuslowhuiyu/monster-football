@@ -45,10 +45,10 @@ internal static class RestartLayout
     {
         if (stoppage.Restart == RestartType.Kickoff)
         {
-            foreach (var player in state.Players)
+            foreach (var player in state.ActivePlayers)
                 player.MovementTarget = player == taker
                     ? stoppage.Location
-                    : Formation433.KickoffPosition(state.Pitch, player.Team, player.Definition.Position);
+                    : Formation433.KickoffPosition(state.Pitch, player.Team, player.Role);
         }
         else
         {
@@ -58,13 +58,13 @@ internal static class RestartLayout
             if (RestartTakers.InShootingRange(state, stoppage, tuning))
                 ApplyWall(state, tuning, stoppage);
             taker.MovementTarget = stoppage.Location;
-            foreach (var player in state.Players.Where(p => p != taker && MustRespect(state, stoppage, p)))
+            foreach (var player in state.ActivePlayers.Where(p => p != taker && MustRespect(state, stoppage, p)))
                 player.MovementTarget = Legal(state, tuning, stoppage, player.MovementTarget, ExclusionMargin);
             if (stoppage.Restart == RestartType.Penalty && Keeper(state, stoppage.AwardedTeam.Opponent()) is { } keeper)
                 keeper.MovementTarget = state.Pitch.OwnGoalCentre(keeper.Team);
         }
 
-        foreach (var player in state.Players)
+        foreach (var player in state.ActivePlayers)
             player.MovementIntensity = MovementIntensity.Jog;
     }
 
@@ -74,7 +74,7 @@ internal static class RestartLayout
     /// </summary>
     public static bool MustRespect(MatchState state, Stoppage stoppage, PlayerMatchState player) =>
         stoppage.Restart == RestartType.Penalty
-            ? !(player.Team != stoppage.AwardedTeam && player.Definition.Position.IsGoalkeeper())
+            ? !(player.Team != stoppage.AwardedTeam && player.Role.IsGoalkeeper())
             : player.Team != stoppage.AwardedTeam;
 
     /// <summary>True if a player at <paramref name="position"/> respects the restart's law (see <see cref="MustRespect"/>).</summary>
@@ -82,7 +82,7 @@ internal static class RestartLayout
         Legal(state, tuning, stoppage, position, margin: 0) == position;
 
     public static PlayerMatchState? Keeper(MatchState state, TeamSide side) =>
-        state.TeamPlayers(side).FirstOrDefault(p => p.Definition.Position.IsGoalkeeper());
+        state.Goalkeeper(side);
 
     /// <summary>The nearest legal spot for an opponent of the awarded team, <paramref name="margin"/> clear of the limit.</summary>
     private static Vec2 Legal(MatchState state, RestartTuning tuning, Stoppage stoppage, Vec2 position, double margin)
@@ -141,7 +141,7 @@ internal static class RestartLayout
         var across = new Vec2(-toGoal.Y, toGoal.X);
         var centre = stoppage.Location + toGoal * (tuning.FreeKickExclusionRadius + ExclusionMargin);
         var wall = WallSlots
-            .Select(slot => state.TeamPlayers(stoppage.AwardedTeam.Opponent()).FirstOrDefault(p => p.Definition.Position == slot))
+            .Select(slot => state.TeamPlayers(stoppage.AwardedTeam.Opponent()).FirstOrDefault(p => p.Role == slot))
             .Where(p => p is not null)
             .Take(tuning.WallSize)
             .ToList();
@@ -162,7 +162,7 @@ internal static class RestartLayout
         var towardCorner = cornerLocal.Y > pitch.Width / 2 ? 1 : -1;
         foreach (var (slot, depth, lateral) in spots)
         {
-            var player = state.TeamPlayers(side).FirstOrDefault(p => p.Definition.Position == slot);
+            var player = state.TeamPlayers(side).FirstOrDefault(p => p.Role == slot);
             if (player is null)
                 continue;
             var x = attacking ? pitch.Length - depth : depth;

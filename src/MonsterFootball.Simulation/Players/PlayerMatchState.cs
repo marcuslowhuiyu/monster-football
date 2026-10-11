@@ -20,9 +20,23 @@ public sealed class PlayerMatchState
         Team = team;
         Position = position;
         MovementTarget = position;
+        Role = definition.Position;
     }
 
     public PlayerDefinition Definition { get; }
+
+    /// <summary>
+    /// The slot this player plays now: their listed position until a dismissal re-forms the team (ADR-031). Shape, AI,
+    /// goalkeeping and restarts use the role, never <see cref="PlayerDefinition.Position"/>.
+    /// </summary>
+    public PlayingPosition Role { get; internal set; }
+
+    public PlayerStatus Status { get; internal set; } = PlayerStatus.Active;
+
+    public bool IsActive => Status == PlayerStatus.Active;
+
+    /// <summary>Cautions received this match.</summary>
+    public int YellowCards { get; internal set; }
     public PlayerId PlayerId => Definition.Id;
     public TeamSide Team { get; }
 
@@ -56,5 +70,5 @@ public sealed class PlayerMatchState
     }
 
     public override string ToString() =>
-        $"{Team} #{Definition.ShirtNumber} {Definition.Name} ({PlayerId}, {Definition.Position}) at {Position}";
+        $"{Team} #{Definition.ShirtNumber} {Definition.Name} ({PlayerId}, {Role}{(IsActive ? "" : ", sent off")}) at {Position}";
 }

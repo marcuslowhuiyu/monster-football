@@ -93,7 +93,7 @@ internal sealed class OffBallDecisionSystem(OffBallCandidateGenerator generator,
 
     /// <summary>Keeper, carrier, presser and pass receiver: the shape system's sprint assignment marks the latter two.</summary>
     private static bool IsControlledElsewhere(MatchState state, PlayerMatchState player) =>
-        player.Definition.Position.IsGoalkeeper()
+        player.Role.IsGoalkeeper()
         || state.HasBall(player.PlayerId)
         || player.MovementIntensity == MovementIntensity.Sprint;
 

@@ -12,14 +12,28 @@ public static class MatchStateInvariants
     {
         var violations = new List<string>();
 
-        if (state.Players.Count != MatchState.ActivePlayerCount)
-            violations.Add($"Expected {MatchState.ActivePlayerCount} active players but found {state.Players.Count}.");
+        if (state.Players.Count != MatchState.SquadPlayerCount)
+            violations.Add($"Expected {MatchState.SquadPlayerCount} players but found {state.Players.Count}.");
 
         foreach (var side in Enum.GetValues<TeamSide>())
         {
             var count = state.TeamPlayers(side).Count();
-            if (count != TeamDefinition.PlayersPerTeam)
-                violations.Add($"{side} has {count} active players; expected {TeamDefinition.PlayersPerTeam}.");
+            if (state.Phase != MatchPhase.Finished && count is < MatchState.MinimumPlayers or > TeamDefinition.PlayersPerTeam)
+                violations.Add($"{side} has {count} active players; expected {MatchState.MinimumPlayers}–{TeamDefinition.PlayersPerTeam}.");
+            var keepers = state.TeamPlayers(side).Count(p => p.Role.IsGoalkeeper());
+            if (count > 0 && keepers != 1)
+                violations.Add($"{side} has {keepers} active goalkeepers; expected exactly one.");
+            var roles = state.TeamPlayers(side).Select(p => p.Role).ToList();
+            if (roles.Distinct().Count() != roles.Count)
+                violations.Add($"{side} has two players in the same role: {string.Join(", ", roles)}.");
+        }
+
+        foreach (var sentOff in state.Players.Where(p => !p.IsActive))
+        {
+            if (state.Pitch.Contains(sentOff.Position))
+                violations.Add($"Sent-off player still on the pitch: {sentOff}.");
+            if (state.HasBall(sentOff.PlayerId))
+                violations.Add($"Sent-off player has the ball: {sentOff}.");
         }
 
         if (state.Players.Select(p => p.PlayerId).Distinct().Count() != state.Players.Count)
@@ -27,7 +41,7 @@ public static class MatchStateInvariants
 
         if (state.Ball.PossessorId is { } possessor)
         {
-            var carrier = state.Players.FirstOrDefault(p => p.PlayerId == possessor);
+            var carrier = state.ActivePlayers.FirstOrDefault(p => p.PlayerId == possessor);
             if (carrier is null)
                 violations.Add($"Ball possessor {possessor} is not an active player.");
             else if (carrier.Position != state.Ball.Position)
@@ -51,7 +65,7 @@ public static class MatchStateInvariants
         if (state.Score.Home < 0 || state.Score.Away < 0)
             violations.Add($"Score is negative: {state.Score}.");
 
-        foreach (var player in state.Players)
+        foreach (var player in state.ActivePlayers)
         {
             if (!state.Pitch.Contains(player.Position))
                 violations.Add($"Player outside pitch: {player}.");

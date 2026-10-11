@@ -25,7 +25,7 @@ internal sealed class OnBallCandidateGenerator(
     {
         var pitch = state.Pitch;
         var candidates = new List<ActionCandidate>();
-        var isKeeper = carrier.Definition.Position.IsGoalkeeper();
+        var isKeeper = carrier.Role.IsGoalkeeper();
         var opponents = state.TeamPlayers(carrier.Team.Opponent()).ToList();
         var nearest = opponents.Min(o => o.Position.DistanceTo(carrier.Position));
         var pressure = nearest < W.PressureRadius ? 1 - nearest / W.PressureRadius : 0;
@@ -54,7 +54,7 @@ internal sealed class OnBallCandidateGenerator(
             var utility = W.PassSuccessWeight * success
                 + W.PassProgressionWeight * progression
                 + W.PassGoalProximityWeight * GoalProximity(state, receiver)
-                - (receiver.Definition.Position.IsGoalkeeper() ? W.PassToKeeperPenalty : 0);
+                - (receiver.Role.IsGoalkeeper() ? W.PassToKeeperPenalty : 0);
             candidates.Add(new ActionCandidate(ActionKind.Pass, utility, intent));
         }
 

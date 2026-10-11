@@ -58,7 +58,7 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null)
     {
         State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender, Fouled = fouled });
-        foreach (var player in State.Players)
+        foreach (var player in State.ActivePlayers)
         {
             player.ClearIntent();
             player.OffBallPlan = null;
