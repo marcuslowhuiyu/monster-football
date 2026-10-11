@@ -100,10 +100,12 @@ internal sealed class TackleSystem(TackleResolver resolver, AI.OffBallWeights we
                         new KeyValuePair<string, string>("chance", result.FoulProbability.ToString("0.###", CultureInfo.InvariantCulture)),
                         new KeyValuePair<string, string>("severity", result.Severity.ToString("0.###", CultureInfo.InvariantCulture)),
                     ]));
+                var (card, reason) = Laws.Discipline.Decide(state, tackler, carrier, result, context.Random);
                 if (state.Zones.IsIn(tackler.Team, spot, Tactical.TacticalAreas.OwnPenaltyArea))
-                    context.StopPlay(StoppageReason.Foul, RestartType.Penalty, carrier.Team, state.Pitch.PenaltySpot(tackler.Team), tackler.PlayerId, carrier.PlayerId);
+                    context.StopPlay(StoppageReason.Foul, RestartType.Penalty, carrier.Team, state.Pitch.PenaltySpot(tackler.Team), tackler.PlayerId, carrier.PlayerId, card);
                 else
-                    context.StopPlay(StoppageReason.Foul, RestartType.DirectFreeKick, carrier.Team, spot, tackler.PlayerId, carrier.PlayerId);
+                    context.StopPlay(StoppageReason.Foul, RestartType.DirectFreeKick, carrier.Team, spot, tackler.PlayerId, carrier.PlayerId, card);
+                context.Caution(tackler, card, reason?.ToString() ?? "");
                 break;
 
             case TackleOutcome.LooseBall:

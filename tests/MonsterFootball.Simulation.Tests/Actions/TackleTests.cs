@@ -108,7 +108,7 @@ public class TackleTests
     [Fact]
     public void A_foul_outside_the_area_is_a_direct_free_kick_where_it_happened()
     {
-        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0));
+        var s = Duel(random: new ScriptedRandom(0.0, 0.0, 0.0, 0.9999, 0.9999)); // attempt, contact, foul; no card
         var carrier = s.State.Slot(TeamSide.Home, PlayingPosition.CM);
         var tackler = s.State.Slot(TeamSide.Away, PlayingPosition.CM);
 
@@ -127,7 +127,7 @@ public class TackleTests
     [Fact]
     public void A_foul_in_the_defenders_own_area_is_a_penalty()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.0));
+        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.0, 0.9999, 0.9999));
         s.Place(TeamSide.Home, PlayingPosition.ST, 95, 34);
         s.Place(TeamSide.Away, PlayingPosition.LCB, 96, 34);
         s.GiveBall(TeamSide.Home, PlayingPosition.ST);

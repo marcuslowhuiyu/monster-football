@@ -34,6 +34,9 @@ public sealed record BatchSummary(
     public double AverageCorners { get; init; }
     public double AverageOffsides { get; init; }
     public double AverageFouls { get; init; }
+    public double AverageYellowCards { get; init; }
+    public double AverageRedCards { get; init; }
+    public double AbandonedShare { get; init; }
     public double AveragePenalties { get; init; }
     public double PenaltyConversion { get; init; }
 
@@ -76,6 +79,9 @@ public sealed record BatchSummary(
             AverageCorners = ordered.Average(s => s.Statistics.Home.Corners + s.Statistics.Away.Corners),
             AverageOffsides = ordered.Average(s => s.Statistics.Home.Offsides + s.Statistics.Away.Offsides),
             AverageFouls = ordered.Average(s => s.Statistics.Home.Fouls + s.Statistics.Away.Fouls),
+            AverageYellowCards = ordered.Average(s => s.Statistics.Home.YellowCards + s.Statistics.Away.YellowCards),
+            AverageRedCards = ordered.Average(s => s.Statistics.Home.RedCards + s.Statistics.Away.RedCards),
+            AbandonedShare = ordered.Count(s => s.Abandoned) / n,
             AveragePenalties = ordered.Average(s => s.Statistics.Home.Penalties + s.Statistics.Away.Penalties),
             PenaltyConversion = ordered.Sum(s => s.Statistics.Home.Penalties + s.Statistics.Away.Penalties) is var taken and > 0
                 ? (double)ordered.Sum(s => s.Statistics.Home.PenaltiesScored + s.Statistics.Away.PenaltiesScored) / taken

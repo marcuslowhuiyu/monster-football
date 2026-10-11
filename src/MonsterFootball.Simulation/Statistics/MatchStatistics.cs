@@ -5,7 +5,7 @@ namespace MonsterFootball.Simulation.Statistics;
 
 /// <summary>
 /// Per-team match statistics. Throw-ins, goal kicks, corners, free kicks and penalties count restarts the team took;
-/// offsides and fouls count the team's offences.
+/// offsides, fouls and cards count the team's offences (a second yellow counts as a yellow and a red).
 /// </summary>
 public sealed record TeamStatistics(
     int Goals,
@@ -24,6 +24,8 @@ public sealed record TeamStatistics(
     public int Penalties { get; init; }
     public int PenaltiesScored { get; init; }
     public int Fouls { get; init; }
+    public int YellowCards { get; init; }
+    public int RedCards { get; init; }
 
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
@@ -120,6 +122,12 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 case MatchEventType.FoulCommitted:
                     Of(e.Team!.Value).Fouls++;
                     break;
+                case MatchEventType.YellowCard:
+                    Of(e.Team!.Value).YellowCards++;
+                    break;
+                case MatchEventType.RedCard:
+                    Of(e.Team!.Value).RedCards++;
+                    break;
                 case MatchEventType.PassAttempted:
                     Of(e.Team!.Value).PassesAttempted++;
                     break;
@@ -165,6 +173,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int Penalties;
         public int PenaltiesScored;
         public int Fouls;
+        public int YellowCards;
+        public int RedCards;
 
         public TeamStatistics ToStatistics() =>
             new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
@@ -177,6 +187,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 Penalties = Penalties,
                 PenaltiesScored = PenaltiesScored,
                 Fouls = Fouls,
+                YellowCards = YellowCards,
+                RedCards = RedCards,
             };
     }
 }
