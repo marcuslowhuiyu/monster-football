@@ -11,4 +11,8 @@ public sealed record MatchResult(
     IReadOnlyList<MatchEvent> Events,
     MatchState FinalState,
     MatchStatistics Statistics,
-    int Seed);
+    int Seed)
+{
+    /// <summary>The match was abandoned (a team fell below seven players, D12); the score stands as it was.</summary>
+    public bool Abandoned => FinalState.Abandoned;
+}

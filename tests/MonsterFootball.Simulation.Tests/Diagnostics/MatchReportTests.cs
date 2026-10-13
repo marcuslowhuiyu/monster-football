@@ -152,6 +152,10 @@ public class MatchReportTests
             new MatchEvent(new MatchTime(25), MatchEventType.FoulCommitted, lb.PlayerId, striker.PlayerId, TeamSide.Away)));
         Assert.Equal("Penalty to Blue", MatchReport.Describe(state,
             new MatchEvent(new MatchTime(25), MatchEventType.PlayStopped, lb.PlayerId, striker.PlayerId, TeamSide.Home) { Metadata = Meta(("reason", "Foul"), ("restart", "Penalty")) }));
+        Assert.Equal($"RED CARD: Red #{lb.Definition.ShirtNumber} (denying an obvious goal-scoring opportunity)", MatchReport.Describe(state,
+            new MatchEvent(new MatchTime(26), MatchEventType.RedCard, lb.PlayerId, Team: TeamSide.Away) { Metadata = Meta(("reason", "Dogso")) }));
+        Assert.Equal("MATCH ABANDONED — Red down to fewer than 7 players", MatchReport.Describe(state,
+            new MatchEvent(new MatchTime(27), MatchEventType.MatchAbandoned, Team: TeamSide.Away)));
         var keeper = state.Slot(TeamSide.Away, PlayingPosition.GK);
         Assert.Equal("Saved by Red GK — pushed behind", MatchReport.Describe(state,
             new MatchEvent(new MatchTime(30), MatchEventType.ShotSaved, keeper.PlayerId, Team: TeamSide.Away) { Metadata = Meta(("save", "ParriedBehind")) }));

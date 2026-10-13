@@ -47,7 +47,7 @@ public class MatchSimulationTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    public void Added_time_is_announced_once_per_half_from_its_goals(int seed)
+    public void Added_time_is_announced_once_per_half_from_its_goals_penalties_and_cards(int seed)
     {
         var events = NewSimulation(seed).RunToCompletion().Events;
         var announced = events.Where(e => e.Type == MatchEventType.AddedTimeAnnounced).ToList();
@@ -57,9 +57,17 @@ public class MatchSimulationTests
         {
             Assert.Equal(period, e.Timestamp.Period);
             Assert.Equal(MatchConfig.Default.PeriodSeconds, e.Timestamp.PeriodSeconds);
-            var goals = events.Count(g => g.Type == MatchEventType.GoalScored && g.Timestamp.Period == period
-                                          && g.Timestamp.PeriodSeconds < MatchConfig.Default.PeriodSeconds);
-            var expected = (int)Math.Ceiling(goals * MatchConfig.Default.AddedTime.PerGoalSeconds / 60);
+            bool InRegularTime(MatchEvent x) => x.Timestamp.Period == period && x.Timestamp.PeriodSeconds < MatchConfig.Default.PeriodSeconds;
+            var allowances = MatchConfig.Default.AddedTime;
+            var seconds = events.Where(InRegularTime).Sum(x => x.Type switch
+            {
+                MatchEventType.GoalScored => allowances.PerGoalSeconds,
+                MatchEventType.PlayStopped when x.Metadata["restart"] == "Penalty" => allowances.PerPenaltySeconds,
+                MatchEventType.YellowCard => allowances.PerCardSeconds,
+                MatchEventType.RedCard => allowances.PerDismissalSeconds + (x.Metadata["reason"] == "SecondYellow" ? 0 : allowances.PerCardSeconds),
+                _ => 0,
+            });
+            var expected = (int)Math.Ceiling(seconds / 60 - 1e-9);
             Assert.Equal(expected.ToString(System.Globalization.CultureInfo.InvariantCulture), e.Metadata["minutes"]);
         }
     }

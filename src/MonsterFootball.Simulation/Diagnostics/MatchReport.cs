@@ -24,6 +24,9 @@ public static class MatchReport
         MatchEventType.ShotMissed,
         MatchEventType.GoalScored,
         MatchEventType.RestartTaken,
+        MatchEventType.YellowCard,
+        MatchEventType.RedCard,
+        MatchEventType.MatchAbandoned,
         MatchEventType.AddedTimeAnnounced,
         MatchEventType.PeriodEnded,
         MatchEventType.MatchFinished,
@@ -97,6 +100,9 @@ public static class MatchReport
             MatchEventType.AddedTimeAnnounced => $"Added time: +{e.Metadata.GetValueOrDefault("minutes", "?")}",
             MatchEventType.PeriodEnded => $"END OF PERIOD {e.Metadata.GetValueOrDefault("period", "?")}"
                                           + (e.Metadata.GetValueOrDefault("end") == "SafetyCap" ? " (safety cap: play never stopped)" : ""),
+            MatchEventType.YellowCard => $"Yellow card: {P(e.ActorPlayerId)}" + (e.Metadata.GetValueOrDefault("reason") is { Length: > 0 } y ? $" ({CardReason(y)})" : ""),
+            MatchEventType.RedCard => $"RED CARD: {P(e.ActorPlayerId)}" + (e.Metadata.GetValueOrDefault("reason") is { Length: > 0 } r ? $" ({CardReason(r)})" : ""),
+            MatchEventType.MatchAbandoned => $"MATCH ABANDONED — {TeamName(state, e.Team)} down to fewer than {MatchState.MinimumPlayers} players",
             MatchEventType.FoulCommitted => $"Foul by {P(e.ActorPlayerId)} on {P(e.TargetPlayerId)}",
             MatchEventType.RestartTaken => $"{Capitalise(RestartName(e.Metadata.GetValueOrDefault("restart", "?")))}: {P(e.ActorPlayerId)}",
             MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "Offside" =>
@@ -184,6 +190,7 @@ public static class MatchReport
             ("Goal kicks", N(stats.Home.GoalKicks), N(stats.Away.GoalKicks)),
             ("Free kicks", N(stats.Home.FreeKicks), N(stats.Away.FreeKicks)),
             ("Fouls", N(stats.Home.Fouls), N(stats.Away.Fouls)),
+            ("Yellow / red cards", $"{N(stats.Home.YellowCards)} / {N(stats.Home.RedCards)}", $"{N(stats.Away.YellowCards)} / {N(stats.Away.RedCards)}"),
             ("Offsides", N(stats.Home.Offsides), N(stats.Away.Offsides)),
             ("Penalties", $"{N(stats.Home.PenaltiesScored)}/{N(stats.Home.Penalties)}", $"{N(stats.Away.PenaltiesScored)}/{N(stats.Away.Penalties)}"),
         };
@@ -218,6 +225,16 @@ public static class MatchReport
         "FreeKick" => "free kick",
         "Kickoff" => "kickoff",
         _ => restart,
+    };
+
+    private static string CardReason(string reason) => reason switch
+    {
+        "Reckless" => "reckless challenge",
+        "PromisingAttack" => "stopping a promising attack",
+        "SeriousFoulPlay" => "serious foul play",
+        "Dogso" => "denying an obvious goal-scoring opportunity",
+        "SecondYellow" => "second yellow",
+        _ => reason,
     };
 
     private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];

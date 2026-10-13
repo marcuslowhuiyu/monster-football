@@ -38,7 +38,7 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
         var local = TeamFrame.Convert(pitch, side, player.Position);
         var ballLocal = TeamFrame.Convert(pitch, side, state.Ball.Position);
         var opponents = state.TeamPlayers(side.Opponent()).ToList();
-        var group = player.Definition.Position.Group();
+        var group = player.Role.Group();
 
         var candidates = new List<ActionCandidate> { new(ActionKind.MoveIntoPosition, W.MoveIntoPositionUtility, Target: shapeTarget) };
 
@@ -47,7 +47,7 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
             if (supportAvailable && group != PositionGroup.Defender && state.PossessionPlayerId is { } carrierId)
                 AddSupport(state, player, state.Player(carrierId), opponents, candidates);
 
-            if (runAvailable && ballLocal.X > W.RunMinBallX && player.Definition.Position is
+            if (runAvailable && ballLocal.X > W.RunMinBallX && player.Role is
                     PlayingPosition.ST or PlayingPosition.LW or PlayingPosition.RW or PlayingPosition.LCM or PlayingPosition.RCM)
                 AddForwardRun(pitch, player, opponents, candidates);
         }
@@ -115,7 +115,7 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
         var lineX = xs.Count >= 2 ? xs[1] : xs.FirstOrDefault();
 
         var centreY = pitch.Width / 2;
-        var laneY = player.Definition.Position switch
+        var laneY = player.Role switch
         {
             PlayingPosition.LW => centreY + 10,
             PlayingPosition.RW => centreY - 10,
@@ -123,7 +123,7 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
             PlayingPosition.RCM => centreY - 6,
             _ => centreY,
         };
-        var roleBonus = player.Definition.Position switch
+        var roleBonus = player.Role switch
         {
             PlayingPosition.ST => 8,
             PlayingPosition.LW or PlayingPosition.RW => 5,
@@ -149,7 +149,7 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
         var pitch = state.Pitch;
         var ownGoal = pitch.OwnGoalCentre(player.Team);
         var attacker = opponents
-            .Where(o => !o.Definition.Position.IsGoalkeeper()
+            .Where(o => !o.Role.IsGoalkeeper()
                         && !state.HasBall(o.PlayerId)
                         && !marked.Contains(o.PlayerId)
                         && o.Position.DistanceTo(shapeTarget) <= W.MarkZoneRadius

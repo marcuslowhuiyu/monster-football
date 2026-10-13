@@ -35,7 +35,7 @@ internal sealed class StaminaSystem
     {
         var state = context.State;
 
-        foreach (var player in state.Players)
+        foreach (var player in state.ActivePlayers)
             Drain(player, player.LastTickDistance * CostPerMetre(player.MovementIntensity));
 
         var events = context.Events;

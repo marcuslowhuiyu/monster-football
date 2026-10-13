@@ -25,7 +25,7 @@ internal sealed class CarrySystem
     public void Apply(MatchContext context)
     {
         var state = context.State;
-        foreach (var player in state.Players)
+        foreach (var player in state.ActivePlayers)
         {
             if (player.ActiveCarry is not { } carry)
                 continue;

@@ -161,9 +161,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 
 | PR | Branch | Scope | FP |
 |---|---|---|---|
-| 7a | `feat/m2-7-reduced-teams` | player status; active-player iteration everywhere; `Goalkeeper(side)`; shape templates; keeper replacement; generic restart takers; invariants rewritten; forced-dismissal tests | **must be no** (verifies the refactor) |
-| 7b | `feat/m2-7-cards` | yellow / second yellow / red from severity, promising-attack and DOGSO (shared geometry); dismissal; abandonment (D12). ADR-028. | yes |
-| 7c | `chore/m2-7-calibration-checkpoint` | batch figures recorded; new match-flow health bands; tuning only with a clear cause; `LAWS_OF_THE_GAME.md`. ADR-034 (part). | if tuned |
+| 7a+7b+7c | `feat/m2-7-discipline` | One PR (CI budget), stacked on M2.6: reduced teams — roles, sent-off status, active-player iteration, `Goalkeeper(side)`, shape templates, invariants (ADR-031, fingerprint-neutral); cards — DOGSO, serious foul play, promising attack, reckless, second yellow, dismissal, abandonment (ADR-032); calibration checkpoint — safety cap, match-flow bands, figures (ADR-033). | yes (cards, safety cap) |
 
 ### M2.8 — Tactical geometry and snapshot
 
@@ -215,7 +213,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 | 7 | 5 | offside and offside-aware AI |
 | 8 | 6 | fouls |
 | 9 | 7b | cards and dismissals |
-| 10 | 7c | calibration (only if tuned) |
+| 10 | 7 | calibration: safety cap 180 s |
 
 Each is verified cross-platform by CI and recorded in its ADR. Any other PR that changes a fingerprint is a bug.
 

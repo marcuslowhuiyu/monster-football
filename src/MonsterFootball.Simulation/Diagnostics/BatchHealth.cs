@@ -31,13 +31,20 @@ public static class BatchHealth
         new("Tackles per match", s.AverageTackles, 10, 600),
         new("Outfield distance per player (km)", s.AverageOutfieldDistanceKm, 5, 16),
         new("Outfield stamina at full time", s.AverageOutfieldStaminaAtFullTime, 10, 95),
-        // Restart and law volumes (MILESTONE_2 §16.4). Throw-ins and ball-in-play time join at the M2.7 calibration
-        // checkpoint (ADR-028).
+        // Match flow and law volumes (MILESTONE_2 §16.4). Throw-ins, ball-in-play time and the safety cap use interim
+        // bands until defensive clearances (D6) bring them to the milestone's targets (ADR-033).
+        new("Ball-in-play minutes", s.AverageBallInPlayMinutes, 45, 85),
+        new("Added minutes per period", s.AverageAddedMinutesPerPeriod, 0, 10),
+        new("Periods ended by the safety cap", s.SafetyCapPeriodShare, 0, 0.25),
+        new("Throw-ins per match", s.AverageThrowIns, 5, 70),
         new("Goal kicks per match", s.AverageGoalKicks, 8, 35),
         new("Corners per match", s.AverageCorners, 3, 20),
         new("Offsides per match", s.AverageOffsides, 1, 15),
         new("Fouls per match", s.AverageFouls, 8, 45),
         new("Penalties per match", s.AveragePenalties, 0, 0.8),
+        new("Yellow cards per match", s.AverageYellowCards, 0.5, 8),
+        new("Red cards per match", s.AverageRedCards, 0, 0.6),
+        new("Abandoned matches", s.AbandonedShare, 0, 0.001),
     ];
 
     public static bool IsHealthy(BatchSummary summary) => Evaluate(summary).All(c => c.Passed);

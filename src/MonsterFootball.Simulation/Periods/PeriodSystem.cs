@@ -19,6 +19,8 @@ internal sealed class PeriodSystem
     {
         var state = context.State;
         var clock = state.Clock;
+        if (state.Phase == MatchPhase.Finished)
+            return; // abandoned
 
         if (clock.AddedTimeTicks is null && clock.Tick >= clock.RegularEndTick)
             AnnounceAddedTime(context);

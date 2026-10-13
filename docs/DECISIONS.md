@@ -568,7 +568,8 @@ Decision:
   share of halves ended by the safety cap.
 - **Interim safety cap of 60 s** (decision D2 proposed 180 s). Until the ball can go out of play (M2.4), goals are the
   only stoppages and ~96 % of halves end at the cap; with 180 s the extra play pushed outfield distance to 16.4 km,
-  over its 16 km band. Revisit at the M2.7 calibration checkpoint, when the cap should rarely trigger.
+  over its 16 km band. Revisit at the M2.7 calibration checkpoint, when the cap should rarely trigger (raised to
+  180 s there, ADR-033).
 
 Reason:
 The user asked for real-football endings: time added for lost time, and the whistle only when play stops. Stopping at a
@@ -746,3 +747,79 @@ Fingerprint change (ledger #8). Batch of 1,000 (before → after): fouls 22.7 pe
 60 % → 39 %; outfield distance 14.9 → 13.9 km. A first try (4 % base, ×0.5 in the box) gave 27.9 fouls and 1.3
 penalties per match.
 
+
+## ADR-031 — Sent-Off Players Leave Play; Teams Re-Form From Templates
+
+Status: Accepted (M2.7). Implements D11.
+
+Decision:
+- `PlayerMatchState` gains `Role` (the slot played now; starts as the listed position), `Status` (`Active`,
+  `SentOff`) and `YellowCards`. Football systems iterate only active players (`MatchState.ActivePlayers`,
+  `TeamPlayers(side)`, stable order) and read `Role`, never the listed position; `MatchState.Goalkeeper(side)` finds
+  the keeper by role.
+- `MatchState.SendOff` takes a player off the pitch (beside the halfway line), clears their action and the ball, and
+  re-forms the team (`ShapeTemplates.Reform`): with no keeper left, the outfielder with the best Keeping goes in goal;
+  the outfield takes the template for its size — 10 → 4-3-3, 9 → 4-4-1, 8 → 4-3-1, 7 → 4-2-1, 6 → 4-1-1 — whose roles
+  keep their 4-3-3 anchors. Players whose role survives keep it; each vacant role goes to the displaced player whose
+  anchor is nearest (ties → earlier player).
+- Invariants: 7–11 active players and exactly one goalkeeper per side, unique roles, sent-off players off the pitch
+  and never on the ball. Frames carry each player's role and an active flag; the viewer hides sent-off players.
+
+Reason:
+Milestone §14–§15. Keeping the 4-3-3 anchors means the shape, positioning and AI code need no per-formation data.
+
+Consequences:
+A pure refactor: fingerprints identical before and after (seeds 1–5). Full matches with forced dismissals (both
+keepers, down to seven a side) run under the per-tick invariant checks.
+
+## ADR-032 — Cards Follow Law 12 From the Foul and the Situation
+
+Status: Accepted (M2.7). Implements D10 and D12; D3 card and dismissal allowances.
+
+Decision:
+- `Laws.Discipline.Decide` judges every foul, in order:
+  1. **DOGSO** — the carrier within 25 m of goal and no outfield defender other than the tackler goal-side: red
+     outside the area; inside it, yellow when the challenge played for the ball, red from behind (D10).
+  2. **Serious foul play** — red with chance clamp((severity − 0.7) × 1.2, 0, 0.5).
+  3. **Stopping a promising attack** — the carrier in the final third with at most one outfield defender goal-side:
+     yellow.
+  4. **Reckless** — yellow with chance clamp(0.07 + (severity − 0.3) × 0.55, 0, 0.6), halved for a player already
+     booked.
+  A second yellow is a red. A booked player also fouls less (foul chance × 0.6).
+- `MatchContext.Caution` emits `YellowCard` / `RedCard` (metadata `reason`), records the card on the stoppage
+  (`Stoppage.Discipline`) and in regular time adds 20 s per card and 30 s per dismissal. A dismissed player is sent
+  off (ADR-031). A team left with fewer than seven players abandons the match (D12): `MatchAbandoned` then
+  `MatchFinished`; `MatchResult.Abandoned`, and the score stands.
+- `Tactical.Spatial.GoalSideCount` is the first shared tactical geometry (milestone §21).
+
+Reason:
+Milestone §14. The referee applies the law consistently; how bad a foul looks is still a judgement, so serious foul
+play and recklessness are rolls rising with severity.
+
+Consequences:
+Fingerprint change (ledger #9). Batch of 1,000: 3.21 yellow and 0.13 red cards per match (real ≈ 3.5–4 and ≈ 0.1–0.2),
+fouls 22.7 → 21.8, no abandonments. Without the booked caution and leniency, almost every red was a second yellow.
+
+## ADR-033 — M2.7 Calibration Checkpoint: Three-Minute Safety Cap, Match-Flow Bands, Clearances Next
+
+Status: Accepted (M2.7). Implements D2; D13 stands; D6 is triggered.
+
+Decision:
+- The safety cap becomes 180 s, as D2 proposed (60 s was an interim value while goals were the only stoppages,
+  ADR-024). With fouls, offsides and the ball going out, outfield distance stays well inside its band.
+- `BatchHealth` gains the remaining match-flow bands of milestone §16.4: added minutes per period 0–10. Three figures
+  get **interim** bands that catch regressions without failing today's figures, recorded per ADR-020:
+  ball-in-play minutes 45–85 (target 45–75), throw-ins 5–70 per match (target 15–70) and halves ended by the safety cap
+  ≤ 25 % (target ≤ 1 %).
+- No stamina recovery at half-time or during stoppages (D13): distance and full-time stamina are inside their bands.
+- **D6 is triggered**: throw-ins are a fifth of real football's and the ball is in play ~79 of ~95 minutes, because
+  play rarely reaches the touchlines (no clearances, crosses or long switches). A defensive clearance action is the
+  next simulation step; the interim bands tighten to the targets when it lands.
+
+Reason:
+Milestone §47: calibrate once all stoppages exist, with a clear cause for each change.
+
+Consequences:
+Fingerprint change (ledger #10). Batch of 1,000 (before → after): halves ended by the safety cap 40 % → 10 %; ball in
+play 78.5 → 79.4 min; added time 2.1 min per half; outfield distance 14.1 → 14.2 km; goals 2.89 → 2.89; fouls 21.8 →
+22.0; cards 3.21 → 3.26 yellow, 0.13 → 0.13 red. HEALTHY.

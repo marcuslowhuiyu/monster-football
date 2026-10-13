@@ -30,6 +30,9 @@ public sealed record TackleResult(
     double ContactProbability,
     double CleanProbability)
 {
+    /// <summary>The defender got to the ball (the contact roll succeeded).</summary>
+    public bool ContactMade { get; init; }
+
     /// <summary>Chance the challenge was a foul, as estimated for it.</summary>
     public double FoulProbability { get; init; }
 

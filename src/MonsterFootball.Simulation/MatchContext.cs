@@ -35,9 +35,10 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
     /// Stops play (ADR-023): records the stoppage, clears every player's ongoing action and plan, and emits
     /// PlayStopped (team = awarded team, position = restart location, metadata <c>reason</c> and <c>restart</c>).
     /// </summary>
-    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null)
+    public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null,
+        DisciplinaryOutcome discipline = DisciplinaryOutcome.None)
     {
-        BeginStoppage(reason, restart, awardedTeam, location, offender, fouled);
+        BeginStoppage(reason, restart, awardedTeam, location, offender, fouled, discipline);
         if (State.Clock.Tick < State.Clock.RegularEndTick)
         {
             if (reason == StoppageReason.Goal)
@@ -54,11 +55,58 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
             ]));
     }
 
-    /// <summary>Records a stoppage and clears every player's ongoing action and plan, without emitting an event.</summary>
-    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null)
+    /// <summary>
+    /// Shows <paramref name="card"/> to <paramref name="player"/> (ADR-032): YellowCard and/or RedCard events (metadata
+    /// <c>reason</c>), added time in regular time, and for a red or second yellow the dismissal — the team re-forms, and if
+    /// it is left with fewer than <see cref="MatchState.MinimumPlayers"/> the match is abandoned (D12).
+    /// </summary>
+    public void Caution(PlayerMatchState player, DisciplinaryOutcome card, string reason)
     {
-        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender, Fouled = fouled });
-        foreach (var player in State.Players)
+        if (card == DisciplinaryOutcome.None)
+            return;
+
+        ImmutableSortedDictionary<string, string> Reason(string r) =>
+            ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>("reason", r)]);
+        var regular = State.Clock.Tick < State.Clock.RegularEndTick;
+
+        if (card is DisciplinaryOutcome.Yellow or DisciplinaryOutcome.SecondYellow)
+        {
+            player.YellowCards++;
+            Emit(MatchEventType.YellowCard, actor: player.PlayerId, team: player.Team, position: player.Position,
+                metadata: Reason(card == DisciplinaryOutcome.SecondYellow ? "SecondYellow" : reason));
+            if (regular)
+                State.AddedTimeAllowanceSeconds += Config.AddedTime.PerCardSeconds;
+        }
+
+        if (card is DisciplinaryOutcome.Red or DisciplinaryOutcome.SecondYellow)
+        {
+            Emit(MatchEventType.RedCard, actor: player.PlayerId, team: player.Team, position: player.Position,
+                metadata: Reason(card == DisciplinaryOutcome.SecondYellow ? "SecondYellow" : reason));
+            if (regular)
+                State.AddedTimeAllowanceSeconds += Config.AddedTime.PerDismissalSeconds
+                                                   + (card == DisciplinaryOutcome.Red ? Config.AddedTime.PerCardSeconds : 0); // a second yellow's card was counted above
+            State.SendOff(player.PlayerId);
+            if (State.TeamPlayers(player.Team).Count() < MatchState.MinimumPlayers)
+                Abandon(player.Team);
+        }
+    }
+
+    /// <summary>Ends the match as abandoned: MatchAbandoned (team = the side reduced below seven), then MatchFinished.</summary>
+    public void Abandon(TeamSide side)
+    {
+        State.Abandoned = true;
+        State.Phase = MatchPhase.Finished;
+        Emit(MatchEventType.MatchAbandoned, team: side,
+            metadata: ImmutableSortedDictionary.CreateRange([new KeyValuePair<string, string>("reason", "TooFewPlayers")]));
+        Emit(MatchEventType.MatchFinished);
+    }
+
+    /// <summary>Records a stoppage and clears every player's ongoing action and plan, without emitting an event.</summary>
+    public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null,
+        DisciplinaryOutcome discipline = DisciplinaryOutcome.None)
+    {
+        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender, Fouled = fouled, Discipline = discipline });
+        foreach (var player in State.ActivePlayers)
         {
             player.ClearIntent();
             player.OffBallPlan = null;

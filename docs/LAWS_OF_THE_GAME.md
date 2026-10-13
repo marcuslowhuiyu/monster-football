@@ -1,15 +1,16 @@
 # Laws of the Game (as simulated)
 
-The simplified laws the simulation implements. Grows in M2.7 (discipline, reduced teams); only implemented laws are listed. Details and numbers: `MATCH_SIMULATION.md`.
+The simplified laws the simulation implements; only implemented laws are listed. Details and numbers: `MATCH_SIMULATION.md`.
 
 ## Match flow (implemented, M2.1)
 
 - Two halves of 45 minutes. The referee's clock runs through stoppages; ball-in-play time is measured separately.
 - Coin toss for the opening kickoff; the other team kicks off the second half. A goal is restarted by a kickoff for
   the team that conceded.
-- Added time: 45 s per goal in regular time, rounded up to whole minutes and announced when regular time ends.
+- Added time for what happens in regular time — 45 s per goal, 45 s per penalty, 20 s per card, 30 s per dismissal —
+  rounded up to whole minutes and announced when regular time ends.
 - **A half ends only when play stops** after regular plus added time — a ball in flight is never cut off. If play
-  never stops, the half ends at an interim safety cap (60 s past added time).
+  never stops, the half ends at a safety cap 3 minutes past added time (about one half in ten until clearances, D6).
 - Simplification: teams do not change ends at half-time (D1).
 
 ## Ball out of play (implemented, M2.4)
@@ -50,8 +51,25 @@ behind (a corner).
   likelier; a better Defending rating makes it less likely; defenders are much more careful in their own area.
 - A foul stops play at once (no advantage, D7): a **direct free kick** where it happened, or a **penalty** if it
   happened inside the fouling team's own penalty area.
-- Each foul has a severity (Power, from behind, pace, missing the ball), used for cards from M2.7.
-- Added time: 45 s for each penalty awarded in regular time (on top of 45 s per goal).
+- Each foul has a severity (Power, from behind, pace, missing the ball), which decides how likely a card is.
+
+## Cards (implemented, M2.7)
+
+The referee judges every foul (Law 12), checking in this order:
+
+| Offence | When | Card |
+|---|---|---|
+| Denying an obvious goal-scoring opportunity | the fouled player was within 25 m of goal with no outfield defender (other than the offender) goal-side | red; **inside the area** yellow if the challenge was for the ball, red from behind (D10) |
+| Serious foul play | a very severe challenge (severity above 0.7), more likely the worse it is | red |
+| Stopping a promising attack | the fouled player was in the final third with at most one outfield defender goal-side | yellow |
+| Reckless challenge | any other foul, more likely the more severe | yellow |
+
+- A second yellow is a red. Booked players tackle more carefully, and referees think twice before a second caution
+  for a reckless foul.
+- A sent-off player leaves the pitch for the rest of the match (no substitutes). The team re-forms: ten players play 4-4-1, nine
+  4-3-1, eight 4-2-1, seven 4-1-1. If the goalkeeper is sent off, the outfielder with the best Keeping goes in goal.
+- A team reduced to **fewer than seven players** abandons the match (D12); the score stands and the result is
+  recorded as abandoned.
 
 ## Restarts (implemented, M2.1 kickoffs; M2.4–M2.6 the rest)
 
@@ -77,5 +95,5 @@ behind (a corner).
 
 ## Not yet simulated
 
-Cards, dismissals and reduced teams (M2.7); advantage (not in
-M2, D7); headers, set-piece routines, short corners, long throws.
+Advantage (not in M2, D7); handball, off-ball fouls and dissent (D9); substitutions; headers, set-piece routines,
+short corners, long throws.
