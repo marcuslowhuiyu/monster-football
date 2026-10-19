@@ -255,4 +255,24 @@ public class TeamShapeSystemTests
                     Assert.All(state.Players, p => Assert.True(state.Pitch.Contains(p.MovementTarget), $"{p} -> {p.MovementTarget}"));
                 }
     }
+
+    [Fact]
+    public void Far_side_winger_stays_wide_when_the_ball_is_on_the_other_flank()
+    {
+        // Ball on the left (Y = 60): the RW is on the far side.
+        var home = Arrange(new Vec2(40, 60), TeamSide.Home);
+        Assert.True(Target(home, TeamSide.Home, PlayingPosition.RW).Y <= 8, Target(home, TeamSide.Home, PlayingPosition.RW).ToString());
+
+        // Mirrored: Away attacks towards X = 0, so its left flank is at low pitch Y.
+        var away = Arrange(new Vec2(65, 8), TeamSide.Away);
+        Assert.True(Target(away, TeamSide.Away, PlayingPosition.RW).Y >= 68 - 8, Target(away, TeamSide.Away, PlayingPosition.RW).ToString());
+    }
+
+    [Fact]
+    public void Central_midfielders_still_shift_towards_the_ball_side_in_possession()
+    {
+        // LCM in-possession anchor Y = 46; ball 26 m left of centre; 0.25 × 26 = 6.5.
+        var state = Arrange(new Vec2(40, 60), TeamSide.Home);
+        Assert.Equal(52.5, Target(state, TeamSide.Home, PlayingPosition.LCM).Y, precision: 9);
+    }
 }

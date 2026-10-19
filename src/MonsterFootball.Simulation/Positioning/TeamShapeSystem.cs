@@ -6,7 +6,8 @@ namespace MonsterFootball.Simulation.Positioning;
 
 /// <summary>
 /// Assigns every player's <see cref="PlayerMatchState.MovementTarget"/> and intensity each tick
-/// from the 4-3-3 anchors, shifted with the ball. The attacking team (in possession, or whose pass is
+/// from the 4-3-3 anchors, shifted with the ball. Wide roles shift less across the pitch in possession,
+/// keeping the wide channel (ADR-034). The attacking team (in possession, or whose pass is
 /// in flight) uses the attacking shape, never pushing beyond the opponents' last outfield line; the other team (and both teams when the ball is loose) defends,
 /// with its nearest outfield player sprinting to close the ball (to a jockeying spot goal-side of a carrier). The ball carrier follows their carry,
 /// if any, and otherwise holds position. Whoever a pass in flight will reach sprints to meet it.
@@ -16,6 +17,8 @@ internal sealed class TeamShapeSystem
     // How strongly the block follows the ball (fraction of ball offset from the centre spot).
     private const double AttackShiftX = 0.5;
     private const double AttackShiftY = 0.25;
+    // Wide roles barely shift towards the ball side, so the far-side winger and full-back stay wide (ADR-034).
+    private const double WideAttackShiftY = 0.1;
     private const double DefendShiftX = 0.55;
     private const double DefendShiftY = 0.35;
 
@@ -114,7 +117,8 @@ internal sealed class TeamShapeSystem
     {
         var anchor = Formation433.InPossession(pitch, slot);
         var x = anchor.X + AttackShiftX * (ballLocal.X - pitch.HalfwayX);
-        var y = anchor.Y + AttackShiftY * (ballLocal.Y - pitch.Width / 2);
+        var shiftY = WideChannel.IsWide(slot) ? WideAttackShiftY : AttackShiftY;
+        var y = anchor.Y + shiftY * (ballLocal.Y - pitch.Width / 2);
 
         if (slot is PlayingPosition.LCB or PlayingPosition.RCB)
             x = Math.Min(x, ballLocal.X - CentreBackCoverBehindBall);
