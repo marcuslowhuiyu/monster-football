@@ -5,7 +5,7 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.5 offside (ADR-029, `feat/m2-5-offside`), M2.6 fouls, free kicks, penalties (ADR-030, `feat/m2-6-fouls`) and M2.7 cards, reduced teams, calibration checkpoint (ADR-031–033, `feat/m2-7-discipline`) — stacked branches, PRs to open and merge in order; next D6 defensive clearances (triggered at the checkpoint), then M2.8 tactical geometry
+M2.1–M2.7 merged (M2.5 #25, M2.6 #26, M2.7 #27). Next: D6 defensive clearances (triggered at the M2.7 calibration checkpoint, ADR-033), then M2.8 tactical geometry
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, stamina/fatigue, utility AI on and off the ball
@@ -43,8 +43,8 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 
 Next recommended work:
 - Watch matches: `tools/viewer.sh --seed=7 --autoplay`
-- Open the M2.5, M2.6 and M2.7 PRs (merge in order); then D6 defensive clearances
+- D6 defensive clearances, then tighten the interim ball-in-play, throw-in and safety-cap bands (ADR-033)
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
-2026-10-05 — M2 baseline on `main` @ `6e4e799`: Release build 0 warnings, 269/269 tests, format clean, `match 7`, `fingerprint 1 2 3` and `batch 1000` (HEALTHY, figures identical to M1 acceptance).
+2026-10-19 — M2.7 on `main` @ `36bf1da`: CI green on #27 (Ubuntu tests, Windows/macOS fingerprints, cross-platform determinism, format, `batch 1000` HEALTHY); locally Release build 0 warnings, 453/453 tests.
