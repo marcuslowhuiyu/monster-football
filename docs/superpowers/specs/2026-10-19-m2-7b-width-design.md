@@ -58,7 +58,7 @@ LW and LB and the right one (Y = 0) for RW and RB.
 |---|---|---|
 | In-possession shape (`TeamShapeSystem.AttackingTarget`) | every slot shifts 0.25 × the ball's Y offset from centre, so the far-side winger drifts inside | wide roles shift 0.1 × the ball's Y offset (`WideAttackShiftY`); other slots unchanged |
 | Forward runs (`OffBallCandidateGenerator.AddForwardRun`) | wingers run at centre ± 10 m | wingers run at `RunWideLaneMetres` (5 m) from their touchline; ST, LCM, RCM unchanged |
-| Support (`OffBallCandidateGenerator.AddSupport`) | the best of 8 spots 12 m around the carrier, anywhere on the pitch | for wide roles each spot is clamped into the role's channel before scoring: wingers within `WingerChannelMetres` (8 m) of their touchline, full-backs within `FullBackChannelMetres` (12 m) |
+| Support (`OffBallCandidateGenerator.AddSupport`) | midfielders and forwards only (no defender ever supports); the best of 8 spots 12 m around the carrier, anywhere on the pitch | **full-backs become eligible** to support (centre-backs still not); for wide roles each spot is clamped into the role's channel before scoring: wingers within `WingerChannelMetres` (8 m) of their touchline, full-backs within `FullBackChannelMetres` (12 m) |
 | Carries (`CarryResolver.ChooseDestination`) | forward, steered away from the nearest opponent, pulled towards the middle; bends towards goal in the final third | for a wide-role carrier **outside the final third**, no pull towards the middle (the existing 3 m touchline clamp keeps the carry on the pitch); everything else unchanged, including the bend towards goal in the final third |
 
 The out-of-possession shape, pressing, marking and the pass maths are unchanged.
@@ -76,8 +76,9 @@ reduced team without wingers (4-3-1, 4-2-1, 4-1-1) still has wide full-backs.
 - **`TeamShapeSystem`** — `WideAttackShiftY` = 0.1 next to the existing `AttackShiftY`.
 - **`OffBallWeights`** — `RunWideLaneMetres` 5, `WingerChannelMetres` 8, `FullBackChannelMetres` 12, beside the
   existing run and support weights.
-- **`OffBallCandidateGenerator`** — winger run lane from `RunWideLaneMetres`; support spots of wide roles through
-  `WideChannel.Clamp` (a clamped spot that coincides with another direction's is simply scored again).
+- **`OffBallCandidateGenerator`** — winger run lane from `RunWideLaneMetres`; full-backs may support; support spots
+  of wide roles through `WideChannel.Clamp` before the on-pitch check (a clamped spot that coincides with another
+  direction's is simply scored again).
 - **`CarryResolver.ChooseDestination`** — skip the centre bias for a wide-role carrier whose team-frame X is below
   `MatchState.Zones.FinalThirdX`.
 
@@ -90,8 +91,8 @@ Determinism: no new random draws; only arithmetic in team frame (no trigonometry
 - Shape: with the ball on the left, the RW's in-possession target stays within 8 m of the right touchline (Home and
   Away), while a central midfielder still shifts as before.
 - Forward run: a winger's run target is 5 m from their touchline.
-- Support: a full-back's chosen support spot is within 12 m of their touchline; a central midfielder's is not
-  constrained.
+- Support: a full-back now gets a support candidate, within 12 m of their touchline (Home and Away); centre-backs
+  still get none; a central midfielder's spot is not constrained.
 - Carry: in their own half, a winger's carry next to the touchline goes straight up the line (no inward Y component
   beyond opponent avoidance) while a central midfielder's keeps the centre bias; in the final third the winger's
   carry still bends towards goal.
@@ -117,8 +118,8 @@ Determinism: no new random draws; only arithmetic in team frame (no trigonometry
 Branch `feat/m2-7b-width`, one PR:
 
 1. `feat(positioning): wide channel helper` — `WideChannel` and its tests; unused, fingerprints identical.
-2. `feat(ai): wide players hold the touchline in possession` — the four behaviour changes and their tests;
-   **fingerprints change** (ledger #11).
+2. One commit per behaviour, each with its tests — shape, forward runs, support, carries; **fingerprints change**
+   (all four are ledger #11).
 3. `docs: width (ADR-034)` — ADR-034, `MATCH_SIMULATION` (shape, off-ball, carrying, batch figures, limitations),
    `GLOSSARY` (wide channel), `CURRENT_STATE`, and a new **M2.7b match realism** section in `MILESTONE_2_PLAN.md`
    listing the four steps and ledger entry #11.
