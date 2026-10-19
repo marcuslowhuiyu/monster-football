@@ -53,12 +53,15 @@ public class OffBallDecisionTests
     }
 
     [Fact]
-    public void Defenders_do_not_make_forward_runs_or_support()
+    public void Centre_backs_neither_run_nor_support_and_full_backs_do_not_run()
     {
         var s = HomeAttacking(new Vec2(60, 34));
-        var kinds = Candidates(s, s.State.Slot(TeamSide.Home, PlayingPosition.LCB), attacking: true).Select(c => c.Kind);
-        Assert.DoesNotContain(ActionKind.MakeForwardRun, kinds);
-        Assert.DoesNotContain(ActionKind.SupportBallCarrier, kinds);
+        var centreBack = Candidates(s, s.State.Slot(TeamSide.Home, PlayingPosition.LCB), attacking: true).Select(c => c.Kind);
+        Assert.DoesNotContain(ActionKind.MakeForwardRun, centreBack);
+        Assert.DoesNotContain(ActionKind.SupportBallCarrier, centreBack);
+
+        var fullBack = Candidates(s, s.State.Slot(TeamSide.Home, PlayingPosition.LB), attacking: true).Select(c => c.Kind);
+        Assert.DoesNotContain(ActionKind.MakeForwardRun, fullBack);
     }
 
     [Fact]
@@ -206,5 +209,31 @@ public class OffBallDecisionTests
         var away = AwayAttacking(new Vec2(45, 34));
         var awayLw = Assert.Single(Candidates(away, away.State.Slot(TeamSide.Away, PlayingPosition.LW), attacking: true), c => c.Kind == ActionKind.MakeForwardRun);
         Assert.Equal(lane, awayLw.Target!.Value.Y, precision: 9);
+    }
+
+    [Fact]
+    public void Full_backs_support_within_their_channel()
+    {
+        var channel = AiTuning.Default.OffBall.FullBackChannelMetres;
+
+        // Home LB kicks off at (20, 58); the carrier is within support range on the left.
+        var home = HomeAttacking(new Vec2(40, 55));
+        var support = Assert.Single(Candidates(home, home.State.Slot(TeamSide.Home, PlayingPosition.LB), attacking: true), c => c.Kind == ActionKind.SupportBallCarrier);
+        Assert.True(support.Target!.Value.Y >= 68 - channel - 1e-9, support.Target.Value.ToString());
+
+        // Mirrored: Away's left touchline is pitch Y = 0.
+        var away = AwayAttacking(new Vec2(65, 13));
+        var awaySupport = Assert.Single(Candidates(away, away.State.Slot(TeamSide.Away, PlayingPosition.LB), attacking: true), c => c.Kind == ActionKind.SupportBallCarrier);
+        Assert.True(awaySupport.Target!.Value.Y <= channel + 1e-9, awaySupport.Target.Value.ToString());
+    }
+
+    [Fact]
+    public void Winger_support_stays_within_the_winger_channel()
+    {
+        var channel = AiTuning.Default.OffBall.WingerChannelMetres;
+        var s = HomeAttacking(new Vec2(55, 45));
+        s.Place(TeamSide.Home, PlayingPosition.LW, 60, 60);
+        var support = Assert.Single(Candidates(s, s.State.Slot(TeamSide.Home, PlayingPosition.LW), attacking: true), c => c.Kind == ActionKind.SupportBallCarrier);
+        Assert.True(support.Target!.Value.Y >= 68 - channel - 1e-9, support.Target.Value.ToString());
     }
 }

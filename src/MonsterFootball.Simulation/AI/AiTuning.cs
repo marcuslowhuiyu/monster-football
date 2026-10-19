@@ -71,6 +71,12 @@ public sealed record OffBallWeights
     public double SupportLaneCap { get; init; } = 5;
     public double SupportTravelPenalty { get; init; } = 0.4;
     public double SupportForwardBonus { get; init; } = 4;
+
+    /// <summary>A winger's support spot is kept within this distance of their touchline (ADR-034).</summary>
+    public double WingerChannelMetres { get; init; } = 8;
+
+    /// <summary>A full-back's support spot is kept within this distance of their touchline (ADR-034).</summary>
+    public double FullBackChannelMetres { get; init; } = 12;
     public double RunBase { get; init; } = 31;
     public double RunPerPace { get; init; } = 0.8;
     public double RunSpaceWeight { get; init; } = 0.6;
