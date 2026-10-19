@@ -22,7 +22,7 @@ What exists:
 - Decisions ADR-001 – ADR-034
 
 In progress:
-- nothing
+- M2.7b step 1 width — PR from `feat/m2-7b-width`
 
 Known issues (calibration, all within health bands):
 - Goals ~1.95 per match since width (real ≈ 2.7): wide attacks have no crosses yet (M2.7b step 3)

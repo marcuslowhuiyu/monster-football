@@ -77,6 +77,7 @@ public sealed record OffBallWeights
 
     /// <summary>A full-back's support spot is kept within this distance of their touchline (ADR-034).</summary>
     public double FullBackChannelMetres { get; init; } = 12;
+
     public double RunBase { get; init; } = 31;
     public double RunPerPace { get; init; } = 0.8;
     public double RunSpaceWeight { get; init; } = 0.6;
@@ -96,6 +97,7 @@ public sealed record OffBallWeights
 
     /// <summary>Wingers' forward runs aim this far from their own touchline (ADR-034).</summary>
     public double RunWideLaneMetres { get; init; } = 5;
+
     public double MarkBase { get; init; } = 36;
     public double MarkThreatWeight { get; init; } = 18;
     public double MarkThreatRange { get; init; } = 50;

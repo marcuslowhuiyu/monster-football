@@ -160,8 +160,8 @@ public class MatchStatisticsTests
         Assert.Equal(result.AwayGoals, stats.Away.Goals);
         Assert.Equal(stats.BallInPlaySeconds, stats.Home.PossessionSeconds + stats.Away.PossessionSeconds, precision: 6);
         Assert.True(stats.BallInPlaySeconds < result.FinalState.Clock.Now.Seconds, "stoppages are not ball-in-play time");
-        // At least the ball-in-play health band's floor (45 min; milestone §16.4). Real football is 55–60 min.
-        Assert.True(stats.BallInPlaySeconds > 45 * 60, $"{stats.BallInPlaySeconds / 60:0.0} min in play");
+        // Per-match sanity floor: these seeds play ~75–80 min of ball in play (the batch band is 45–85, BatchHealth).
+        Assert.True(stats.BallInPlaySeconds > 60 * 60, $"{stats.BallInPlaySeconds / 60:0.0} min in play");
         var changes = result.Events.Where(e => e.Type == MatchEventType.PossessionChanged).ToList();
         Assert.Equal(changes.Count, stats.PossessionChanges);
         Assert.All(changes, e => Assert.NotNull(e.GetPossessionCause()));
