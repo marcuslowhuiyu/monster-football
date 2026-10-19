@@ -122,9 +122,11 @@ public class ReducedTeamTests
             if (dismissals.Count > 0 && state.Clock.Now.Seconds >= dismissals.Peek().Minute * 60 && state.Phase == MatchPhase.Stopped)
             {
                 var (_, side, slot) = dismissals.Dequeue();
-                if (state.TeamPlayers(side).Count() > MatchState.MinimumPlayers)
+                // Skip it if a real red card already removed that player.
+                var player = state.TeamPlayers(side).FirstOrDefault(p => p.Definition.Position == slot);
+                if (player is not null && state.TeamPlayers(side).Count() > MatchState.MinimumPlayers)
                 {
-                    var id = state.TeamPlayers(side).First(p => p.Definition.Position == slot).PlayerId;
+                    var id = player.PlayerId;
                     state.SendOff(id);
                     forced[side]++;
                     sentOffAt[id] = state.Clock.Now.Seconds;

@@ -23,15 +23,17 @@ internal static class WideChannel
 
     /// <summary>
     /// Moves <paramref name="local"/> (team frame) in Y so it is at most <paramref name="channelMetres"/> from the
-    /// role's touchline. Central roles are returned unchanged.
+    /// role's touchline, on the pitch side (points beyond the line are left for the caller's on-pitch check). Central
+    /// roles are returned unchanged.
     /// </summary>
     public static Vec2 Clamp(PitchGeometry pitch, PlayingPosition role, Vec2 local, double channelMetres)
     {
         if (!IsWide(role))
             return local;
 
-        var touchline = TouchlineY(pitch, role);
-        var y = touchline == 0 ? Math.Min(local.Y, channelMetres) : Math.Max(local.Y, touchline - channelMetres);
+        var y = role is PlayingPosition.LW or PlayingPosition.LB
+            ? Math.Max(local.Y, pitch.Width - channelMetres)
+            : Math.Min(local.Y, channelMetres);
         return new Vec2(local.X, y);
     }
 }

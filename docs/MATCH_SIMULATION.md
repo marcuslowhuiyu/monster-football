@@ -436,7 +436,7 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 - **Distance**: 14.0 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
 - Few stoppages: ~40 ball-out restarts (23.4 throw-ins), ~23 fouls and ~3 offsides per match, so ~6 % of halves still end at the 180 s safety cap; dead-ball times are the bare minimums. Clearances, crosses and dead-ball times follow (M2.7b).
-- **Goals** fell to ~1.95 per match with width (ADR-034): wide attacks have no crosses yet. Full-backs receive under 1 % of passes each.
+- **Goals** fell to ~1.95 per match with width (ADR-034): wide attacks have no crosses yet. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; corners are a pass into the box; no headers, routines or short corners.
 - No blocks as events or posts; deflections only send misses behind.

@@ -32,7 +32,7 @@ public static class BatchHealth
         new("Outfield distance per player (km)", s.AverageOutfieldDistanceKm, 5, 16),
         new("Outfield stamina at full time", s.AverageOutfieldStaminaAtFullTime, 10, 95),
         // Match flow and law volumes (MILESTONE_2 §16.4). Throw-ins, ball-in-play time and the safety cap use interim
-        // bands until defensive clearances (D6) bring them to the milestone's targets (ADR-033).
+        // bands until the M2.7b match-realism steps bring them to the milestone's targets (ADR-033).
         new("Ball-in-play minutes", s.AverageBallInPlayMinutes, 45, 85),
         new("Added minutes per period", s.AverageAddedMinutesPerPeriod, 0, 10),
         new("Periods ended by the safety cap", s.SafetyCapPeriodShare, 0, 0.25),
