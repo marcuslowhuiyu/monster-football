@@ -117,8 +117,8 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
         var centreY = pitch.Width / 2;
         var laneY = player.Role switch
         {
-            PlayingPosition.LW => centreY + 10,
-            PlayingPosition.RW => centreY - 10,
+            PlayingPosition.LW => pitch.Width - W.RunWideLaneMetres,
+            PlayingPosition.RW => W.RunWideLaneMetres,
             PlayingPosition.LCM => centreY + 6,
             PlayingPosition.RCM => centreY - 6,
             _ => centreY,

@@ -100,7 +100,7 @@ public class ReducedTeamTests
     public void Full_matches_with_dismissals_run_cleanly(int seed)
     {
         // Send players off at the first stoppages after 10, 30, 50 and 70 minutes, both sides, keepers included,
-        // leaving Home with 7 and Away with 9.
+        // leaving Home with 7 and Away with 9 before any real red cards.
         var dismissals = new Queue<(double Minute, TeamSide Side, PlayingPosition Slot)>(
         [
             (10, TeamSide.Home, PlayingPosition.GK),
@@ -112,6 +112,7 @@ public class ReducedTeamTests
         ]);
         var simulation = new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), seed);
         var state = simulation.State;
+        var sentOffAt = new Dictionary<PlayerId, double>();
         while (!simulation.IsFinished)
         {
             simulation.Step();
@@ -119,18 +120,23 @@ public class ReducedTeamTests
             if (dismissals.Count > 0 && state.Clock.Now.Seconds >= dismissals.Peek().Minute * 60 && state.Phase == MatchPhase.Stopped)
             {
                 var (_, side, slot) = dismissals.Dequeue();
-                state.SendOff(state.TeamPlayers(side).First(p => p.Definition.Position == slot).PlayerId);
+                var id = state.TeamPlayers(side).First(p => p.Definition.Position == slot).PlayerId;
+                state.SendOff(id);
+                sentOffAt[id] = state.Clock.Now.Seconds;
                 MatchStateInvariants.Verify(state);
             }
         }
 
         Assert.Empty(dismissals);
-        Assert.Equal(7, state.TeamPlayers(TeamSide.Home).Count());
-        Assert.Equal(9, state.TeamPlayers(TeamSide.Away).Count());
+        // Real red cards (ADR-032) can come on top of the forced dismissals.
+        int RedCards(TeamSide side) => simulation.Events.Count(e => e.Type == MatchEventType.RedCard && e.Team == side);
+        Assert.Equal(7 - RedCards(TeamSide.Home), state.TeamPlayers(TeamSide.Home).Count());
+        Assert.Equal(9 - RedCards(TeamSide.Away), state.TeamPlayers(TeamSide.Away).Count());
         var result = simulation.RunToCompletion();
+        foreach (var e in result.Events.Where(e => e.Type == MatchEventType.RedCard))
+            sentOffAt.TryAdd(e.ActorPlayerId!.Value, e.Timestamp.Seconds);
+        Assert.DoesNotContain(result.Events, e => e.ActorPlayerId is { } a && sentOffAt.TryGetValue(a, out var at) && e.Timestamp.Seconds > at);
         var lateEvents = result.Events.Where(e => e.Timestamp.Seconds > 75 * 60).ToList();
-        var sentOff = state.Players.Where(p => !p.IsActive).Select(p => p.PlayerId).ToHashSet();
-        Assert.DoesNotContain(lateEvents, e => e.ActorPlayerId is { } a && sentOff.Contains(a) && e.Type != MatchEventType.PlayStopped);
         Assert.Contains(lateEvents, e => e.Type == MatchEventType.PassAttempted && state.Player(e.ActorPlayerId!.Value).Team == TeamSide.Home);
     }
 }

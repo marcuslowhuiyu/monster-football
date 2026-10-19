@@ -174,4 +174,37 @@ public class OffBallDecisionTests
         Assert.Contains(ActionKind.DefendGoalSide, seen);
         Assert.Contains(ActionKind.RecoverPosition, seen);
     }
+
+    /// <summary>Full match state with Away's CM holding the ball at pitch <paramref name="ball"/>; shape targets assigned.</summary>
+    private static Scenario AwayAttacking(Vec2 ball)
+    {
+        var s = new Scenario();
+        foreach (var p in s.State.Players)
+        {
+            p.Position = Formation433.KickoffPosition(s.State.Pitch, p.Team, p.Definition.Position);
+            p.MovementTarget = p.Position;
+        }
+
+        s.Place(TeamSide.Away, PlayingPosition.CM, ball.X, ball.Y);
+        s.GiveBall(TeamSide.Away, PlayingPosition.CM);
+        new TeamShapeSystem().Apply(s.State);
+        return s;
+    }
+
+    [Fact]
+    public void Wingers_run_down_their_channel()
+    {
+        var lane = AiTuning.Default.OffBall.RunWideLaneMetres;
+
+        var home = HomeAttacking(new Vec2(60, 34));
+        var lw = Assert.Single(Candidates(home, home.State.Slot(TeamSide.Home, PlayingPosition.LW), attacking: true), c => c.Kind == ActionKind.MakeForwardRun);
+        var rw = Assert.Single(Candidates(home, home.State.Slot(TeamSide.Home, PlayingPosition.RW), attacking: true), c => c.Kind == ActionKind.MakeForwardRun);
+        Assert.Equal(68 - lane, lw.Target!.Value.Y, precision: 9);
+        Assert.Equal(lane, rw.Target!.Value.Y, precision: 9);
+
+        // Away: team-frame left is pitch Y = 0.
+        var away = AwayAttacking(new Vec2(45, 34));
+        var awayLw = Assert.Single(Candidates(away, away.State.Slot(TeamSide.Away, PlayingPosition.LW), attacking: true), c => c.Kind == ActionKind.MakeForwardRun);
+        Assert.Equal(lane, awayLw.Target!.Value.Y, precision: 9);
+    }
 }
