@@ -823,3 +823,33 @@ Consequences:
 Fingerprint change (ledger #10). Batch of 1,000 (before → after): halves ended by the safety cap 40 % → 10 %; ball in
 play 78.5 → 79.4 min; added time 2.1 min per half; outfield distance 14.1 → 14.2 km; goals 2.89 → 2.89; fouls 21.8 →
 22.0; cards 3.21 → 3.26 yellow, 0.13 → 0.13 red. HEALTHY.
+
+## ADR-034 — Wide Players Hold the Touchline in Possession
+
+Status: Accepted (M2.7b, step 1 of match realism).
+
+Decision:
+- `Positioning.WideChannel`: wingers and full-backs (by role) belong to their own touchline in team frame.
+- In possession, wide roles shift 0.1 × the ball's offset across the pitch (others 0.25), so the far-side winger stays
+  wide; wingers' forward runs aim 5 m from their touchline (was centre ± 10 m); full-backs may support the carrier
+  (centre-backs still hold); a wide player's support spot stays within 8 m (wingers) / 12 m (full-backs) of the
+  touchline; outside the final third a wide player carries straight down the line instead of drifting inside.
+
+Reason:
+After M2.7 the ball was within 5 m of a touchline in only 1.9 % of open play: wingers averaged 13–16 m from the line
+in possession despite 5 m anchors (runs, support and carries pulled them inside) and full-backs received 0.7 % of
+passes each, so throw-ins came almost only from misplaced passes (8.1 per match, real ≈ 40). Width is the first of
+four realism steps — width, clearances (D6), crosses, dead-ball times — aiming at real football, which the user chose
+over the milestone's minimum bands.
+
+Consequences:
+Fingerprint change (ledger #11). Batch of 1,000 (before → after): throw-ins 8.1 → 23.4; goal kicks 15.2 → 11.0;
+corners 6.4 → 4.7; ball in play 79.4 → 77.9 min (a throw-in costs only 8 s; step 4 addresses dead-ball times);
+halves ended by the safety cap 10 % → 6 %; **goals 2.89 → 1.95**, shots 27.4 → 19.1, penalties 0.31 → 0.14, draws
+24.6 % → 33.5 %; carries 170 → 222; passes 1,471 → 1,369; distance 14.2 → 14.0 km. HEALTHY. Probe (100 matches): open
+play within 5 m of a touchline 1.9 % → 8.3 %; wingers 7.8–7.9 m from their line in possession; throw-ins after a
+misplaced pass 8.0 → 23.6, after a tackle 0.1 → 0.4.
+More attacks now go down the flanks, where a winger in the final third can only cut inside, pass or shoot, so the
+central threat falls; crosses (step 3) are expected to turn wide play back into chances, and goals are re-checked
+there. Full-backs still receive under 1 % of passes each: a small pass-utility change favouring open wide receivers
+is a candidate follow-up, not made here.

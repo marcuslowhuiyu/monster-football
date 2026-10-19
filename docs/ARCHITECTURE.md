@@ -53,7 +53,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Players` | `PlayerId`, `PlayerStats`, `PlayerDefinition`, `PlayingPosition`/`PositionGroup`/`PlayingPositionExtensions`, `TeamDefinition`/`InvalidTeamException`, `PlayerMatchState`, `MovementIntensity`; `PlayerStatus` | M1.2–M1.11, M2.7 |
 | `Random` | `IMatchRandom`, `MatchRng` | M1.3 |
 | `Events` | `MatchEvent`, `MatchEventType`, `MatchEventLog` | M1.3 |
-| `Positioning` | `Formation433`, `TeamFrame`, `TeamShapeSystem`, `GoalkeeperPositioning`; `ShapeTemplates` (reduced-team shapes) | M1.3–M1.4, M2.7 |
+| `Positioning` | `Formation433`, `TeamFrame`, `TeamShapeSystem`, `GoalkeeperPositioning`; `ShapeTemplates` (reduced-team shapes); `WideChannel` (wide roles' touchline channel) | M1.3–M1.4, M2.7, M2.7b |
 | `Movement` | `MovementSystem` | M1.4 |
 | root | `MatchSimulation`, `MatchResult` | M1.3 |
 | `Core` additions | `MatchConfig`, `MatchClock`, `MatchTime` | M1.3 |
