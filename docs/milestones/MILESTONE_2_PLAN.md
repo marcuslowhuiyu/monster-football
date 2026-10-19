@@ -163,6 +163,19 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 |---|---|---|---|
 | 7a+7b+7c | `feat/m2-7-discipline` | One PR (CI budget), stacked on M2.6: reduced teams — roles, sent-off status, active-player iteration, `Goalkeeper(side)`, shape templates, invariants (ADR-031, fingerprint-neutral); cards — DOGSO, serious foul play, promising attack, reckless, second yellow, dismissal, abandonment (ADR-032); calibration checkpoint — safety cap, match-flow bands, figures (ADR-033). | yes (cards, safety cap) |
 
+### M2.7b — Match realism (addition after the M2.7 checkpoint, ADR-033)
+
+The user chose to aim for real football (≈ 40 throw-ins, 55–60 min of ball in play), not only the milestone bands.
+Four steps, one PR each, specs and plans in `docs/superpowers/`; the interim bands of ADR-033 tighten to the milestone
+targets by the end.
+
+| PR | Branch | Scope | FP |
+|---|---|---|---|
+| b1 | `feat/m2-7b-width` | wide players hold the touchline in possession (shape, runs, support, carries). ADR-034. | yes |
+| b2 | `feat/m2-7b-clearances` | D6: defenders under pressure in their own third clear long and wide | yes |
+| b3 | `feat/m2-7b-crosses` | wide players in the final third cross into the box; re-check goals (1.95 after b1) | yes |
+| b4 | `chore/m2-7b-dead-ball-times` | stoppage durations from real averages; tighten the interim bands | yes |
+
 ### M2.8 — Tactical geometry and snapshot
 
 | PR | Branch | Scope | FP |
@@ -214,6 +227,7 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 | 8 | 6 | fouls |
 | 9 | 7b | cards and dismissals |
 | 10 | 7 | calibration: safety cap 180 s |
+| 11 | 7b1 | width |
 
 Each is verified cross-platform by CI and recorded in its ADR. Any other PR that changes a fingerprint is a bug.
 

@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6), cards and reduced teams (M2.7) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6), cards and reduced teams (M2.7), width (M2.7b) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -125,7 +125,7 @@ All shape logic runs in **team frame** (`TeamFrame`): own goal at X = 0, attacki
 `TeamShapeSystem.Apply(state, attackingSmoothing, defendingSmoothing)` sets every player's `MovementTarget` and `MovementIntensity` each tick. Each team's shape is built around its **shape focus** (`MatchState.ShapeFocus(side)`), a moving average of the ball: time constant 3 s for the attacking team, 0.75 s for the defending team. Attackers drift with the flow of play instead of shifting for every square pass; defenders track the ball closely. Pressers, markers and pass receivers use the real ball. Tests call `Apply(state)`, which snaps the focus to the ball.
 
 - **Ball carrier** — follows their active carry (intensity `Carry`); otherwise target = current position.
-- **In possession** (intensity `Easy`) — anchor + 0.5 × ball X offset, 0.25 × ball Y offset from centre. CBs capped 6 m behind the ball; forwards capped 6 m from the goal line; no attacker pushes beyond max(offside line — the second-last opponent —, ball X).
+- **In possession** (intensity `Easy`) — anchor + 0.5 × ball X offset, 0.25 × ball Y offset from centre (0.1 for wingers and full-backs, who keep their wide channel — ADR-034). CBs capped 6 m behind the ball; forwards capped 6 m from the goal line; no attacker pushes beyond max(offside line — the second-last opponent —, ball X).
 - **Out of possession / loose ball** — anchor + 0.55 × X offset, 0.35 × Y offset.
   - Back four share one line X: follows the ball, clamped to ≥ 6 m and ≥ 4 m goal-side of the ball.
   - Midfield ≥ 8 m ahead of the line, Y compressed 20 % toward centre. Forwards ≥ 16 m ahead of the line.
@@ -178,7 +178,7 @@ OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassInten
 
 `CarryIntent(Carrier, Destination)` → `CarryResolver.Resolve` → `CarryResult(Carrier, StartPosition, TargetPosition, Speed, Duration, StartTick, EndTick, Quality)` (ADR-014). No randomness; the carrier keeps the ball.
 
-- `ChooseDestination`: up to 10 m forward in team frame (bending toward goal in the final third), steered sideways away from the nearest opponent within 12 m (steer strength ∝ Awareness and closeness), with a small drift toward the centre; kept 3 m inside touchlines and goal lines.
+- `ChooseDestination`: up to 10 m forward in team frame (bending toward goal in the final third), steered sideways away from the nearest opponent within 12 m (steer strength ∝ Awareness and closeness), with a small drift toward the centre — except a winger or full-back outside the final third, who carries straight down the line (ADR-034); kept 3 m inside touchlines and goal lines.
 - Speed = top speed × (0.55 + 0.03 × Technique) — `MovementIntensity.Carry`.
 - `CarrySystem.Start` sets `CurrentIntent` / `ActiveCarry` and emits `CarryStarted` (metadata `distance`, `speed`, `stamina`). The carry ends at `EndTick`, on reaching the target, or when the ball leaves the carrier.
 
@@ -261,8 +261,8 @@ Skipped: goalkeepers, the carrier, the presser and a pass receiver (they keep th
 |---|---|---|---|
 | MoveIntoPosition | always | team-shape target and intensity (`Easy` in possession, `Jog` defending) | 40 |
 | RecoverPosition | defending, > 10 m from shape target | shape target, sprint | 40 + 1.5 × (distance − 10) (+10 if ahead of the ball) |
-| SupportBallCarrier | attacking, not a defender, ≤ 30 m from carrier | best of 8 spots 12 m around the carrier, jog | 28 + 2.5 × openness (≤ 10) + 2 × lane clearance (≤ 5) − 0.4 × travel (+4 if forward) |
-| MakeForwardRun | attacking, ST/LW/RW/LCM/RCM, ball beyond 35 m | 1 m beyond the offside line (second-last opponent) but never closer than 16 m to the goal line, in the player's lane, sprint; until a teammate's pass is in the air the runner waits at the current offside line + 1.5 × (10 − Awareness) ÷ 9 − 0.5 m (onside when aware, up to 1 m beyond when not) | 31 + 0.8 × Pace + min(20, 0.6 × space behind the line) + role bonus (ST 8, wingers 5) |
+| SupportBallCarrier | attacking, not a centre-back, ≤ 30 m from carrier | best of 8 spots 12 m around the carrier, jog; a winger's spot is kept within 8 m of their touchline, a full-back's within 12 m (`WideChannel`, ADR-034) | 28 + 2.5 × openness (≤ 10) + 2 × lane clearance (≤ 5) − 0.4 × travel (+4 if forward) |
+| MakeForwardRun | attacking, ST/LW/RW/LCM/RCM, ball beyond 35 m | 1 m beyond the offside line (second-last opponent) but never closer than 16 m to the goal line, in the player's lane (wingers 5 m from their touchline, LCM/RCM centre ± 6 m, ST centre), sprint; until a teammate's pass is in the air the runner waits at the current offside line + 1.5 × (10 − Awareness) ÷ 9 − 0.5 m (onside when aware, up to 1 m beyond when not) | 31 + 0.8 × Pace + min(20, 0.6 × space behind the line) + role bonus (ST 8, wingers 5) |
 | DefendGoalSide | defending, defender/midfielder | 2 m goal-side of the nearest unmarked attacker (not the carrier, within 15 m of the shape target, X < ball X + 15 m in team frame); sprint if > 8 m away | 36 + 18 × threat − 0.5 × travel; threat = max(0, 1 − attacker's distance to own goal ÷ 50) |
 
 Commitment: forward runs 3 s, support and marking 1.5 s, others 1 s. A plan is dropped early if the attacking team changes or the marked opponent gains the ball. Team limits: 2 supporters, 2 runners, one marker per opponent.
@@ -295,28 +295,29 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
-Current defaults, 1 000 matches between all-5 teams (after the M2.7 calibration checkpoint):
+Current defaults, 1 000 matches between all-5 teams (after M2.7b width):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 2.89 (max 9) |
-| Shots / on target per match | 27.4 / 8.7 (32 %) |
-| Passes per match, completion | 1 471, 82 % |
-| Home win / draw / away win | 37.9 % / 24.6 % / 37.5 % |
-| Home possession | 50.1 % |
-| Tackles / carries / possession changes | 270 / 170 / 335 |
-| Striker share of goals | 70 % |
-| Outfield distance, stamina at full time | 14.2 km, 53.1 |
-| Throw-ins / goal kicks / corners / offsides per match | 8.1 / 15.2 / 6.4 / 2.5 |
-| Fouls; penalties (scored) per match | 22.0; 0.31 (72 %) |
-| Yellow / red cards per match; abandoned | 3.26 / 0.13; 0 % |
-| Ball in play; added time per half; halves ended by the safety cap | 79.4 min; 2.1 min; 10 % |
+| Goals per match | 1.95 (max 7) |
+| Shots / on target per match | 19.1 / 5.9 (31 %) |
+| Passes per match, completion | 1 369, 82 % |
+| Home win / draw / away win | 33.8 % / 33.5 % / 32.7 % |
+| Home possession | 50.0 % |
+| Tackles / carries / possession changes | 267 / 222 / 312 |
+| Striker share of goals | 76 % |
+| Outfield distance, stamina at full time | 14.0 km, 54.0 |
+| Throw-ins / goal kicks / corners / offsides per match | 23.4 / 11.0 / 4.7 / 3.1 |
+| Fouls; penalties (scored) per match | 22.8; 0.14 (68 %) |
+| Yellow / red cards per match; abandoned | 3.42 / 0.16; 0 % |
+| Ball in play; added time per half; halves ended by the safety cap | 77.9 min; 1.8 min; 6 % |
 
 Health bands also cover, per match, goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45), penalties
 (≤ 0.8), yellow cards (0.5–8), red cards (≤ 0.6), added minutes per period (0–10) and abandoned matches (≤ 0.1 %).
-Throw-ins (real ≈ 40) are far below real football because play rarely reaches the touchlines (no crosses, clearances
-or long switches), and the ball is in play ~79 of ~95 minutes (real ≈ 55–60). Until clearances (D6) land, three bands
-are interim (ADR-033): ball in play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
+Width (ADR-034) brought throw-ins from 8.1 to 23.4 (real ≈ 40), but the ball is still in play ~78 of ~94 minutes
+(real ≈ 55–60) and goals fell to 1.95 (real ≈ 2.7) as more attacks go wide without crosses. The match-realism steps
+(clearances, crosses, dead-ball times; plan M2.7b) address these; until then three bands are interim (ADR-033): ball in
+play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
 
 ## Observation (implemented)
 
@@ -430,11 +431,12 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 
 ## Current limitations
 
-- **Striker dominance**: strikers score ~70 % of goals; wingers and midfielders rarely finish moves.
-- **Volume**: ~1 470 passes, ~270 tackles and ~335 possession changes per match (~79 minutes of ball in play) — busy compared with real football.
-- **Distance**: 14.2 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
+- **Striker dominance**: strikers score ~76 % of goals; wingers and midfielders rarely finish moves.
+- **Volume**: ~1 370 passes, ~265 tackles and ~310 possession changes per match (~78 minutes of ball in play) — busy compared with real football.
+- **Distance**: 14.0 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
-- Few stoppages: ~30 ball-out restarts (8.1 throw-ins), ~22 fouls and ~2.5 offsides per match, so ~10 % of halves still end at the 180 s safety cap; defensive clearances (D6, triggered at the M2.7 checkpoint) are next.
+- Few stoppages: ~40 ball-out restarts (23.4 throw-ins), ~23 fouls and ~3 offsides per match, so ~6 % of halves still end at the 180 s safety cap; dead-ball times are the bare minimums. Clearances, crosses and dead-ball times follow (M2.7b).
+- **Goals** fell to ~1.95 per match with width (ADR-034): wide attacks have no crosses yet. Full-backs receive under 1 % of passes each.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; corners are a pass into the box; no headers, routines or short corners.
 - No blocks as events or posts; deflections only send misses behind.
