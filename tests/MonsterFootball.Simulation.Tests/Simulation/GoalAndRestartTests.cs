@@ -45,7 +45,9 @@ public class GoalAndRestartTests
     [Fact]
     public void During_the_stoppage_players_walk_back_and_nothing_else_happens_until_the_kickoff()
     {
-        var simulation = Enumerable.Range(1, 8).Select(UntilFirstGoal).First(s => s is not null)!;
+        // A goal after regular time ends the period instead (ADR-024), so pick one scored in regular time.
+        var simulation = Enumerable.Range(1, 8).Select(UntilFirstGoal)
+            .First(s => s is not null && s.State.Clock.Tick < s.State.Clock.RegularEndTick)!;
         var state = simulation.State;
         var config = MatchConfig.Default;
         var awarded = state.CurrentStoppage!.AwardedTeam;
