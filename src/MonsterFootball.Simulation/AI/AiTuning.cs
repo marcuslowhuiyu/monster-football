@@ -87,6 +87,9 @@ public sealed record OffBallWeights
     /// <summary>Where <paramref name="awareness"/> makes a runner wait, relative to the offside line (negative = onside).</summary>
     public double RunHoldOffset(int awareness) => RunEagernessMetres * (10 - awareness) / 9.0 - RunHoldOnside;
     public double RunMaxDepthFromGoalLine { get; init; } = 16;
+
+    /// <summary>Wingers' forward runs aim this far from their own touchline (ADR-034).</summary>
+    public double RunWideLaneMetres { get; init; } = 5;
     public double MarkBase { get; init; } = 36;
     public double MarkThreatWeight { get; init; } = 18;
     public double MarkThreatRange { get; init; } = 50;
