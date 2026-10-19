@@ -44,7 +44,8 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
 
         if (attacking)
         {
-            if (supportAvailable && group != PositionGroup.Defender && state.PossessionPlayerId is { } carrierId)
+            // Midfielders, forwards and full-backs support; centre-backs hold (ADR-034).
+            if (supportAvailable && (group != PositionGroup.Defender || WideChannel.IsWide(player.Role)) && state.PossessionPlayerId is { } carrierId)
                 AddSupport(state, player, state.Player(carrierId), opponents, candidates);
 
             if (runAvailable && ballLocal.X > W.RunMinBallX && player.Role is
@@ -86,7 +87,7 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
 
         foreach (var direction in Directions)
         {
-            var spotLocal = carrierLocal + direction * W.SupportDistance;
+            var spotLocal = WideChannel.Clamp(pitch, player.Role, carrierLocal + direction * W.SupportDistance, ChannelMetres(player.Role));
             var spot = TeamFrame.Convert(pitch, player.Team, spotLocal);
             if (!pitch.Contains(spot))
                 continue;
@@ -107,6 +108,9 @@ internal sealed class OffBallCandidateGenerator(OffBallWeights weights)
         if (best is not null)
             candidates.Add(best);
     }
+
+    private double ChannelMetres(PlayingPosition role) =>
+        role.Group() == PositionGroup.Defender ? W.FullBackChannelMetres : W.WingerChannelMetres;
 
     private void AddForwardRun(PitchGeometry pitch, PlayerMatchState player, List<PlayerMatchState> opponents, List<ActionCandidate> candidates)
     {
