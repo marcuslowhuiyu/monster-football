@@ -6,9 +6,9 @@ namespace MonsterFootball.Simulation.Actions.Carrying;
 
 /// <summary>
 /// Plans carries. <see cref="ChooseDestination"/> picks where to go (forward, steering away from the
-/// nearest opponent by Awareness); <see cref="Resolve"/> turns a <see cref="CarryIntent"/> into a
-/// <see cref="CarryResult"/>. Carrying never loses the ball by itself; defenders must tackle.
-/// No randomness.
+/// nearest opponent by Awareness; wide players go down the line outside the final third);
+/// <see cref="Resolve"/> turns a <see cref="CarryIntent"/> into a <see cref="CarryResult"/>.
+/// Carrying never loses the ball by itself; defenders must tackle. No randomness.
 /// </summary>
 internal sealed class CarryResolver
 {
@@ -40,8 +40,10 @@ internal sealed class CarryResolver
             }
         }
 
-        // Drift toward the middle when near a touchline so the carry stays on the pitch.
-        var centreBias = (pitch.Width / 2 - local.Y) / pitch.Width * 0.5;
+        // Drift toward the middle when near a touchline so the carry stays on the pitch — except a wide player outside
+        // the final third, who carries straight down the line (ADR-034); the touchline margin keeps it on the pitch.
+        var downTheLine = WideChannel.IsWide(carrier.Role) && local.X < state.Zones.FinalThirdX;
+        var centreBias = downTheLine ? 0 : (pitch.Width / 2 - local.Y) / pitch.Width * 0.5;
         var direction = (forward + steer + new Vec2(0, centreBias)).Normalized();
         var destinationLocal = local + direction * SegmentLength;
         return TeamFrame.Convert(pitch, carrier.Team, ClampLocal(pitch, destinationLocal));

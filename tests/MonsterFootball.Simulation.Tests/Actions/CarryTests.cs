@@ -134,4 +134,37 @@ public class CarryTests
         Assert.Null(carrier.ActiveCarry);
         MatchStateInvariants.Verify(s.State);
     }
+
+    private static (Scenario Scenario, PlayerMatchState Carrier) WithBall(TeamSide side, PlayingPosition slot, double x, double y)
+    {
+        var s = new Scenario();
+        var carrier = s.Place(side, slot, x, y);
+        s.GiveBall(side, slot);
+        return (s, carrier);
+    }
+
+    [Fact]
+    public void Wide_players_carry_straight_down_the_line_outside_the_final_third()
+    {
+        var (home, homeWinger) = WithBall(TeamSide.Home, PlayingPosition.LW, 30, 64);
+        Assert.Equal(64, _resolver.ChooseDestination(home.State, homeWinger).Y, precision: 9);
+
+        // Away: team-frame (30, 64) is pitch (75, 4).
+        var (away, awayWinger) = WithBall(TeamSide.Away, PlayingPosition.LW, 75, 4);
+        Assert.Equal(4, _resolver.ChooseDestination(away.State, awayWinger).Y, precision: 9);
+    }
+
+    [Fact]
+    public void Central_players_still_drift_towards_the_middle()
+    {
+        var (s, midfielder) = WithBall(TeamSide.Home, PlayingPosition.LCM, 30, 50);
+        Assert.True(_resolver.ChooseDestination(s.State, midfielder).Y < 50);
+    }
+
+    [Fact]
+    public void Wide_players_bend_towards_goal_in_the_final_third()
+    {
+        var (s, winger) = WithBall(TeamSide.Home, PlayingPosition.LW, 80, 60);
+        Assert.True(_resolver.ChooseDestination(s.State, winger).Y < 60);
+    }
 }

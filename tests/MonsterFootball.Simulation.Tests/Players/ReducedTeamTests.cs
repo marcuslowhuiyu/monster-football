@@ -100,7 +100,8 @@ public class ReducedTeamTests
     public void Full_matches_with_dismissals_run_cleanly(int seed)
     {
         // Send players off at the first stoppages after 10, 30, 50 and 70 minutes, both sides, keepers included,
-        // leaving Home with 7 and Away with 9 before any real red cards.
+        // leaving Home with 7 and Away with 9 before any real red cards. A forced dismissal is skipped once a side is
+        // down to the minimum (a real red card already reduced it).
         var dismissals = new Queue<(double Minute, TeamSide Side, PlayingPosition Slot)>(
         [
             (10, TeamSide.Home, PlayingPosition.GK),
@@ -113,6 +114,7 @@ public class ReducedTeamTests
         var simulation = new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), seed);
         var state = simulation.State;
         var sentOffAt = new Dictionary<PlayerId, double>();
+        var forced = new Dictionary<TeamSide, int> { [TeamSide.Home] = 0, [TeamSide.Away] = 0 };
         while (!simulation.IsFinished)
         {
             simulation.Step();
@@ -120,18 +122,22 @@ public class ReducedTeamTests
             if (dismissals.Count > 0 && state.Clock.Now.Seconds >= dismissals.Peek().Minute * 60 && state.Phase == MatchPhase.Stopped)
             {
                 var (_, side, slot) = dismissals.Dequeue();
-                var id = state.TeamPlayers(side).First(p => p.Definition.Position == slot).PlayerId;
-                state.SendOff(id);
-                sentOffAt[id] = state.Clock.Now.Seconds;
-                MatchStateInvariants.Verify(state);
+                if (state.TeamPlayers(side).Count() > MatchState.MinimumPlayers)
+                {
+                    var id = state.TeamPlayers(side).First(p => p.Definition.Position == slot).PlayerId;
+                    state.SendOff(id);
+                    forced[side]++;
+                    sentOffAt[id] = state.Clock.Now.Seconds;
+                    MatchStateInvariants.Verify(state);
+                }
             }
         }
 
         Assert.Empty(dismissals);
         // Real red cards (ADR-032) can come on top of the forced dismissals.
         int RedCards(TeamSide side) => simulation.Events.Count(e => e.Type == MatchEventType.RedCard && e.Team == side);
-        Assert.Equal(7 - RedCards(TeamSide.Home), state.TeamPlayers(TeamSide.Home).Count());
-        Assert.Equal(9 - RedCards(TeamSide.Away), state.TeamPlayers(TeamSide.Away).Count());
+        Assert.Equal(11 - forced[TeamSide.Home] - RedCards(TeamSide.Home), state.TeamPlayers(TeamSide.Home).Count());
+        Assert.Equal(11 - forced[TeamSide.Away] - RedCards(TeamSide.Away), state.TeamPlayers(TeamSide.Away).Count());
         var result = simulation.RunToCompletion();
         foreach (var e in result.Events.Where(e => e.Type == MatchEventType.RedCard))
             sentOffAt.TryAdd(e.ActorPlayerId!.Value, e.Timestamp.Seconds);
