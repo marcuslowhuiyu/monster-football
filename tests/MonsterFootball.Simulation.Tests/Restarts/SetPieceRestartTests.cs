@@ -33,9 +33,9 @@ public class SetPieceRestartTests
     }
 
     /// <summary>Runs the stoppage loop; returns the state of every player on the tick the restart was taken.</summary>
-    private static (double Seconds, Dictionary<PlayerId, Vec2> AtRestart) RunUntilTaken(Scenario s)
+    private static (double Seconds, Dictionary<PlayerId, Vec2> AtRestart) RunUntilTaken(Scenario s, RestartSystem? system = null)
     {
-        var restarts = new RestartSystem(new PassResolver(), new ShotResolver(), AiTuning.Default.OnBall);
+        var restarts = system ?? new RestartSystem(new PassResolver(), new ShotResolver(), AiTuning.Default.OnBall);
         var movement = new MovementSystem();
         var stoppedAt = s.State.Clock.Tick;
         var stoppage = s.State.CurrentStoppage!;
@@ -103,6 +103,23 @@ public class SetPieceRestartTests
         var change = s.Log.Events.Single(e => e.Type == MatchEventType.PossessionChanged && e.Team == TeamSide.Away);
         Assert.Equal(PossessionCause.ThrowIn, change.GetPossessionCause());
         Assert.False(PossessionCause.ThrowIn.IsOpenPlay());
+    }
+
+    [Fact]
+    public void A_taker_sent_off_during_the_stoppage_is_replaced()
+    {
+        var spot = new Vec2(PitchGeometry.GoalAreaDepth, 34 + PitchGeometry.GoalAreaWidth / 2);
+        var s = Stopped(RestartType.GoalKick, TeamSide.Home, spot);
+        var restarts = new RestartSystem(new PassResolver(), new ShotResolver(), AiTuning.Default.OnBall);
+        restarts.Position(s.Context); // the keeper is chosen to take it
+        var keeper = s.State.Slot(TeamSide.Home, PlayingPosition.GK);
+        s.State.SendOff(keeper.PlayerId);
+
+        RunUntilTaken(s, restarts); // invariants are checked every tick: the keeper never comes back on
+
+        var taker = s.State.Player(Taken(s).ActorPlayerId!.Value);
+        Assert.NotEqual(keeper.PlayerId, taker.PlayerId);
+        Assert.True(taker.IsActive);
     }
 
     [Fact]
