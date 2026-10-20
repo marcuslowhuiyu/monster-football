@@ -30,6 +30,9 @@ public sealed class TacticalZones
     /// <summary>X of the final-third line in team frame.</summary>
     public double FinalThirdX => Pitch.Length * 2 / 3;
 
+    /// <summary>X of the defensive-third line in team frame: the end of a team's own third.</summary>
+    public double DefensiveThirdX => Pitch.Length / 3;
+
     /// <summary>
     /// The zone containing <paramref name="point"/> (pitch coordinates) for <paramref name="side"/>. A point on a
     /// boundary belongs to the zone further from the team's own goal (bands) or further left (channels); points off

@@ -11,6 +11,7 @@ namespace MonsterFootball.Simulation.Positioning;
 /// in flight) uses the attacking shape, never pushing beyond the opponents' last outfield line; the other team (and both teams when the ball is loose) defends,
 /// with its nearest outfield player sprinting to close the ball (to a jockeying spot goal-side of a carrier). The ball carrier follows their carry,
 /// if any, and otherwise holds position. Whoever a pass in flight will reach sprints to meet it.
+/// While a clearance flies, the nearest outfield player of each side sprints to where it will land.
 /// </summary>
 internal sealed class TeamShapeSystem
 {
@@ -53,6 +54,20 @@ internal sealed class TeamShapeSystem
             var receiver = state.Player(receiverId);
             receiver.MovementTarget = pass.TargetPosition;
             receiver.MovementIntensity = MovementIntensity.Sprint;
+        }
+
+        // A clearance in the air: the nearest outfield player of each side races to where it will land (ADR-035).
+        if (state.Ball.Flight is { Clearance: { } clearance })
+        {
+            var landing = state.Pitch.Clamp(clearance.TargetPosition);
+            foreach (var side in Enum.GetValues<TeamSide>())
+            {
+                var chaser = state.TeamPlayers(side).Where(p => !p.Role.IsGoalkeeper()).MinBy(p => p.Position.DistanceTo(landing));
+                if (chaser is null)
+                    continue;
+                chaser.MovementTarget = landing;
+                chaser.MovementIntensity = MovementIntensity.Sprint;
+            }
         }
     }
 
