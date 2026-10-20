@@ -13,6 +13,7 @@ public enum ActionKind
     Carry,
     Shoot,
     Clear,
+    Cross,
 
     // Off the ball.
     MoveIntoPosition,
