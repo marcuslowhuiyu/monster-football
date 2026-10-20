@@ -103,6 +103,7 @@ public static class MatchReport
             MatchEventType.YellowCard => $"Yellow card: {P(e.ActorPlayerId)}" + (e.Metadata.GetValueOrDefault("reason") is { Length: > 0 } y ? $" ({CardReason(y)})" : ""),
             MatchEventType.RedCard => $"RED CARD: {P(e.ActorPlayerId)}" + (e.Metadata.GetValueOrDefault("reason") is { Length: > 0 } r ? $" ({CardReason(r)})" : ""),
             MatchEventType.MatchAbandoned => $"MATCH ABANDONED — {TeamName(state, e.Team)} down to fewer than {MatchState.MinimumPlayers} players",
+            MatchEventType.Clearance => $"Clearance ({e.Metadata.GetValueOrDefault("kind", "?").ToLowerInvariant()}) by {P(e.ActorPlayerId)}",
             MatchEventType.FoulCommitted => $"Foul by {P(e.ActorPlayerId)} on {P(e.TargetPlayerId)}",
             MatchEventType.RestartTaken => $"{Capitalise(RestartName(e.Metadata.GetValueOrDefault("restart", "?")))}: {P(e.ActorPlayerId)}",
             MatchEventType.PlayStopped when e.Metadata.GetValueOrDefault("reason") == "Offside" =>
@@ -190,6 +191,7 @@ public static class MatchReport
             ("Goal kicks", N(stats.Home.GoalKicks), N(stats.Away.GoalKicks)),
             ("Free kicks", N(stats.Home.FreeKicks), N(stats.Away.FreeKicks)),
             ("Fouls", N(stats.Home.Fouls), N(stats.Away.Fouls)),
+            ("Clearances", N(stats.Home.Clearances), N(stats.Away.Clearances)),
             ("Yellow / red cards", $"{N(stats.Home.YellowCards)} / {N(stats.Home.RedCards)}", $"{N(stats.Away.YellowCards)} / {N(stats.Away.RedCards)}"),
             ("Offsides", N(stats.Home.Offsides), N(stats.Away.Offsides)),
             ("Penalties", $"{N(stats.Home.PenaltiesScored)}/{N(stats.Home.Penalties)}", $"{N(stats.Away.PenaltiesScored)}/{N(stats.Away.Penalties)}"),
