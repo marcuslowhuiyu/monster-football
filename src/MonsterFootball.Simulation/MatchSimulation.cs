@@ -141,17 +141,17 @@ public sealed class MatchSimulation
     /// </summary>
     private void RunOpenPlay()
     {
-        _ballFlight.Apply(_context);      // advance a pass or shot in flight; apply its outcome on arrival
+        _ballFlight.Apply(_context);      // advance a pass, shot or clearance in flight; apply its outcome on arrival
         if (State.Phase != MatchPhase.OpenPlay)
             return;                       // goal, or the ball went out
 
         _carry.Apply(_context);           // end finished carries
-        _onBallDecision.Apply(_context);  // carrier holds, passes, carries or shoots (utility AI)
+        _onBallDecision.Apply(_context);  // carrier holds, passes, carries, shoots or clears (utility AI)
 
         _tackle.Apply(_context);          // presser (or another defender) in range may challenge
         if (State.Phase != MatchPhase.OpenPlay)
             return;                       // knocked out of play
-        _shape.Apply(State,                                  // default targets: shape, presser, pass receiver
+        _shape.Apply(State,                                  // default targets: shape, presser, pass receiver, clearance chasers
             _config.TickSeconds / AttackingShapeFocusSeconds,
             _config.TickSeconds / DefendingShapeFocusSeconds);
         _offBall.Apply(_context);         // off-ball utility AI: support, runs, marking, recovery

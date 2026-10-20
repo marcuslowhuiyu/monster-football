@@ -43,11 +43,11 @@ Each `Step()`:
 3. Run the current phase:
    - `Stopped` / `RestartSetup` — see *Stoppages*: restart targets → advance the stoppage (the tick ends if the restart is taken) → movement → stamina.
    - `OpenPlay` — in this order:
-     1. `BallFlightSystem` — move a pass or shot in flight; on its arrival tick, apply its outcome. A misplaced pass whose path leaves the pitch goes out of play where it crosses. If play stopped (goal, ball out), the rest of the tick is skipped.
+     1. `BallFlightSystem` — move a pass, shot or clearance in flight; on its arrival tick, apply its outcome. A misplaced pass or a clearance whose path leaves the pitch goes out of play where it crosses. If play stopped (goal, ball out), the rest of the tick is skipped.
      2. `CarrySystem` — end carries whose time is up, whose target is reached, or whose carrier lost the ball.
-     3. `OnBallDecisionSystem` — utility AI: carrier holds, passes, carries or shoots (a shot is struck and launched; it lands on a later tick).
+     3. `OnBallDecisionSystem` — utility AI: carrier holds, passes, carries, shoots or clears (shots and clearances are struck and launched; they land on a later tick).
      4. `TackleSystem` — the presser (or another opponent in range) may challenge. A ball knocked out of play skips the rest of the tick.
-     5. `TeamShapeSystem` — default targets: team shape, the presser, a pass receiver; the carrier follows their carry.
+     5. `TeamShapeSystem` — default targets: team shape, the presser, a pass receiver, a clearance's chasers; the carrier follows their carry.
      6. `OffBallDecisionSystem` — utility AI for everyone else: support, forward runs, marking, recovery.
      7. `MovementSystem` — move all players.
      8. Sync a possessed ball to its carrier.
@@ -326,8 +326,8 @@ Current defaults, 1 000 matches between all-5 teams (after M2.7b clearances):
 Health bands also cover, per match, goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45), penalties
 (≤ 0.8), yellow cards (0.5–8), red cards (≤ 0.6), clearances (10–80), added minutes per period (0–10) and abandoned matches (≤ 0.1 %).
 Width (ADR-034) and clearances (ADR-035) brought throw-ins from 8.1 to 27.6 (real ≈ 40), but the ball is still in play
-~77 of ~94 minutes (real ≈ 55–60) and goals are 2.11 (real ≈ 2.7) as more attacks go wide without crosses. The match-realism steps
-(clearances, crosses, dead-ball times; plan M2.7b) address these; until then three bands are interim (ADR-033): ball in
+~77 of ~94 minutes (real ≈ 55–60) and goals are 2.11 (real ≈ 2.7) as more attacks go wide without crosses. The remaining match-realism steps
+(crosses, dead-ball times; plan M2.7b) address these; until then three bands are interim (ADR-033): ball in
 play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
 
 ## Observation (implemented)
@@ -443,11 +443,11 @@ A pass, shot or clearance in the air is `BallState.Flight` (`BallFlight`: exactl
 ## Current limitations
 
 - **Striker dominance**: strikers score ~76 % of goals; wingers and midfielders rarely finish moves.
-- **Volume**: ~1 370 passes, ~265 tackles and ~310 possession changes per match (~78 minutes of ball in play) — busy compared with real football.
-- **Distance**: 14.0 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
+- **Volume**: ~1 310 passes, ~270 tackles and ~340 possession changes per match (~77 minutes of ball in play) — busy compared with real football.
+- **Distance**: 13.9 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
 - Few stoppages: ~44 ball-out restarts (27.6 throw-ins), ~23 fouls and ~3 offsides per match, so ~4 % of halves still end at the 180 s safety cap; dead-ball times are the bare minimums. Crosses and dead-ball times follow (M2.7b).
-- Clearances are simple: never blocked or charged down, no headers, and goalkeepers do not punt from their hands.
+- Clearances are simple: never blocked or charged down, no headers, goalkeepers do not punt from their hands, and a clearance costs no stamina. A long clearance aims at the striker even when they are only just ahead and wide (a near-sideways kick), and the clearer's chaser may be a player judged offside at the strike. Contested landings are a 50/50 draw, not stat-based.
 - **Goals** ~2.1 per match since width (ADR-034): wide attacks have no crosses yet. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; corners are a pass into the box; no headers, routines or short corners.
