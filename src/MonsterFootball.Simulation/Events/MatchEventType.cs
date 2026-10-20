@@ -33,4 +33,6 @@ public enum MatchEventType
 
     // Actions (M2.7b)
     Clearance,
+    Cross,
+    CrossContested,
 }

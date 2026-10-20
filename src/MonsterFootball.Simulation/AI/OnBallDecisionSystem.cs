@@ -1,5 +1,6 @@
 using MonsterFootball.Simulation.Actions.Carrying;
 using MonsterFootball.Simulation.Actions.Clearing;
+using MonsterFootball.Simulation.Actions.Crossing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 
@@ -15,7 +16,8 @@ internal sealed class OnBallDecisionSystem(
     PassResolver passResolver,
     CarryResolver carryResolver,
     ShotResolver shotResolver,
-    ClearanceResolver clearanceResolver)
+    ClearanceResolver clearanceResolver,
+    CrossResolver crossResolver)
 {
     public const double FirstTouchSeconds = 0.5;
 
@@ -46,6 +48,9 @@ internal sealed class OnBallDecisionSystem(
                 break;
             case ClearanceIntent clearance:
                 ClearanceExecution.Launch(context, clearanceResolver.Resolve(state, clearance, context.Random));
+                break;
+            case CrossIntent cross:
+                CrossExecution.Launch(context, crossResolver.Resolve(state, cross, context.Random));
                 break;
         }
     }

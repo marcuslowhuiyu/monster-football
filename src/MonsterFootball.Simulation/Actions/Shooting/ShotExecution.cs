@@ -28,7 +28,7 @@ internal static class ShotExecution
                 new KeyValuePair<string, string>("stamina", Format(state.Player(result.Shooter).CurrentStamina)),
                 new KeyValuePair<string, string>("keeperStamina", Format(state.Player(result.Goalkeeper).CurrentStamina)),
                 new KeyValuePair<string, string>("travel", Format(result.TravelDuration)),
-            ]).SetItems(result.IsPenalty ? [new KeyValuePair<string, string>("penalty", "true")] : []));
+            ]).SetItems(Flags(result)));
         state.LaunchBall(BallFlight.ForShot(result, tick, tick + BallFlight.TravelTicks(result.TravelDuration, context.Config.TickSeconds)));
     }
 
@@ -44,7 +44,7 @@ internal static class ShotExecution
                     metadata: ImmutableSortedDictionary.CreateRange(
                     [
                         new KeyValuePair<string, string>("score", state.Score.ToString()),
-                    ]).SetItems(result.IsPenalty ? [new KeyValuePair<string, string>("penalty", "true")] : []));
+                    ]).SetItems(Flags(result)));
                 context.StopPlay(StoppageReason.Goal, RestartType.Kickoff, result.Team.Opponent(), state.Pitch.Centre);
                 break;
 
@@ -87,6 +87,14 @@ internal static class ShotExecution
                 Laws.OutOfPlay.Stop(context, result.TargetPosition, Laws.BoundaryLine.GoalLine);
                 break;
         }
+    }
+
+    private static IEnumerable<KeyValuePair<string, string>> Flags(ShotResult result)
+    {
+        if (result.IsPenalty)
+            yield return new KeyValuePair<string, string>("penalty", "true");
+        if (result.FromCross)
+            yield return new KeyValuePair<string, string>("cross", "true");
     }
 
     private static string Format(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);

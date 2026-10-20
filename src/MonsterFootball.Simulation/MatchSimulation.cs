@@ -1,6 +1,7 @@
 using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Actions.Carrying;
 using MonsterFootball.Simulation.Actions.Clearing;
+using MonsterFootball.Simulation.Actions.Crossing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.Actions.Tackling;
@@ -74,7 +75,8 @@ public sealed class MatchSimulation
             passResolver,
             carryResolver,
             shotResolver,
-            new ClearanceResolver());
+            new ClearanceResolver(),
+            new CrossResolver());
     }
 
     public int Seed { get; }
@@ -141,7 +143,7 @@ public sealed class MatchSimulation
     /// </summary>
     private void RunOpenPlay()
     {
-        _ballFlight.Apply(_context);      // advance a pass, shot or clearance in flight; apply its outcome on arrival
+        _ballFlight.Apply(_context);      // advance a pass, shot, clearance or cross in flight; apply its outcome on arrival
         if (State.Phase != MatchPhase.OpenPlay)
             return;                       // goal, or the ball went out
 

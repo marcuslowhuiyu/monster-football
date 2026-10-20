@@ -287,4 +287,19 @@ public class ShotTests
         var other = s.State.Slot(TeamSide.Home, PlayingPosition.LW);
         Assert.Throws<ArgumentException>(() => _resolver.Resolve(s.State, new ShotIntent(other.PlayerId), new MatchRng(1)));
     }
+
+    [Fact]
+    public void A_first_time_shot_from_a_cross_is_harder_to_put_on_target()
+    {
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5));
+        s.Place(TeamSide.Home, PlayingPosition.ST, 95, 34);
+        var shooter = s.GiveBall(TeamSide.Home, PlayingPosition.ST);
+        var resolver = new ShotResolver();
+
+        var normal = resolver.Estimate(s.State, new ShotIntent(shooter.PlayerId));
+        var firstTime = resolver.ResolveFirstTime(s.State, new ShotIntent(shooter.PlayerId), s.Context.Random);
+
+        Assert.True(firstTime.Quality < normal.OnTargetProbability);
+        Assert.True(firstTime.FromCross);
+    }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.AI;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Players;
@@ -22,11 +23,17 @@ public sealed record MatchFrame(
     BallFrame Ball,
     ImmutableArray<PlayerFrame> Players)
 {
+    private static BallFlightKind KindOf(BallFlight f) =>
+        f.Pass is not null ? BallFlightKind.Pass
+        : f.Shot is not null ? BallFlightKind.Shot
+        : f.Clearance is not null ? BallFlightKind.Clearance
+        : BallFlightKind.Cross;
+
     public static MatchFrame Capture(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
         var flight = state.Ball.Flight is { } f
-            ? new BallFlightFrame(f.Pass is not null ? BallFlightKind.Pass : f.Shot is not null ? BallFlightKind.Shot : BallFlightKind.Clearance, f.Team, f.StartPosition, f.TargetPosition,
+            ? new BallFlightFrame(KindOf(f), f.Team, f.StartPosition, f.TargetPosition,
                 f.LaunchTick, f.ArrivalTick, f.Pass?.IntendedReceiver)
             : null;
 
@@ -78,6 +85,7 @@ public enum BallFlightKind
     Pass,
     Shot,
     Clearance,
+    Cross,
 }
 
 /// <summary>
