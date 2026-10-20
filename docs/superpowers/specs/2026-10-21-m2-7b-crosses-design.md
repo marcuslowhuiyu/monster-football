@@ -55,7 +55,8 @@ On arrival at landing point L, `AerialContest` looks at active players within `C
    outcome. No draw.
 2. **Attacker vs defender**: best attacker A and best defender D (highest aerial rating; ties → nearer, then earlier
    player). Aerial rating = 0.5 × Power + 0.3 × Awareness + 0.2 × Technique (attacker) or Defending (defender). P(attacker
-   wins) = Sigmoid(`ContestScale` 0.4 × (A − D) + `ContestBias` −0.3) (≈ 0.43 between equals); one draw.
+   wins) = Sigmoid(`ContestScale` 0.4 × (A − D) + `ContestBias` −0.14) (≈ 0.43 between equals — `Curves.Sigmoid` is
+   the algebraic 0.5 + 0.5x/√(1+x²), not the logistic curve); one draw.
 3. **Only one side present**: that side wins, no draw.
 4. **Nobody within the radius**: the ball lands loose and rolls on (35 % of the flight distance, as a misplaced pass).
 
@@ -76,7 +77,7 @@ metadata `outcome` = `Shot` / `Cleared` / `Claimed` / `Loose`).
 
 ## Code
 
-- **`Actions/Crossing/`** (new): `CrossIntent(PlayerId Crosser)`; `CrossKind { OpenPlay, Corner }`;
+- **`Actions/Crossing/`** (new): `CrossIntent(PlayerId Crosser, CrossKind Kind = OpenPlay)`; `CrossKind { OpenPlay, Corner }`;
   `CrossResult(Team, Crosser, Kind, StartPosition, IntendedTarget, TargetPosition, TravelDuration)` (public, with
   `Distance`); `CrossResolver` (`Aim`, `Resolve`); `AerialContest` (pure: contestants, keeper claim, win chance);
   `CrossExecution` (`Launch`, `LeavePlay`, `Land` → contest and outcome); `HeaderClearance`.
