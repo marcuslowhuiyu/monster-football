@@ -874,8 +874,8 @@ Decision:
 - **Contested loose balls**: players exactly as near to a loose ball contest it with one random draw. Previously the
   earlier player in the list (always Home) won; the chase made such ties common, giving Home 51.1 % possession and a
   7–8 point win edge on seeds 1–3000.
-- A restart taker sent off during the stoppage is replaced (latent bug found by the same seeds; not reachable in a
-  normal match, where the dismissed player is on the other side).
+- A restart taker sent off during the stoppage is replaced: a defensive fix, exposed by a test that sends a goalkeeper
+  off during a goal-kick stoppage; not reachable in a normal match, where the dismissed player is on the other side.
 
 Reason:
 After width (ADR-034) defenders under pressure could only hold, pass or carry, while real teams make ≈ 35–45

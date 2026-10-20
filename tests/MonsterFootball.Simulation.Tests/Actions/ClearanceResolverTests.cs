@@ -53,6 +53,21 @@ public class ClearanceResolverTests
     }
 
     [Fact]
+    public void Long_clearances_mirror_for_the_away_side()
+    {
+        var s = new Scenario();
+        var kicker = s.Place(TeamSide.Away, PlayingPosition.LCB, 85, 34); // team frame (20, 34)
+        s.Place(TeamSide.Away, PlayingPosition.ST, 45, 34);               // team frame (60, 34)
+        s.GiveBall(TeamSide.Away, PlayingPosition.LCB);
+
+        var (kind, target) = _resolver.Aim(s.State, kicker);
+
+        Assert.Equal(ClearanceKind.Long, kind);
+        Assert.Equal(50, target.X, precision: 9); // team frame (55, 34)
+        Assert.Equal(34, target.Y, precision: 9);
+    }
+
+    [Fact]
     public void Far_from_goal_even_a_pressed_clearance_goes_long()
     {
         var s = new Scenario();

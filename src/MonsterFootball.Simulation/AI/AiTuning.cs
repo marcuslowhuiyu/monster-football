@@ -59,7 +59,7 @@ public sealed record OnBallWeights
     public double ClearPressureWeight { get; init; } = 40;
     public double ClearDangerWeight { get; init; } = 30;
 
-    /// <summary>Danger is 1 on the own goal line and 0 this far from the own goal centre.</summary>
+    /// <summary>Danger is 1 at the own goal centre, falling linearly to 0 this far from it.</summary>
     public double ClearDangerRange { get; init; } = 35;
 }
 
