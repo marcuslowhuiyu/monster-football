@@ -156,9 +156,12 @@ public class SetPieceRestartTests
         Assert.True(seconds >= Tuning.CornerDeadBallSeconds - 1e-9);
         Assert.All(s.State.TeamPlayers(TeamSide.Away), p => Assert.True(at[p.PlayerId].DistanceTo(corner) >= Tuning.CornerExclusionRadius - 1e-9, $"{p} too close"));
 
-        var delivery = s.Log.Events.Single(e => e.Type == MatchEventType.PassAttempted);
-        var target = s.State.Player(delivery.TargetPlayerId!.Value);
-        Assert.True(s.State.Zones.IsIn(TeamSide.Home, at[target.PlayerId], TacticalAreas.OppositionPenaltyArea));
+        Assert.DoesNotContain(s.Log.Events, e => e.Type == MatchEventType.PassAttempted);
+        var delivery = s.Log.Events.Single(e => e.Type == MatchEventType.Cross);
+        Assert.Equal("Corner", delivery.Metadata["kind"]);
+        var cross = s.State.Ball.Flight!.Cross!;
+        Assert.True(s.State.Zones.IsIn(TeamSide.Home, cross.IntendedTarget, TacticalAreas.OppositionPenaltyArea));
+        Assert.Null(s.State.Offside); // no offside from a corner
         Assert.True(s.State.Zones.IsIn(TeamSide.Home, at[s.State.Slot(TeamSide.Home, PlayingPosition.ST).PlayerId], TacticalAreas.OppositionPenaltyArea));
         Assert.True(s.State.TeamPlayers(TeamSide.Away).Count(p => s.State.Zones.IsIn(TeamSide.Away, at[p.PlayerId], TacticalAreas.OwnPenaltyArea)) >= 8);
     }

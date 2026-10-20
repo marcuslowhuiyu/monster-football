@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using MonsterFootball.Simulation.Actions.Crossing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.AI;
@@ -6,7 +7,6 @@ using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
-using MonsterFootball.Simulation.Tactical;
 
 namespace MonsterFootball.Simulation.Restarts;
 
@@ -22,6 +22,7 @@ namespace MonsterFootball.Simulation.Restarts;
 internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shotResolver, OnBallWeights weights)
 {
     private readonly TeamShapeSystem _shape = new();
+    private readonly CrossResolver _crosses = new();
     private Stoppage? _takerStoppage;
     private PlayerId _taker;
 
@@ -150,6 +151,12 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
             return;
         }
 
+        if (stoppage.Restart == RestartType.Corner)
+        {
+            CrossExecution.Launch(context, _crosses.Resolve(state, new CrossIntent(taker.PlayerId, CrossKind.Corner), context.Random));
+            return;
+        }
+
         if (RestartTakers.InShootingRange(state, stoppage, context.Config.Restarts)
             && shotResolver.Estimate(state, new ShotIntent(taker.PlayerId)).GoalProbability >= context.Config.Restarts.FreeKickMinXg)
         {
@@ -165,7 +172,7 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
 
     /// <summary>
     /// The teammate the restart is played to: the best pass by the on-ball AI's pass utility (no randomness), within
-    /// throwing range for a throw-in and among attackers in the penalty area for a corner (anyone if nobody is there).
+    /// throwing range for a throw-in. Corners are not passes: the taker crosses (<see cref="CrossKind.Corner"/>).
     /// Null if nobody qualifies; the taker then keeps the ball and open-play decisions take over.
     /// </summary>
     private PlayerMatchState? ChooseReceiver(MatchState state, RestartTuning tuning, Stoppage stoppage, PlayerMatchState taker)
@@ -179,9 +186,6 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
             .Where(p => !offsideApplies || !Laws.Offside.IsOffsidePosition(state, p, taker.Position, misjudge))
             .Where(p => stoppage.Restart != RestartType.ThrowIn || p.Position.DistanceTo(taker.Position) <= tuning.ThrowInMaxRange)
             .ToList();
-        if (stoppage.Restart == RestartType.Corner
-            && candidates.Where(p => state.Zones.IsIn(p.Team, p.Position, TacticalAreas.OppositionPenaltyArea)).ToList() is { Count: > 0 } inBox)
-            candidates = inBox;
 
         double Utility(PlayerMatchState receiver)
         {
