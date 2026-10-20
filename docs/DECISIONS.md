@@ -853,3 +853,36 @@ More attacks now go down the flanks, where a winger in the final third can only 
 central threat falls; crosses (step 3) are expected to turn wide play back into chances, and goals are re-checked
 there. Full-backs still receive under 1 % of passes each: a small pass-utility change favouring open wide receivers
 is a candidate follow-up, not made here.
+
+## ADR-035 — Defenders Clear Under Pressure
+
+Status: Accepted (M2.7b, step 2 of match realism). Implements D6.
+
+Decision:
+- **When**: in their own defensive third (team-frame X < `Zones.DefensiveThirdX`, a third of the pitch), the carrier —
+  outfield player or goalkeeper — gets a `Clear` candidate: utility 20 + 40 × pressure + 30 × danger, pressure as for
+  holding (nearest opponent within 3 m), danger = max(0, 1 − distance to own goal ÷ 35 m). Chosen by the usual utility
+  selection (ADR-018).
+- **Where** (`ClearanceResolver`): pressed (pressure ≥ 0.5) within 25 m of their own goal → *wide*, at the nearest
+  touchline 25 m further upfield; otherwise *long*, towards their striker (straight upfield if none is ahead). Distance
+  35 m + 2 m per Power point above 5; two draws scatter the landing point sideways (± 4 m + 0.8 m per Technique point
+  below 10) and in length (± 5 m); flight 18 m/s.
+- **Flight** (`BallFlight` third kind, `ClearanceExecution`): the clearer's touch is recorded and offside judged at the
+  strike, as for a pass (ADR-029); a path crossing a line goes out by last touch; otherwise the ball lands loose and
+  rolls on for 35 % of its flight (D4). While it flies, the nearest outfield player of each side sprints to the landing
+  point. `Clearance` event (kind, distance); clearances counted per team; health band 10–80 per match.
+- **Contested loose balls**: players exactly as near to a loose ball contest it with one random draw. Previously the
+  earlier player in the list (always Home) won; the chase made such ties common, giving Home 51.1 % possession and a
+  7–8 point win edge on seeds 1–3000.
+- A restart taker sent off during the stoppage is replaced (latent bug found by the same seeds; not reachable in a
+  normal match, where the dismissed player is on the other side).
+
+Reason:
+After width (ADR-034) defenders under pressure could only hold, pass or carry, while real teams make ≈ 35–45
+clearances a match, many going out. One "kick to a spot" flight also serves crosses (step 3).
+
+Consequences:
+Fingerprint change (ledger #12). Batch of 1,000 (before → after): clearances 0 → 42.7; throw-ins 23.4 → 27.6 (5.8 of
+them after a clearance); goals 1.95 → 2.11; ball in play 77.9 → 77.1 min; halves ended by the safety cap 6 % → 4 %;
+possession changes 312 → 340; home win / draw / away win 33.8 / 33.5 / 32.7 % → 33.7 / 31.0 / 35.3 %, home possession
+50.0 %. HEALTHY with the first weights; no tuning.
