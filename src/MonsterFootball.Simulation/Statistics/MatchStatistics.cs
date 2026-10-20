@@ -27,6 +27,9 @@ public sealed record TeamStatistics(
     public int YellowCards { get; init; }
     public int RedCards { get; init; }
     public int Clearances { get; init; }
+    public int Crosses { get; init; }
+    public int ShotsFromCrosses { get; init; }
+    public int GoalsFromCrosses { get; init; }
 
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
@@ -126,6 +129,9 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 case MatchEventType.Clearance:
                     Of(e.Team!.Value).Clearances++;
                     break;
+                case MatchEventType.Cross:
+                    Of(e.Team!.Value).Crosses++;
+                    break;
                 case MatchEventType.YellowCard:
                     Of(e.Team!.Value).YellowCards++;
                     break;
@@ -140,6 +146,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                     break;
                 case MatchEventType.ShotTaken:
                     Of(e.Team!.Value).Shots++;
+                    if (e.Metadata.ContainsKey("cross"))
+                        Of(e.Team.Value).ShotsFromCrosses++;
                     break;
                 case MatchEventType.ShotSaved:
                     // Team on the event is the saving side; the shot belongs to the other team.
@@ -150,6 +158,8 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                     if (e.Metadata.ContainsKey("penalty"))
                         Of(e.Team.Value).PenaltiesScored++;
                     Of(e.Team.Value).ShotsOnTarget++;
+                    if (e.Metadata.ContainsKey("cross"))
+                        Of(e.Team.Value).GoalsFromCrosses++;
                     break;
                 case MatchEventType.MatchFinished:
                     StopPlay(at);
@@ -180,6 +190,9 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int YellowCards;
         public int RedCards;
         public int Clearances;
+        public int Crosses;
+        public int ShotsFromCrosses;
+        public int GoalsFromCrosses;
 
         public TeamStatistics ToStatistics() =>
             new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
@@ -195,6 +208,9 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 YellowCards = YellowCards,
                 RedCards = RedCards,
                 Clearances = Clearances,
+                Crosses = Crosses,
+                ShotsFromCrosses = ShotsFromCrosses,
+                GoalsFromCrosses = GoalsFromCrosses,
             };
     }
 }

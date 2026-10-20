@@ -55,4 +55,7 @@ public sealed record ShotResult(
 
     /// <summary>A penalty kick (resolved by <see cref="ShotResolver.ResolvePenalty"/>).</summary>
     public bool IsPenalty { get; init; }
+
+    /// <summary>A first-time shot from a cross (ADR-036).</summary>
+    public bool FromCross { get; init; }
 }

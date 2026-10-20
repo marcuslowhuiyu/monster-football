@@ -1,12 +1,13 @@
 using MonsterFootball.Simulation.Actions.Clearing;
+using MonsterFootball.Simulation.Actions.Crossing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 
 namespace MonsterFootball.Simulation.Actions;
 
 /// <summary>
-/// Advances a pass, shot or clearance in flight and applies its outcome on the arrival tick. A misplaced pass or a
-/// clearance whose path leaves the pitch goes out of play where it crosses the line, before it lands.
+/// Advances a pass, shot, clearance or cross in flight and applies its outcome on the arrival tick. A misplaced pass, a
+/// clearance or a cross whose path leaves the pitch goes out of play where it crosses the line, before it lands.
 /// </summary>
 internal sealed class BallFlightSystem
 {
@@ -22,6 +23,8 @@ internal sealed class BallFlightSystem
         {
             if (flight.Pass is { } pass)
                 PassExecution.LeavePlay(context, pass, leaving.Point, leaving.Line);
+            else if (flight.Cross is not null)
+                CrossExecution.LeavePlay(context, leaving.Point, leaving.Line);
             else
                 ClearanceExecution.LeavePlay(context, leaving.Point, leaving.Line);
         }
@@ -31,6 +34,8 @@ internal sealed class BallFlightSystem
             PassExecution.Land(context, landing);
         else if (flight.Clearance is { } clearance)
             ClearanceExecution.Land(context, clearance);
+        else if (flight.Cross is { } cross)
+            CrossExecution.Land(context, cross);
         else
             ShotExecution.Land(context, flight.Shot!);
     }

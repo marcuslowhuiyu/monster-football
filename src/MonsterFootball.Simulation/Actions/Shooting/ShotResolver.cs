@@ -63,7 +63,11 @@ internal sealed class ShotResolver
     public const double BaseShotSpeed = 18;
     public const double ShotSpeedPerPower = 1.2;
 
-    public ShotEstimate Estimate(MatchState state, ShotIntent intent)
+    /// <summary>A first-time shot from a cross (ADR-036): the ordinary shot with the shooter's ability reduced by 1.5.</summary>
+    public const double FirstTimeAbilityPenalty = 1.5;
+
+    /// <summary>Assesses the shot; <paramref name="abilityPenalty"/> is subtracted from the shooter's ability before the on-target roll.</summary>
+    public ShotEstimate Estimate(MatchState state, ShotIntent intent, double abilityPenalty = 0)
     {
         var shooter = state.Player(intent.Shooter);
         var keeper = OpposingKeeper(state, shooter);
@@ -90,7 +94,7 @@ internal sealed class ShotResolver
             + blockers * BlockPenaltyPerDefender;
 
         var ability = (stats.Finishing + TechniqueWeight * (stats.Technique - 5) + PowerWeight * (stats.Power - 5))
-            * FatigueModel.EffectivenessFactor(shooter);
+            * FatigueModel.EffectivenessFactor(shooter) - abilityPenalty;
         var onTarget = Curves.Sigmoid(OnTargetScale * (ability - DistancePenaltyPerMetre * distance - pressure - anglePenalty) + OnTargetBias);
 
         var keeperStats = keeper.Definition.Stats;
@@ -109,6 +113,9 @@ internal sealed class ShotResolver
 
     public ShotResult Resolve(MatchState state, ShotIntent intent, IMatchRandom random) =>
         Resolve(state, intent, Estimate(state, intent), random, penalty: false);
+
+    public ShotResult ResolveFirstTime(MatchState state, ShotIntent intent, IMatchRandom random) =>
+        Resolve(state, intent, Estimate(state, intent, FirstTimeAbilityPenalty), random, penalty: false) with { FromCross = true };
 
     /// <summary>
     /// A penalty from the spot (MILESTONE_2 §13): on target = Sigmoid(0.5·(ability − 5) + 1.55) (≈ 0.92 between equals),
