@@ -57,11 +57,11 @@ public class OnBallCandidateGeneratorTests
     }
 
     [Fact]
-    public void Goalkeepers_only_hold_or_pass()
+    public void Goalkeepers_hold_pass_or_clear_but_never_shoot_or_carry()
     {
         var s = CarrierAt(TeamSide.Home, PlayingPosition.GK, 5, 34);
         var kinds = Candidates(s, s.State.Slot(TeamSide.Home, PlayingPosition.GK)).Select(c => c.Kind).Distinct();
-        Assert.Equal([ActionKind.Hold, ActionKind.Pass], kinds.Order());
+        Assert.Equal([ActionKind.Hold, ActionKind.Pass, ActionKind.Clear], kinds.Order());
     }
 
     [Fact]

@@ -57,6 +57,7 @@ public class PossessionFlowMatchTests
                 case MatchEventType.PassCompleted:
                     holder = e.TargetPlayerId;
                     break;
+                case MatchEventType.Clearance:
                 case MatchEventType.PassMisplaced:
                 case MatchEventType.TackleLooseBall:
                     holder = null; // a teammate may collect without an event

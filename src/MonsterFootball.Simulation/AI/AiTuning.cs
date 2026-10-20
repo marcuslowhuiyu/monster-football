@@ -53,6 +53,14 @@ public sealed record OnBallWeights
     public double CarrySpaceWeight { get; init; } = 2;
     public double CarrySpaceCap { get; init; } = 12;
     public double CarryTechniquePressureRelief { get; init; } = 0.05;
+
+    // Clear (own defensive third only; D6, ADR-035).
+    public double ClearBase { get; init; } = 20;
+    public double ClearPressureWeight { get; init; } = 40;
+    public double ClearDangerWeight { get; init; } = 30;
+
+    /// <summary>Danger is 1 on the own goal line and 0 this far from the own goal centre.</summary>
+    public double ClearDangerRange { get; init; } = 35;
 }
 
 /// <summary>Weights for off-ball behaviours (see <see cref="OffBallCandidateGenerator"/>).</summary>

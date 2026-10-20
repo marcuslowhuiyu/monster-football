@@ -12,6 +12,7 @@ public enum ActionKind
     Pass,
     Carry,
     Shoot,
+    Clear,
 
     // Off the ball.
     MoveIntoPosition,
