@@ -35,6 +35,9 @@ public sealed record BatchSummary(
     public double AverageOffsides { get; init; }
     public double AverageFouls { get; init; }
     public double AverageClearances { get; init; }
+    public double AverageCrosses { get; init; }
+    public double AverageShotsFromCrosses { get; init; }
+    public double AverageGoalsFromCrosses { get; init; }
     public double AverageYellowCards { get; init; }
     public double AverageRedCards { get; init; }
     public double AbandonedShare { get; init; }
@@ -81,6 +84,9 @@ public sealed record BatchSummary(
             AverageOffsides = ordered.Average(s => s.Statistics.Home.Offsides + s.Statistics.Away.Offsides),
             AverageFouls = ordered.Average(s => s.Statistics.Home.Fouls + s.Statistics.Away.Fouls),
             AverageClearances = ordered.Average(s => s.Statistics.Home.Clearances + s.Statistics.Away.Clearances),
+            AverageCrosses = ordered.Average(s => s.Statistics.Home.Crosses + s.Statistics.Away.Crosses),
+            AverageShotsFromCrosses = ordered.Average(s => s.Statistics.Home.ShotsFromCrosses + s.Statistics.Away.ShotsFromCrosses),
+            AverageGoalsFromCrosses = ordered.Average(s => s.Statistics.Home.GoalsFromCrosses + s.Statistics.Away.GoalsFromCrosses),
             AverageYellowCards = ordered.Average(s => s.Statistics.Home.YellowCards + s.Statistics.Away.YellowCards),
             AverageRedCards = ordered.Average(s => s.Statistics.Home.RedCards + s.Statistics.Away.RedCards),
             AbandonedShare = ordered.Count(s => s.Abandoned) / n,
