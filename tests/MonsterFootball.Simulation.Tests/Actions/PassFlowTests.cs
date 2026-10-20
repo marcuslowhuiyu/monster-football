@@ -114,6 +114,34 @@ public class PassFlowTests
         Assert.True(s.State.Ball.IsLoose);
     }
 
+    [Theory]
+    [InlineData(0.25, TeamSide.Home)]
+    [InlineData(0.75, TeamSide.Away)]
+    public void Players_exactly_as_near_to_a_loose_ball_contest_it_with_one_draw(double draw, TeamSide winner)
+    {
+        var s = new Scenario(random: new ScriptedRandom(draw));
+        s.State.SetBallLoose(new Vec2(52.5, 34));
+        var home = s.Place(TeamSide.Home, PlayingPosition.CM, 52.5, 34);
+        var away = s.Place(TeamSide.Away, PlayingPosition.CM, 52.5, 34);
+
+        new LooseBallSystem().Apply(s.Context);
+
+        Assert.True(s.State.HasBall((winner == TeamSide.Home ? home : away).PlayerId));
+    }
+
+    [Fact]
+    public void The_nearest_player_collects_a_loose_ball_without_a_draw()
+    {
+        var s = new Scenario(random: new ScriptedRandom()); // any draw would throw
+        s.State.SetBallLoose(new Vec2(52.5, 34));
+        s.Place(TeamSide.Home, PlayingPosition.CM, 53.5, 34);
+        var nearer = s.Place(TeamSide.Away, PlayingPosition.CM, 53, 34);
+
+        new LooseBallSystem().Apply(s.Context);
+
+        Assert.True(s.State.HasBall(nearer.PlayerId));
+    }
+
     [Fact]
     public void Same_team_recovering_a_loose_ball_is_not_a_possession_change()
     {
