@@ -26,7 +26,7 @@ public sealed record MatchFrame(
     {
         ArgumentNullException.ThrowIfNull(state);
         var flight = state.Ball.Flight is { } f
-            ? new BallFlightFrame(f.Shot is null ? BallFlightKind.Pass : BallFlightKind.Shot, f.Team, f.StartPosition, f.TargetPosition,
+            ? new BallFlightFrame(f.Pass is not null ? BallFlightKind.Pass : f.Shot is not null ? BallFlightKind.Shot : BallFlightKind.Clearance, f.Team, f.StartPosition, f.TargetPosition,
                 f.LaunchTick, f.ArrivalTick, f.Pass?.IntendedReceiver)
             : null;
 
@@ -77,6 +77,7 @@ public enum BallFlightKind
 {
     Pass,
     Shot,
+    Clearance,
 }
 
 /// <summary>

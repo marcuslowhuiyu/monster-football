@@ -247,7 +247,7 @@ public sealed class MatchState
     {
         ReleaseHolder();
         Ball.Launch(flight);
-        RecordTouch(flight.Pass?.Passer ?? flight.Shot!.Shooter);
+        RecordTouch(flight.Pass?.Passer ?? flight.Shot?.Shooter ?? flight.Clearance!.Kicker);
     }
 
     /// <summary>A player who loses the ball also loses any action that needed it (e.g. a carry).</summary>
