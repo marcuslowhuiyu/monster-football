@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6), cards and reduced teams (M2.7), width (M2.7b) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6), cards and reduced teams (M2.7), width and clearances (M2.7b) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -51,7 +51,7 @@ Each `Step()`:
      6. `OffBallDecisionSystem` — utility AI for everyone else: support, forward runs, marking, recovery.
      7. `MovementSystem` — move all players.
      8. Sync a possessed ball to its carrier.
-     9. `LooseBallSystem` — a rolling ball moves on (and may go out of play); then the nearest player within 1.5 m collects a loose ball.
+     9. `LooseBallSystem` — a rolling ball moves on (and may go out of play); then the nearest player within 1.5 m collects a loose ball (exact ties: one random draw).
      10. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
 4. Advance the clock one tick.
 5. `PeriodSystem`: announce added time at the end of regular time; end the period at a stoppage once time is up (or at the safety cap); start the second half or finish the match.
@@ -72,7 +72,7 @@ A new match is `Stopped` with a `MatchStart` stoppage; a goal stops play with a 
 
 - `MatchState.CurrentStoppage` (`Stoppage`): `Reason` (`MatchStart`, `Goal`, `PeriodStart`, `BallOutOfPlay`, `Offside`, `Foul`), `Restart` (`Kickoff`, `ThrowIn`, `GoalKick`, `Corner`, `IndirectFreeKick`, `DirectFreeKick`, `Penalty`), `AwardedTeam`, `Location`, `StoppedAtTick`, `Offender` (offside, foul), `Fouled`, `Discipline` (the card for a foul: `None`, `Yellow`, `SecondYellow`, `Red`). Present exactly while play is stopped.
 - `MatchContext.StopPlay` records it, makes the ball dead (nobody holds it), clears every player's intent, carry, off-ball plan and tackle cooldown, and emits `PlayStopped` (team = awarded team, position = restart location, metadata `reason`, `restart`).
-- The taker is chosen once, when play stops (`RestartTakers`; ties → earlier player): kickoff — the ST; throw-in — the nearest full-back or winger; goal kick — the goalkeeper; corner — the highest Passing (then Technique) outfielder other than the centre-backs and striker; indirect free kick — the nearest defender; direct free kick — the best finisher within 32 m of goal, otherwise the nearest defender or midfielder; penalty — the best finisher (then Technique, Power). Each falls back to any outfield player.
+- The taker is chosen once, when play stops (`RestartTakers`; ties → earlier player): kickoff — the ST; throw-in — the nearest full-back or winger; goal kick — the goalkeeper; corner — the highest Passing (then Technique) outfielder other than the centre-backs and striker; indirect free kick — the nearest defender; direct free kick — the best finisher within 32 m of goal, otherwise the nearest defender or midfielder; penalty — the best finisher (then Technique, Power). Each falls back to any outfield player. A taker sent off during the stoppage is replaced.
 - Each stopped tick, `RestartSystem.Position` gives every player a restart target at `Jog` (`RestartLayout`):
   - kickoff — the 4-3-3 kickoff layout (everyone in their own half, opponents outside the centre circle), the taker on the ball;
   - throw-in, goal kick and free kicks — both shapes built around the restart spot (awarded side attacking, the other defending, nobody pressing);
@@ -108,7 +108,7 @@ ADR-029, `Laws.Offside`, on unless `MatchConfig.OffsideEnabled` is false.
 - `MatchEvent` (immutable record): `Timestamp`, `Type`, optional `ActorPlayerId`, `TargetPlayerId`, `Team`, `Position`, and `Metadata` (sorted string map, empty by default).
 - `ToString()` gives a canonical one-line form used by determinism tests.
 - `MatchEventLog` is append-only; `MatchSimulation.Events` exposes it read-only.
-- `MatchEventType` (25 values; `PossessionChanged` carries a `cause`): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`, `MatchAbandoned`), match flow (`PlayStopped`, `RestartTaken`, `AddedTimeAnnounced`, `PeriodEnded`), laws (`FoulCommitted`, `YellowCard`, `RedCard`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`). New types are appended.
+- `MatchEventType` (26 values; `PossessionChanged` carries a `cause`): match lifecycle (`MatchStarted`, `Kickoff`, `MatchFinished`, `MatchAbandoned`), match flow (`PlayStopped`, `RestartTaken`, `AddedTimeAnnounced`, `PeriodEnded`), laws (`FoulCommitted`, `YellowCard`, `RedCard`), passing (`PassAttempted`, `PassCompleted`, `PassIntercepted`, `PassMisplaced`), `PossessionChanged`, `CarryStarted`, tackling (`TackleAttempted`, `TackleWon`, `TackleLost`, `TackleLooseBall`), shooting (`ShotTaken`, `ShotSaved`, `ShotMissed`, `GoalScored`), `Clearance`. New types are appended.
 
 ## Positioning and shape (implemented)
 
@@ -173,6 +173,15 @@ OnBallDecisionSystem ─▶ (utility AI picks a Pass candidate) ─▶ PassInten
 **During flight**: the receiver (or interceptor) sprints to the landing point; the passing team keeps its attacking shape; the defending presser chases the ball.
 
 **Events**: `PassAttempted` (actor = passer, target = intended receiver, metadata `quality` (accuracy), `success`, `distance`, `threats`, `stamina`, `travel`), `PassCompleted` (actor = passer, target = receiver), `PassIntercepted` (actor = interceptor, target = intended receiver, metadata `chance`, then `PossessionChanged`), `PassMisplaced` (actor = passer, target = intended receiver, position = landing).
+
+## Clearances (implemented)
+
+ADR-035, D6. `ClearanceIntent(Kicker)` → `ClearanceResolver.Resolve` → `ClearanceResult(Team, Kicker, Kind, StartPosition, IntendedTarget, TargetPosition, TravelDuration)`.
+
+- `Aim` (deterministic): **Wide** when pressure ≥ 0.5 (nearest opponent within 1.5 m) and the clearer is within 25 m of their own goal — aimed at the nearest touchline 25 m further upfield; otherwise **Long** — towards the clearer's striker if ahead, else straight upfield. Distance 35 m + 2 m × (Power − 5) (also caps a wide clearance).
+- Scatter: two draws, sideways ± (4 + 0.8 × (10 − Technique)) m and lengthways ± 5 m, applied across and along the aim. Flight 18 m/s.
+- `ClearanceExecution.Launch`: launches a `BallFlight` (third kind), records the clearer's touch, judges offside as for a pass, emits `Clearance` (actor = clearer, metadata `kind`, `distance`). In flight a path crossing a line goes out there (restart by last touch: usually a throw-in to the opponents); on arrival the ball is loose and rolls on for 35 % of the flight distance.
+- While a clearance flies, `TeamShapeSystem` sends the nearest outfield player of each side, sprinting, to the landing point (clamped to the pitch).
 
 ## Carrying (implemented)
 
@@ -250,8 +259,9 @@ ADR-018. Every decision: generate `ActionCandidate`s → `UtilitySelector.Choose
 | Pass (each teammate ≥ 4 m whom the carrier judges onside: not beyond the offside line by more than 1.5 × (10 − Awareness) ÷ 9 m; D8) | 50 × success probability + 0.75 × forward progress (m) + 18 × goal proximity of receiver (1 on the goal line, 0 at ≥ 35 m) − 15 if goalkeeper |
 | Carry (outfield, not mid-carry, > 4 m from the goal line) | 42 + 0.8 × forward gain + 2 × space ahead (≤ 12 m) − 30 × pressure × (1 − 0.05 × (Technique − 5)) |
 | Shoot (outfield, ≤ 35 m, xG ≥ 0.03) | 22 + 318 × xG |
+| Clear (own defensive third, X < `Zones.DefensiveThirdX` = 35 m; outfield or goalkeeper) | 20 + 40 × pressure + 30 × danger; danger = max(0, 1 − distance to own goal ÷ 35 m) |
 
-Goalkeepers only hold or pass.
+Goalkeepers hold, pass or clear.
 
 ### Off the ball (`OffBallDecisionSystem`, after `TeamShapeSystem`)
 
@@ -284,6 +294,7 @@ ADR-019. `MatchStatistics.FromEvents` derives everything from the event log:
 | Throw-ins / goal kicks / corners / free kicks | `RestartTaken` by type, for the team taking it |
 | Offsides | `PlayStopped` with reason `Offside`, for the offender's team |
 | Fouls | `FoulCommitted`, for the offender's team |
+| Clearances | `Clearance`, for the clearer's team |
 | Yellow / red cards | `YellowCard` / `RedCard`, for the offender's team (a second yellow counts in both) |
 | Penalties / scored | `RestartTaken` `Penalty`; `GoalScored` with `penalty` |
 | Ball-in-play seconds | each `Kickoff` or `RestartTaken` → next `PlayStopped`, `PeriodEnded` or `MatchFinished` |
@@ -295,34 +306,34 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
-Current defaults, 1 000 matches between all-5 teams (after M2.7b width):
+Current defaults, 1 000 matches between all-5 teams (after M2.7b clearances):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 1.95 (max 7) |
-| Shots / on target per match | 19.1 / 5.9 (31 %) |
-| Passes per match, completion | 1 369, 82 % |
-| Home win / draw / away win | 33.8 % / 33.5 % / 32.7 % |
+| Goals per match | 2.11 (max 8) |
+| Shots / on target per match | 19.9 / 6.2 (31 %) |
+| Passes per match, completion | 1 307, 82 % |
+| Home win / draw / away win | 33.7 % / 31.0 % / 35.3 % |
 | Home possession | 50.0 % |
-| Tackles / carries / possession changes | 267 / 222 / 312 |
-| Striker share of goals | 76 % |
-| Outfield distance, stamina at full time | 14.0 km, 54.0 |
-| Throw-ins / goal kicks / corners / offsides per match | 23.4 / 11.0 / 4.7 / 3.1 |
-| Fouls; penalties (scored) per match | 22.8; 0.14 (68 %) |
-| Yellow / red cards per match; abandoned | 3.42 / 0.16; 0 % |
-| Ball in play; added time per half; halves ended by the safety cap | 77.9 min; 1.8 min; 6 % |
+| Tackles / carries / possession changes | 268 / 213 / 340 |
+| Striker share of goals | 77 % |
+| Outfield distance, stamina at full time | 13.9 km, 54.1 |
+| Throw-ins / goal kicks / corners / offsides per match | 27.6 / 11.2 / 4.9 / 3.1 |
+| Fouls; clearances; penalties (scored) per match | 22.7; 42.7; 0.16 (70 %) |
+| Yellow / red cards per match; abandoned | 3.36 / 0.14; 0 % |
+| Ball in play; added time per half; halves ended by the safety cap | 77.1 min; 1.8 min; 4 % |
 
 Health bands also cover, per match, goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45), penalties
-(≤ 0.8), yellow cards (0.5–8), red cards (≤ 0.6), added minutes per period (0–10) and abandoned matches (≤ 0.1 %).
-Width (ADR-034) brought throw-ins from 8.1 to 23.4 (real ≈ 40), but the ball is still in play ~78 of ~94 minutes
-(real ≈ 55–60) and goals fell to 1.95 (real ≈ 2.7) as more attacks go wide without crosses. The match-realism steps
+(≤ 0.8), yellow cards (0.5–8), red cards (≤ 0.6), clearances (10–80), added minutes per period (0–10) and abandoned matches (≤ 0.1 %).
+Width (ADR-034) and clearances (ADR-035) brought throw-ins from 8.1 to 27.6 (real ≈ 40), but the ball is still in play
+~77 of ~94 minutes (real ≈ 55–60) and goals are 2.11 (real ≈ 2.7) as more attacks go wide without crosses. The match-realism steps
 (clearances, crosses, dead-ball times; plan M2.7b) address these; until then three bands are interim (ADR-033): ball in
 play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
 
 ## Observation (implemented)
 
 ADR-025. `MatchFrame.Capture(state)` copies the end-of-tick state: tick, `MatchTime`, phase, stoppage, score, attacking
-team, ball (position, holder, flight: kind, team, start, landing point, launch/arrival tick, intended receiver) and every
+team, ball (position, holder, flight: kind — pass, shot or clearance —, team, start, landing point, launch/arrival tick, intended receiver) and every
 player (id, team, slot, shirt number, position, movement target and intensity, stamina, off-ball plan kind, carrying).
 Frames never change once captured; capturing one every tick leaves the match identical (fingerprint test). The
 landing point is for animation; tactical analysis must not read predetermined outcomes.
@@ -423,7 +434,7 @@ A possessed ball is moved to its carrier after movement (`SyncBallToPossessor`);
 
 `BallState` holds `Position` and `PossessorId`; `IsLoose` is derived. Possession is stored **only** on the ball (ADR-007):
 `MatchState.HasBall(id)`, `PossessionPlayerId` and `PossessionTeam` are computed from it, so two players can never both have the ball.
-A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `PassResult` **or** `ShotResult` plus launch/arrival ticks); `IsInFlight` / `IsLoose` are derived. A loose ball may be rolling (`BallState.Roll`, a `LooseBallMotion`). `MatchState.LastTouch` (`BallTouch`: player, team) is set by every possession, pass or shot strike, a tackle that knocks the ball loose, a parry and a deflection; it decides the restart when the ball goes out. A shot still in the air when the match reaches 90:00 is abandoned (interim until M2.1d, where a period ends only at a stoppage).
+A pass, shot or clearance in the air is `BallState.Flight` (`BallFlight`: exactly one of the resolved `PassResult`, `ShotResult` or `ClearanceResult`, plus launch/arrival ticks); `IsInFlight` / `IsLoose` are derived. A loose ball may be rolling (`BallState.Roll`, a `LooseBallMotion`). `MatchState.LastTouch` (`BallTouch`: player, team) is set by every possession, pass, shot or clearance strike, a tackle that knocks the ball loose, a parry and a deflection; it decides the restart when the ball goes out. A shot still in the air when the match reaches 90:00 is abandoned (interim until M2.1d, where a period ends only at a stoppage).
 
 ## Invariants (implemented)
 
@@ -435,8 +446,9 @@ A pass or shot in the air is `BallState.Flight` (`BallFlight`: the resolved `Pas
 - **Volume**: ~1 370 passes, ~265 tackles and ~310 possession changes per match (~78 minutes of ball in play) — busy compared with real football.
 - **Distance**: 14.0 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
-- Few stoppages: ~40 ball-out restarts (23.4 throw-ins), ~23 fouls and ~3 offsides per match, so ~6 % of halves still end at the 180 s safety cap; dead-ball times are the bare minimums. Clearances, crosses and dead-ball times follow (M2.7b).
-- **Goals** fell to ~1.95 per match with width (ADR-034): wide attacks have no crosses yet. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
+- Few stoppages: ~44 ball-out restarts (27.6 throw-ins), ~23 fouls and ~3 offsides per match, so ~4 % of halves still end at the 180 s safety cap; dead-ball times are the bare minimums. Crosses and dead-ball times follow (M2.7b).
+- Clearances are simple: never blocked or charged down, no headers, and goalkeepers do not punt from their hands.
+- **Goals** ~2.1 per match since width (ADR-034): wide attacks have no crosses yet. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; corners are a pass into the box; no headers, routines or short corners.
 - No blocks as events or posts; deflections only send misses behind.

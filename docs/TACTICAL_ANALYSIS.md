@@ -51,6 +51,6 @@ The laws use these as they arrive (penalty area, goal area, halves); the tackle 
 - `ZoneOf(side, point)` → `TacticalZone`
 - `AreasOf(side, point)` → `TacticalAreas`; `IsIn(side, point, area)`
 - `BoundsOf(side, zone)` → pitch-coordinate rectangle, for overlays
-- `FinalThirdX` — the final-third line in team frame
+- `FinalThirdX` — the final-third line in team frame; `DefensiveThirdX` — the end of a team's own third
 
 Match report detail lines end with the acting player's zone, e.g. `… · xG 0.12 · Attacking / Centre`.

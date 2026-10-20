@@ -180,6 +180,8 @@
 
 **Role** — The 4-3-3 slot a player fills now; changes when the team re-forms after a dismissal.
 
+**Clearance** — Kicking the ball away from danger to a spot rather than a teammate: wide towards the touchline when pressed near goal, otherwise long upfield (ADR-035).
+
 **Wide channel** — The strip along their own touchline that wingers (within 8 m) and full-backs (within 12 m) hold when their team has the ball (ADR-034).
 
 **MatchFrame** — Immutable copy of observable match state at the end of a tick; what analysis and the viewer read (implemented, M2.2).

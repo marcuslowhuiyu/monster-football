@@ -25,8 +25,8 @@ the crossing point is where the segment meets the line. Whoever **last touched**
 | Goal line | attacking team | Goal kick to the defending team | corner of the goal area on that side |
 | Goal line | defending team | Corner to the attacking team | the corner on that side |
 
-Touches: gaining possession, striking a pass or shot, a tackle that knocks the ball loose, a goalkeeper's parry and a
-defender's deflection. Ways the ball goes out: misplaced passes (in flight or rolling on after landing), tackles that
+Touches: gaining possession, striking a pass, shot or clearance, a tackle that knocks the ball loose, a goalkeeper's parry and a
+defender's deflection. Ways the ball goes out: misplaced passes and clearances (in flight or rolling on after landing), tackles that
 knock it out, missed shots (a goal kick, or a corner if deflected by a defender in the lane), and saves parried
 behind (a corner).
 
