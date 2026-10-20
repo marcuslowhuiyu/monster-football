@@ -61,6 +61,14 @@ public sealed record OnBallWeights
 
     /// <summary>Danger is 1 at the own goal centre, falling linearly to 0 this far from it.</summary>
     public double ClearDangerRange { get; init; } = 35;
+
+    // Cross (outfield, wide in the final third; ADR-036).
+    public double CrossBase { get; init; } = 30;
+    public double CrossAttackerWeight { get; init; } = 8;
+    public double CrossDefenderWeight { get; init; } = 2;
+
+    /// <summary>Added in full on the goal line, nothing at the start of the final third.</summary>
+    public double CrossDepthWeight { get; init; } = 10;
 }
 
 /// <summary>Weights for off-ball behaviours (see <see cref="OffBallCandidateGenerator"/>).</summary>

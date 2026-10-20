@@ -1,10 +1,12 @@
 using MonsterFootball.Simulation.Actions.Carrying;
 using MonsterFootball.Simulation.Actions.Clearing;
+using MonsterFootball.Simulation.Actions.Crossing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Positioning;
+using MonsterFootball.Simulation.Tactical;
 
 namespace MonsterFootball.Simulation.AI;
 
@@ -12,7 +14,8 @@ namespace MonsterFootball.Simulation.AI;
 /// Scores every option for the ball carrier (ADR-018). Utilities use resolver estimates, so the AI
 /// judges options with the same maths that decides outcomes. Rough scale: a safe square pass ≈ 45,
 /// a progressive pass ≈ 55–70, an open carry ≈ 55–60, a shot ≈ 22 + 318 × xG (offered from xG 0.03),
-/// a clear (own third, ≈ 20 + 40 × pressure + 30 × danger). Values live in OnBallWeights.
+/// a clear (own third, ≈ 20 + 40 × pressure + 30 × danger),
+/// a cross (wide in the final third, ≈ 30 + 8 × attackers in the box − 2 × defenders + 10 × depth). Values live in OnBallWeights.
 /// No pass is offered to a teammate the carrier judges offside (Awareness-dependent margin, D8).
 /// </summary>
 internal sealed class OnBallCandidateGenerator(
@@ -76,6 +79,18 @@ internal sealed class OnBallCandidateGenerator(
             var danger = Math.Max(0, 1 - carrier.Position.DistanceTo(pitch.OwnGoalCentre(carrier.Team)) / W.ClearDangerRange);
             var utility = W.ClearBase + W.ClearPressureWeight * pressure + W.ClearDangerWeight * danger;
             candidates.Add(new ActionCandidate(ActionKind.Clear, utility, new ClearanceIntent(carrier.PlayerId)));
+        }
+
+        var wide = Math.Abs(local.Y - pitch.Width / 2) > PitchGeometry.PenaltyAreaWidth / 2;
+        if (!isKeeper && wide && local.X >= state.Zones.FinalThirdX)
+        {
+            var attackersInBox = state.TeamPlayers(carrier.Team)
+                .Count(p => p != carrier && state.Zones.IsIn(p.Team, p.Position, TacticalAreas.OppositionPenaltyArea));
+            var defendersInBox = opponents.Count(p => !p.Role.IsGoalkeeper() && state.Zones.IsIn(p.Team, p.Position, TacticalAreas.OwnPenaltyArea));
+            var depth = (local.X - state.Zones.FinalThirdX) / (pitch.Length - state.Zones.FinalThirdX);
+            var utility = W.CrossBase + W.CrossAttackerWeight * Math.Min(3, attackersInBox)
+                - W.CrossDefenderWeight * Math.Min(6, defendersInBox) + W.CrossDepthWeight * depth;
+            candidates.Add(new ActionCandidate(ActionKind.Cross, utility, new CrossIntent(carrier.PlayerId)));
         }
 
         return candidates;
