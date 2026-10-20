@@ -26,6 +26,7 @@ public sealed record TeamStatistics(
     public int Fouls { get; init; }
     public int YellowCards { get; init; }
     public int RedCards { get; init; }
+    public int Clearances { get; init; }
 
     public double PassCompletion => PassesAttempted == 0 ? 0 : (double)PassesCompleted / PassesAttempted;
 }
@@ -122,6 +123,9 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 case MatchEventType.FoulCommitted:
                     Of(e.Team!.Value).Fouls++;
                     break;
+                case MatchEventType.Clearance:
+                    Of(e.Team!.Value).Clearances++;
+                    break;
                 case MatchEventType.YellowCard:
                     Of(e.Team!.Value).YellowCards++;
                     break;
@@ -175,6 +179,7 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
         public int Fouls;
         public int YellowCards;
         public int RedCards;
+        public int Clearances;
 
         public TeamStatistics ToStatistics() =>
             new(Goals, Shots, ShotsOnTarget, PassesAttempted, PassesCompleted, PossessionsWon, PossessionSeconds)
@@ -189,6 +194,7 @@ public sealed record MatchStatistics(TeamStatistics Home, TeamStatistics Away, i
                 Fouls = Fouls,
                 YellowCards = YellowCards,
                 RedCards = RedCards,
+                Clearances = Clearances,
             };
     }
 }

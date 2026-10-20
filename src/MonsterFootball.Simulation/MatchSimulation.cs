@@ -1,5 +1,6 @@
 using MonsterFootball.Simulation.Actions;
 using MonsterFootball.Simulation.Actions.Carrying;
+using MonsterFootball.Simulation.Actions.Clearing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 using MonsterFootball.Simulation.Actions.Tackling;
@@ -72,7 +73,8 @@ public sealed class MatchSimulation
             selector,
             passResolver,
             carryResolver,
-            shotResolver);
+            shotResolver,
+            new ClearanceResolver());
     }
 
     public int Seed { get; }

@@ -1,4 +1,5 @@
 using MonsterFootball.Simulation.Actions.Carrying;
+using MonsterFootball.Simulation.Actions.Clearing;
 using MonsterFootball.Simulation.Actions.Passing;
 using MonsterFootball.Simulation.Actions.Shooting;
 
@@ -13,7 +14,8 @@ internal sealed class OnBallDecisionSystem(
     UtilitySelector selector,
     PassResolver passResolver,
     CarryResolver carryResolver,
-    ShotResolver shotResolver)
+    ShotResolver shotResolver,
+    ClearanceResolver clearanceResolver)
 {
     public const double FirstTouchSeconds = 0.5;
 
@@ -41,6 +43,9 @@ internal sealed class OnBallDecisionSystem(
                 break;
             case CarryIntent carry:
                 CarrySystem.Start(context, carry, carryResolver.Resolve(state, carry));
+                break;
+            case ClearanceIntent clearance:
+                ClearanceExecution.Launch(context, clearanceResolver.Resolve(state, clearance, context.Random));
                 break;
         }
     }

@@ -30,4 +30,7 @@ public enum MatchEventType
     YellowCard,
     RedCard,
     MatchAbandoned,
+
+    // Actions (M2.7b)
+    Clearance,
 }
