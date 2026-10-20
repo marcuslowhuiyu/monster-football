@@ -75,7 +75,8 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
 
     private PlayerMatchState Taker(MatchState state, Stoppage stoppage, RestartTuning tuning)
     {
-        if (!ReferenceEquals(_takerStoppage, stoppage))
+        // Chosen once per stoppage — again if the chosen taker has since been sent off (ADR-031).
+        if (!ReferenceEquals(_takerStoppage, stoppage) || !state.Player(_taker).IsActive)
         {
             _takerStoppage = stoppage;
             _taker = RestartTakers.For(state, stoppage, tuning).PlayerId;
