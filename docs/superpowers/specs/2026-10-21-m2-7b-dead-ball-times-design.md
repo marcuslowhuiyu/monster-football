@@ -90,7 +90,8 @@ the leading side's slow-down. In regular time (`Clock.Tick < RegularEndTick`, as
   game-state factor, testable on their own.
 - **`Stoppage.DeadBallSeconds`** (init property, default 0).
 - **`MatchContext.StopPlay`**: compute, store on the stoppage, add wasted time in regular time; `PlayStopped` metadata
-  gains `deadBall` (seconds, invariant culture, one decimal).
+  gains `deadBall` and `wasted` (seconds, invariant culture, round-trip format so diagnostics and the added-time test
+  can sum them exactly).
 - **`RestartSystem`**: waits `stoppage.DeadBallSeconds`; the per-type `*DeadBallSeconds` fields leave `RestartTuning`
   (replaced by `DeadBallTuning`).
 - **Diagnostics**: `TeamStatistics`/`MatchReport` unchanged except the batch: `BatchSummary` gains mean dead-ball
