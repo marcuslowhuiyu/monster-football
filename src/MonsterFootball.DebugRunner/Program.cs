@@ -117,5 +117,8 @@ static string FormatBatch(BatchSummary b) => string.Join('\n',
     string.Create(CultureInfo.InvariantCulture, $"Abandoned matches          {b.AbandonedShare:P1}"),
     string.Create(CultureInfo.InvariantCulture, $"Penalties per match        {b.AveragePenalties:0.00} ({b.PenaltyConversion:P0} scored)"),
     string.Create(CultureInfo.InvariantCulture, $"Added time per half (min)  {b.AverageAddedMinutesPerPeriod:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Dead ball (s): throw-in    {b.AverageThrowInDeadBallSeconds:0.0} · goal kick {b.AverageGoalKickDeadBallSeconds:0.0} · corner {b.AverageCornerDeadBallSeconds:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Dead ball (s): free kick   {b.AverageDirectFreeKickDeadBallSeconds:0.0} · offside {b.AverageIndirectFreeKickDeadBallSeconds:0.0} · goal {b.AverageGoalDeadBallSeconds:0.0} · penalty {b.AveragePenaltyDeadBallSeconds:0.0}"),
+    string.Create(CultureInfo.InvariantCulture, $"Slow-down per match (s)    {b.AverageWastedSeconds:0.0}"),
     string.Create(CultureInfo.InvariantCulture, $"Halves ended by safety cap {b.SafetyCapPeriodShare:P0}"),
 ]);
