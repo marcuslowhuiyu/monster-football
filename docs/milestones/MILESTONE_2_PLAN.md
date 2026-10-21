@@ -175,7 +175,7 @@ targets by the end.
 | b2 | `feat/m2-7b-clearances` | D6: defenders under pressure in their own third clear long and wide; fair loose-ball ties. ADR-035. | yes |
 | b3 | `feat/m2-7b-crosses` | wide players in the final third cross into the box; corners are crosses; aerial contest on landing. ADR-036 (provisionally tuned). | yes |
 | b4 | `feat/m2-7b-dead-ball-times` | each stoppage draws its own dead-ball time (type average, spread, game state, location, cards); wasted time added. ADR-037. | yes |
-| b5 | `chore/m2-7b-calibration` | calibration pass with all systems in place (goals, crosses, corners, throw-ins, ball in play); tighten the interim bands to the milestone targets (ADR-033) | if tuned |
+| b5 | `chore/m2-7b-calibration` | **Deferred (2026-10-21, user decision)** until the match systems are finished: tuning waits for the whole system. Target, in the user's words: matches between equally skilled teams are on average low-scoring and close, with rare deviance — not an exact fit to real football statistics. Then tighten the interim bands (ADR-033). | if tuned |
 
 ### M2.8 — Tactical geometry and snapshot
 

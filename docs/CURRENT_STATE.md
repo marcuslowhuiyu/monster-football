@@ -5,7 +5,7 @@ M2 — Match Flow, Tactical Understanding & Developer Match Viewer — **in prog
 M1 — Deterministic Match Simulation — complete (see `milestones/MILESTONE_1_ACCEPTANCE.md`)
 
 Current subtask:
-M2.7b match realism (aiming at real football) — steps 1–3 width, clearances and crosses merged (#32–#34); step 4 dead-ball times done (ADR-037, `feat/m2-7b-dead-ball-times`, provisional values, PR pending); next step 5, the calibration pass; then M2.8 tactical geometry
+M2.7b match realism (aiming at real football) — steps 1–3 width, clearances and crosses merged (#32–#34); step 4 dead-ball times merged (#35, ADR-037, provisional values); step 5, the calibration pass, is deferred until the match systems are finished; next M2.8 tactical geometry
 
 What exists:
 - Headless deterministic 11v11 simulation: 4-3-3 shape, movement, passing (ball flight, interceptions), carrying, two-roll tackling, shooting and goalkeeping, stamina/fatigue, utility AI on and off the ball
@@ -28,7 +28,7 @@ In progress:
 - M2.7b step 4 dead-ball times — PR from `feat/m2-7b-dead-ball-times`
 
 Known issues (calibration, all within health bands):
-- Goals ~3.4 per match (real ≈ 2.7): crosses and dead-ball times are provisionally tuned; deliberately left for the M2.7b calibration pass
+- Goals ~3.4 per match (real ≈ 2.7): crosses and dead-ball times are provisionally tuned; deliberately left for the deferred calibration pass
 - Strikers score ~67 % of goals; full-backs receive under 1 % of passes each
 - ~1,000 passes and ~200 tackles per match (busy)
 - 11.6 km per outfield player (real ≈ 10–12 km)
@@ -48,7 +48,8 @@ Decisions taken for M2 (to be recorded as ADRs when implemented):
 
 Next recommended work:
 - Watch matches: `tools/viewer.sh --seed=7 --autoplay`
-- M2.7b step 5: the calibration pass (tune with all systems in place — goals, throw-ins, crosses, dead-ball times; tighten the interim bands, ADR-033); then M2.8
+- M2.8 tactical geometry and snapshot
+- Later, once the match systems are finished: the deferred calibration pass (M2.7b step 5). Target: equal teams play low-scoring, close matches with rare blowouts — believable, not an exact fit to real statistics; then tighten the interim bands (ADR-033)
 - Do not tune the M1 calibration issues before stoppages exist (M2 §47)
 
 Last verified:
