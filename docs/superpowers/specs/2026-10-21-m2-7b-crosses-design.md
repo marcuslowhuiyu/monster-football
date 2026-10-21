@@ -2,6 +2,8 @@
 
 Status: approved design (2026-10-21). Part of **M2.7b match realism** (plan `docs/milestones/MILESTONE_2_PLAN.md`).
 
+Values below are the first design; the provisional tuning that superseded some of them is recorded in ADR-036.
+
 ## Context
 
 After width (ADR-034) and clearances (ADR-035), 1,000 matches give 2.11 goals per match (real ≈ 2.7), 4.9 corners

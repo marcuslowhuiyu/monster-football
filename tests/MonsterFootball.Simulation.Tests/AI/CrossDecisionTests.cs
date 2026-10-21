@@ -78,4 +78,30 @@ public class CrossDecisionTests
         Assert.Equal(result.TargetPosition, defender.MovementTarget);
         Assert.Equal(MovementIntensity.Sprint, defender.MovementIntensity);
     }
+
+    [Fact]
+    public void Two_defenders_and_one_attacker_chase_a_cross()
+    {
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5));
+        s.Place(TeamSide.Home, PlayingPosition.LW, 94, 64);
+        var striker = s.Place(TeamSide.Home, PlayingPosition.ST, 95, 34);
+        var winger = s.Place(TeamSide.Home, PlayingPosition.RW, 90, 40);
+        var first = s.Place(TeamSide.Away, PlayingPosition.LCB, 96, 33);
+        var second = s.Place(TeamSide.Away, PlayingPosition.RCB, 97, 36);
+        var crosser = s.GiveBall(TeamSide.Home, PlayingPosition.LW);
+        var result = new CrossResolver().Resolve(s.State, new CrossIntent(crosser.PlayerId), s.Context.Random);
+        CrossExecution.Launch(s.Context, result);
+        var landing = result.TargetPosition;
+
+        new TeamShapeSystem().Apply(s.State);
+
+        var awayChasers = s.State.TeamPlayers(TeamSide.Away).Where(p => !p.Role.IsGoalkeeper() && p.MovementTarget == landing).ToList();
+        Assert.Equal(new HashSet<PlayerId> { first.PlayerId, second.PlayerId }, awayChasers.Select(p => p.PlayerId).ToHashSet());
+        Assert.All(awayChasers, p => Assert.Equal(MovementIntensity.Sprint, p.MovementIntensity));
+
+        var nearest = new[] { striker, winger }.OrderBy(p => p.Position.DistanceTo(landing)).First();
+        var homeChasers = s.State.TeamPlayers(TeamSide.Home).Where(p => !p.Role.IsGoalkeeper() && p.MovementTarget == landing).ToList();
+        Assert.Equal(nearest.PlayerId, Assert.Single(homeChasers).PlayerId);
+        Assert.Equal(MovementIntensity.Sprint, nearest.MovementIntensity);
+    }
 }
