@@ -25,8 +25,8 @@ during added time; tuning to final values (step 5, calibration pass).
 
 At `MatchContext.StopPlay`, after the stoppage is recorded: the dead-ball time is computed once
 (`DeadBallDuration.Compute`) and stored on the `Stoppage` (`DeadBallSeconds`). The card for a foul is already known
-(`Stoppage.Discipline`). Stoppages begun directly with `BeginStoppage` (match start, period start) keep no dead-ball
-time (0 s) and draw nothing.
+(`Stoppage.Discipline`). The opening kickoff (set up with the match) and half-time kickoffs (`BeginStoppage`) keep no
+dead-ball time (0 s) and draw nothing.
 
 `RestartSystem.Advance` waits `stoppage.DeadBallSeconds` instead of the per-type minimum; the restart-setup phase and
 its timeout (`SetupTimeoutSeconds`, counted from the end of the dead-ball time) are unchanged.

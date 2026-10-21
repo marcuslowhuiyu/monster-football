@@ -128,10 +128,10 @@ public class ShotTests
         Assert.Equal(1, s.State.Score.Home);
         Assert.Equal(0, s.State.Score.Away);
         Assert.Equal(MatchPhase.Stopped, s.State.Phase);
-        Assert.Equal(new Stoppage(StoppageReason.Goal, RestartType.Kickoff, TeamSide.Away, s.State.Pitch.Centre, s.State.Clock.Tick)
-        {
-            DeadBallSeconds = DeadBallTuning.Default.GoalSeconds, // draw 0.5: spread 1; this early on, no game-state factor
-        }, s.State.CurrentStoppage);
+        Assert.Equal(new Stoppage(StoppageReason.Goal, RestartType.Kickoff, TeamSide.Away, s.State.Pitch.Centre, s.State.Clock.Tick),
+            s.State.CurrentStoppage! with { DeadBallSeconds = 0 });
+        // Draw 0.5: spread 1; this early on, no game-state factor.
+        Assert.Equal(DeadBallTuning.Default.GoalSeconds, s.State.CurrentStoppage.DeadBallSeconds, 9);
         Assert.Equal([MatchEventType.ShotTaken, MatchEventType.GoalScored, MatchEventType.PlayStopped], s.EventTypes);
         Assert.Equal(s.State.Pitch.Length, result.TargetPosition.X);
         Assert.InRange(result.TargetPosition.Y, 34 - PitchGeometry.GoalWidth / 2, 34 + PitchGeometry.GoalWidth / 2);

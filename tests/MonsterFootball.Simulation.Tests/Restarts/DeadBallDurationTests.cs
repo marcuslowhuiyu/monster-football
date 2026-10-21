@@ -166,4 +166,12 @@ public class DeadBallDurationTests
 
         Assert.Equal(Tuning.DirectFreeKickSeconds * Spread(0.5) + extra, seconds, 9);
     }
+
+    [Fact]
+    public void Settings_that_would_break_the_formula_are_rejected()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => DeadBallTuning.Default with { GameStateFullMargin = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => DeadBallTuning.Default with { GameStateFromFraction = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => DeadBallTuning.Default with { SpreadMax = 0.5 });
+    }
 }

@@ -33,13 +33,25 @@ public sealed record DeadBallTuning
     public double SpreadMin { get; init; } = 0.65;
 
     /// <summary>Largest multiple of the average one stoppage can take.</summary>
-    public double SpreadMax { get; init; } = 1.35;
+    public double SpreadMax
+    {
+        get;
+        init => field = value >= SpreadMin ? value : throw new ArgumentOutOfRangeException(nameof(SpreadMax), value, "Spread maximum must not be below the minimum.");
+    } = 1.35;
 
     /// <summary>Share of regular time after which the score starts to change the pace of restarts (2/3 = minute 60).</summary>
-    public double GameStateFromFraction { get; init; } = 2.0 / 3;
+    public double GameStateFromFraction
+    {
+        get;
+        init => field = value is >= 0 and < 1 ? value : throw new ArgumentOutOfRangeException(nameof(GameStateFromFraction), value, "Must be in [0, 1).");
+    } = 2.0 / 3;
 
     /// <summary>Goal margin at which the game-state effect is full.</summary>
-    public double GameStateFullMargin { get; init; } = 2;
+    public double GameStateFullMargin
+    {
+        get;
+        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(GameStateFullMargin), value, "Must be positive.");
+    } = 2;
 
     /// <summary>At full strength, a leading side takes this much longer over its restarts (× 1 + this).</summary>
     public double MaxSlowdown { get; init; } = 0.6;

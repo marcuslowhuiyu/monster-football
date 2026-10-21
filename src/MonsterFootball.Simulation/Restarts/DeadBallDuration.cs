@@ -5,7 +5,7 @@ using MonsterFootball.Simulation.Random;
 namespace MonsterFootball.Simulation.Restarts;
 
 /// <summary>A stoppage's dead-ball time, and the part of it caused by a leading side's slow-down (ADR-037).</summary>
-public readonly record struct DeadBallTime(double Seconds, double WastedSeconds);
+internal readonly record struct DeadBallTime(double Seconds, double WastedSeconds);
 
 /// <summary>
 /// How long the ball stays dead after play stops (ADR-037): the type's average × a random spread × game state ×

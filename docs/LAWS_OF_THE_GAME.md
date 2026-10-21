@@ -94,7 +94,7 @@ The referee judges every foul (Law 12), checking in this order:
 - Execution reuses passing: the taker passes at once to the best option (a throw within 25 m; a free kick to a teammate judged onside). A corner is crossed into the box, where attackers
   and defenders contest it in the air (a first-time shot, a headed clearance, the keeper's catch); no offside from it. An indirect free kick
   cannot be scored directly. A direct free kick within 32 m is shot over the wall when worth it (xG ≥ 0.04).
-  A penalty is a dedicated shot from the spot (≈ 74 % scored between equal players); a period waits for it.
+  A penalty is a dedicated shot from the spot (≈ 74 % scored between equal players); a period waits for it, even past the safety cap.
   Throw-ins use the ordinary pass model.
 - Routine restarts add no added time, except the time a leading side wastes over them.
 

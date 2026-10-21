@@ -21,7 +21,7 @@ What exists:
 - Tactical zones (M2.3): 20 team-relative zones and overlapping areas (`MatchState.Zones`, `docs/TACTICAL_ANALYSIS.md`)
 - Observation and viewer (M2.2): immutable `MatchFrame`s, `MonsterFootball.Playback`, Godot developer viewer (`tools/viewer.sh`)
 - `MatchResult` with events, final state and statistics; `DebugRunner` `match`, `batch`, `fingerprint`
-- 570 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
+- 572 tests; CI on Ubuntu/Windows/macOS with format check, cross-platform determinism and a 1,000-match health-checked batch
 - Decisions ADR-001 – ADR-037
 
 In progress:
