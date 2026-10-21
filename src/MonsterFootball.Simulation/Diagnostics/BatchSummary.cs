@@ -44,6 +44,20 @@ public sealed record BatchSummary(
     public double AveragePenalties { get; init; }
     public double PenaltyConversion { get; init; }
 
+    /// <summary>Mean dead-ball seconds per stoppage of each type (ADR-037); 0 when the batch has none.</summary>
+    public double AverageThrowInDeadBallSeconds { get; init; }
+    public double AverageGoalKickDeadBallSeconds { get; init; }
+    public double AverageCornerDeadBallSeconds { get; init; }
+    public double AverageDirectFreeKickDeadBallSeconds { get; init; }
+    public double AverageIndirectFreeKickDeadBallSeconds { get; init; }
+
+    /// <summary>Mean dead-ball seconds from a goal to the kickoff.</summary>
+    public double AverageGoalDeadBallSeconds { get; init; }
+    public double AveragePenaltyDeadBallSeconds { get; init; }
+
+    /// <summary>Mean seconds per match of slow-down by a leading side (added to added time only in regular time).</summary>
+    public double AverageWastedSeconds { get; init; }
+
     public static BatchSummary From(IReadOnlyList<MatchSummary> summaries)
     {
         if (summaries.Count == 0)
@@ -54,6 +68,9 @@ public sealed record BatchSummary(
         var goals = ordered.Sum(s => s.HomeGoals + s.AwayGoals);
         var attempted = ordered.Sum(s => s.Statistics.Home.PassesAttempted + s.Statistics.Away.PassesAttempted);
         var completed = ordered.Sum(s => s.Statistics.Home.PassesCompleted + s.Statistics.Away.PassesCompleted);
+        var stoppages = ordered.SelectMany(s => s.DeadBalls).ToList();
+        double DeadBall(RestartType restart) =>
+            stoppages.Where(d => d.Restart == restart).Select(d => d.Seconds).DefaultIfEmpty(0).Average();
 
         return new BatchSummary(
             ordered.Count,
@@ -94,6 +111,14 @@ public sealed record BatchSummary(
             PenaltyConversion = ordered.Sum(s => s.Statistics.Home.Penalties + s.Statistics.Away.Penalties) is var taken and > 0
                 ? (double)ordered.Sum(s => s.Statistics.Home.PenaltiesScored + s.Statistics.Away.PenaltiesScored) / taken
                 : 0,
+            AverageThrowInDeadBallSeconds = DeadBall(RestartType.ThrowIn),
+            AverageGoalKickDeadBallSeconds = DeadBall(RestartType.GoalKick),
+            AverageCornerDeadBallSeconds = DeadBall(RestartType.Corner),
+            AverageDirectFreeKickDeadBallSeconds = DeadBall(RestartType.DirectFreeKick),
+            AverageIndirectFreeKickDeadBallSeconds = DeadBall(RestartType.IndirectFreeKick),
+            AverageGoalDeadBallSeconds = DeadBall(RestartType.Kickoff), // only goals emit PlayStopped with a kickoff
+            AveragePenaltyDeadBallSeconds = DeadBall(RestartType.Penalty),
+            AverageWastedSeconds = ordered.Average(s => s.DeadBalls.Sum(d => d.WastedSeconds)),
         };
     }
 }

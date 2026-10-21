@@ -1,5 +1,7 @@
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Diagnostics;
+using MonsterFootball.Simulation.Events;
+using MonsterFootball.Simulation.Restarts;
 using MonsterFootball.Simulation.Tests.TestSupport;
 
 namespace MonsterFootball.Simulation.Tests.Diagnostics;
@@ -46,6 +48,25 @@ public class BatchTests
         Assert.InRange(batch.AverageHomePossession, 0, 1);
         Assert.InRange(batch.AverageBallInPlayMinutes, 45, 100);
         Assert.InRange(batch.SafetyCapPeriodShare, 0, 1);
+
+        var t = DeadBallTuning.Default;
+        Assert.InRange(batch.AverageThrowInDeadBallSeconds, t.ThrowInSeconds * 0.8, t.ThrowInSeconds * 1.3);
+        Assert.InRange(batch.AverageGoalKickDeadBallSeconds, t.GoalKickSeconds * 0.8, t.GoalKickSeconds * 1.3);
+        Assert.InRange(batch.AverageCornerDeadBallSeconds, t.CornerSeconds * 0.8, t.CornerSeconds * 1.3);
+        Assert.InRange(batch.AverageDirectFreeKickDeadBallSeconds, t.DirectFreeKickSeconds * 0.8, t.DirectFreeKickSeconds * 1.6);
+        Assert.InRange(batch.AverageGoalDeadBallSeconds, t.GoalSeconds * 0.6, t.GoalSeconds * 1.4);
+        Assert.True(batch.AverageWastedSeconds >= 0);
+    }
+
+    [Fact]
+    public void A_match_summary_lists_each_stoppage_dead_ball_time()
+    {
+        var result = new MatchSimulation(MatchConfig.Default, TestTeams.Team("Blue", 1), TestTeams.Team("Red", 101), 3).RunToCompletion();
+
+        var summary = MatchSummary.From(result);
+
+        Assert.Equal(result.Events.Count(e => e.Type == MatchEventType.PlayStopped), summary.DeadBalls.Count);
+        Assert.All(summary.DeadBalls, d => Assert.True(d.Seconds > 0));
     }
 
     [Fact]
