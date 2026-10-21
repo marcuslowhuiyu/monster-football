@@ -63,7 +63,7 @@ public sealed record OnBallWeights
     public double ClearDangerRange { get; init; } = 35;
 
     // Cross (outfield, wide in the final third; ADR-036).
-    public double CrossBase { get; init; } = 30;
+    public double CrossBase { get; init; } = 28;
     public double CrossAttackerWeight { get; init; } = 8;
     public double CrossDefenderWeight { get; init; } = 2;
 
