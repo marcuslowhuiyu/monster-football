@@ -886,3 +886,43 @@ Fingerprint change (ledger #12). Batch of 1,000 (before → after): clearances 0
 them after a clearance); goals 1.95 → 2.11; ball in play 77.9 → 77.1 min; halves ended by the safety cap 6 % → 4 %;
 possession changes 312 → 340; home win / draw / away win 33.8 / 33.5 / 32.7 % → 33.7 / 31.0 / 35.3 %, home possession
 50.0 %. HEALTHY with the first weights; no tuning.
+
+## ADR-036 — Crosses Are Contested in the Air; Corners Are Crosses
+
+Status: Accepted (M2.7b, step 3 of match realism). **Provisionally tuned**: the numbers are revisited in the M2.7b
+calibration pass, after dead-ball times.
+
+Decision:
+- **When**: an outfield carrier in the final third and outside the width of the penalty area gets a `Cross` candidate:
+  28 + 8 × min(attackers in the box, 3) − 2 × min(defenders in the box, 6) + 10 × depth. The corner taker always
+  crosses (`CrossKind.Corner`, no offside).
+- **Where** (`CrossResolver`): the teammate in the box with the most space, else the penalty spot; Passing-based scatter
+  (two draws); flight 20 m/s; touch recorded and offside judged at the strike (not from a corner); out by last touch if
+  the path leaves the pitch. While it flies the nearest attacker and the two nearest defenders sprint to the landing
+  point.
+- **Contest on arrival** (`AerialContest`) — a deliberate exception to ADR-012's "decided at the strike", because a cross
+  has no named receiver: within 3 m, the defending keeper claims it in their goal area; otherwise the best attacker and
+  defender by aerial rating contest it, P(attacker) = Sigmoid(0.4 × (A − D) − 0.68) ≈ 0.22 between equals — defenders
+  face the ball and are usually taller, which the stat model (ADR-002) has no attribute for; a side alone wins; nobody →
+  loose.
+- **Outcomes**: attacker → first-time shot (`ShotResolver.ResolveFirstTime`, ability − 1.5, metadata `cross`); defender
+  → headed clearance (behind for a corner with chance 0.12, else 15–25 m away from goal, rolling); keeper → holds.
+  Events `Cross`, `CrossContested`; statistics crosses and shots/goals from crosses; health band crosses 10–80.
+
+Reason:
+After clearances, wide attacks had no way to become chances (2.11 goals, real ≈ 2.7) and corners were a pass to an
+attacker (4.9 per match, real ≈ 10 — real corners come largely from defenders heading crosses behind). One aerial model
+serves open play and set pieces.
+
+Consequences:
+Fingerprint change (ledger #13). Tuning record (1,000 matches each):
+- First settings (base 30, behind 25 %, contest bias −0.14 ≈ 43 % between equals, one defender chasing): 62.5 crosses,
+  4.70 goals, 46.3 shots, 18.2 corners, 69.0 min in play. A probe showed 95 % of crosses contested by both sides with the
+  attacker winning ~42 % — close to the designed even contest, whereas real crosses find a teammate ~20–25 % of the time —
+  and a corner loop (9.4 corners per match from headed clearances, every corner itself a cross).
+- Two defenders and 12 % behind: 57.7 crosses, 4.35 goals, 11.8 corners. Base 20 as well: 23.0 crosses, 2.98 goals,
+  7.3 corners — close in totals, but crosses too rare and each too dangerous.
+- **Kept, provisionally** (contest bias −0.68, base 28): 51.5 crosses, 11.6 corners, 3.94 goals (0.73 directly from
+  crosses — most of the rise comes indirectly, from headed clearances and second balls near the box), 35.0 shots,
+  72.9 min in play, safety cap 2 % of halves, home possession 50.0 %, HEALTHY. The user chose to tune the numbers once
+  every system exists, in the calibration pass.
