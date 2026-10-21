@@ -40,6 +40,9 @@ public sealed record MatchConfig
     /// <summary>Restart timing and law distances (ADR-023).</summary>
     public RestartTuning Restarts { get; init; } = RestartTuning.Default;
 
+    /// <summary>Dead-ball times after each stoppage and the wasted time the referee adds (ADR-037).</summary>
+    public DeadBallTuning DeadBall { get; init; } = DeadBallTuning.Default;
+
     /// <summary>Whether offside is enforced (ADR-029).</summary>
     public bool OffsideEnabled { get; init; } = true;
 
