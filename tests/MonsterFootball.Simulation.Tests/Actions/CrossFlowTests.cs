@@ -61,7 +61,7 @@ public class CrossFlowTests
     [Fact]
     public void A_defender_winning_the_cross_can_head_it_behind_for_a_corner()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.05)); // header behind: 0.05 < 0.12
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.05, 0.5)); // header behind: 0.05 < 0.12; then the dead-ball time
         s.Place(TeamSide.Home, PlayingPosition.LW, 94, 64);
         s.Place(TeamSide.Away, PlayingPosition.LCB, 94, 35); // alone at the penalty spot
         Strike(s, PlayingPosition.LW);
@@ -121,7 +121,7 @@ public class CrossFlowTests
     [Fact]
     public void An_attacker_winning_the_cross_from_an_offside_position_stops_play_without_a_shot()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5));
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.5)); // the last draw is the dead-ball time
         var line = 0;
         foreach (var away in s.State.TeamPlayers(TeamSide.Away).Where(p => !p.Role.IsGoalkeeper()))
             away.Position = new Vec2(90, 6 + 5 * line++); // a line at x = 90, well away from the landing point
@@ -141,7 +141,7 @@ public class CrossFlowTests
     [Fact]
     public void A_cross_landing_beyond_the_goal_line_goes_out_for_a_goal_kick()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.5, 0.9999)); // no sideways scatter; the full 3 m long
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.9999, 0.5)); // no sideways scatter; the full 3 m long; then the dead-ball time
         s.Place(TeamSide.Home, PlayingPosition.LW, 90, 34);
         s.Place(TeamSide.Home, PlayingPosition.ST, 103.5, 34); // the target: lands at x ≈ 106.5, over the line
         Strike(s, PlayingPosition.LW);
@@ -189,7 +189,7 @@ public class CrossFlowTests
     [Fact]
     public void A_home_defender_heading_an_away_cross_behind_concedes_a_corner_on_the_home_goal_line()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.05));
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.05, 0.5)); // the last draw is the dead-ball time
         s.Place(TeamSide.Away, PlayingPosition.LW, 11, 64);
         s.Place(TeamSide.Home, PlayingPosition.LCB, 11, 35);
         Strike(s, PlayingPosition.LW, side: TeamSide.Away);
@@ -207,7 +207,7 @@ public class CrossFlowTests
     [InlineData(0.7)] // and just on the other
     public void A_header_behind_from_the_centre_never_gives_a_corner_between_the_posts(double lengthDraw)
     {
-        var s = new Scenario(random: new ScriptedRandom(0.5, lengthDraw, 0.05));
+        var s = new Scenario(random: new ScriptedRandom(0.5, lengthDraw, 0.05, 0.5)); // the last draw is the dead-ball time
         s.Place(TeamSide.Home, PlayingPosition.LW, 94, 64);
         s.Place(TeamSide.Away, PlayingPosition.LCB, 94, 35);
         Strike(s, PlayingPosition.LW); // aimed at the penalty spot (94, 34)

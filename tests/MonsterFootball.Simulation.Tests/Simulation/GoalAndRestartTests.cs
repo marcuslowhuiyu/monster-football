@@ -51,6 +51,7 @@ public class GoalAndRestartTests
         var state = simulation.State;
         var config = MatchConfig.Default;
         var awarded = state.CurrentStoppage!.AwardedTeam;
+        var deadBall = state.CurrentStoppage!.DeadBallSeconds;
         var stoppedAt = state.Clock.Now.Seconds - config.TickSeconds;
         var eventsBefore = simulation.Events.Count;
 
@@ -72,8 +73,7 @@ public class GoalAndRestartTests
         Assert.Equal(MatchEventType.Kickoff, newEvents[0]);
         var kickoff = simulation.Events[eventsBefore];
         Assert.Equal(awarded, kickoff.Team);
-        Assert.InRange(kickoff.Timestamp.Seconds - stoppedAt,
-            config.Restarts.GoalDeadBallSeconds, config.Restarts.GoalDeadBallSeconds + config.Restarts.SetupTimeoutSeconds + config.TickSeconds);
+        Assert.InRange(kickoff.Timestamp.Seconds - stoppedAt, deadBall, deadBall + config.Restarts.SetupTimeoutSeconds + config.TickSeconds);
 
         // At the kickoff everyone is in their own half and opponents are outside the centre circle.
         foreach (var player in state.Players)

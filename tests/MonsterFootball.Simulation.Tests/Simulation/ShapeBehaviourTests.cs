@@ -34,20 +34,35 @@ public class ShapeBehaviourTests
     [Fact]
     public void Each_team_keeps_width_and_depth()
     {
+        // Judge the typical open-play shape over the first ten minutes, not one moment: just after a set piece a
+        // team can briefly be packed into its own box, and when that happens depends on stoppage lengths (ADR-037).
         var simulation = NewSimulation();
-        for (var tick = 0; tick < 4 * 60; tick++)
+        var depths = Enum.GetValues<TeamSide>().ToDictionary(side => side, _ => new List<double>());
+        var widths = Enum.GetValues<TeamSide>().ToDictionary(side => side, _ => new List<double>());
+        for (var tick = 0; tick < 4 * 600; tick++)
+        {
             simulation.Step();
+            if (simulation.State.Phase != MatchPhase.OpenPlay)
+                continue;
+
+            foreach (var side in Enum.GetValues<TeamSide>())
+            {
+                var outfield = simulation.State.TeamPlayers(side).Where(p => !p.Definition.Position.IsGoalkeeper()).ToList();
+                depths[side].Add(outfield.Max(p => p.Position.X) - outfield.Min(p => p.Position.X));
+                widths[side].Add(outfield.Max(p => p.Position.Y) - outfield.Min(p => p.Position.Y));
+            }
+        }
 
         foreach (var side in Enum.GetValues<TeamSide>())
         {
-            var outfield = simulation.State.TeamPlayers(side).Where(p => !p.Definition.Position.IsGoalkeeper()).ToList();
-            var depth = outfield.Max(p => p.Position.X) - outfield.Min(p => p.Position.X);
-            var width = outfield.Max(p => p.Position.Y) - outfield.Min(p => p.Position.Y);
-
-            Assert.True(depth > 20, $"{side} depth {depth:0.0}");
-            Assert.True(width > 30, $"{side} width {width:0.0}");
+            var depth = Median(depths[side]);
+            var width = Median(widths[side]);
+            Assert.True(depth > 20, $"{side} median depth {depth:0.0}");
+            Assert.True(width > 30, $"{side} median width {width:0.0}");
         }
     }
+
+    private static double Median(List<double> values) => values.Order().ElementAt(values.Count / 2);
 
     [Fact]
     public void Goalkeepers_stay_in_their_own_penalty_area_all_match()

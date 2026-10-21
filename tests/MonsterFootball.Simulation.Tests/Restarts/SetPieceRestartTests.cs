@@ -67,6 +67,7 @@ public class SetPieceRestartTests
         var spot = new Vec2(30, 0);
         var s = Stopped(RestartType.ThrowIn, TeamSide.Away, spot);
 
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
         var (seconds, at) = RunUntilTaken(s);
 
         var taken = Taken(s);
@@ -75,7 +76,7 @@ public class SetPieceRestartTests
         Assert.Contains(taker.Definition.Position, new[] { PlayingPosition.LB, PlayingPosition.RB, PlayingPosition.LW, PlayingPosition.RW });
         Assert.Equal("ThrowIn", taken.Metadata["restart"]);
         Assert.Equal(spot, taken.Position);
-        Assert.True(seconds >= Tuning.ThrowInDeadBallSeconds - 1e-9);
+        Assert.True(seconds >= deadBall - 1e-9);
         Assert.All(s.State.TeamPlayers(TeamSide.Home), p => Assert.True(at[p.PlayerId].DistanceTo(spot) >= Tuning.ThrowInExclusionRadius - 1e-9, $"{p} too close"));
     }
 
@@ -131,12 +132,13 @@ public class SetPieceRestartTests
         s.Place(TeamSide.Away, PlayingPosition.ST, 8, 34);
         s.Place(TeamSide.Away, PlayingPosition.LW, 12, 25);
 
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
         var (seconds, at) = RunUntilTaken(s);
 
         var taker = s.State.Player(Taken(s).ActorPlayerId!.Value);
         Assert.Equal(PlayingPosition.GK, taker.Definition.Position);
         Assert.Equal(TeamSide.Home, taker.Team);
-        Assert.True(seconds >= Tuning.GoalKickDeadBallSeconds - 1e-9);
+        Assert.True(seconds >= deadBall - 1e-9);
         Assert.All(s.State.TeamPlayers(TeamSide.Away),
             p => Assert.False(s.State.Zones.IsIn(TeamSide.Home, at[p.PlayerId], TacticalAreas.OwnPenaltyArea), $"{p} in the area"));
         Assert.Equal(MatchEventType.PassAttempted, s.Log.Events[^1].Type);
@@ -148,12 +150,13 @@ public class SetPieceRestartTests
         var corner = new Vec2(105, 68);
         var s = Stopped(RestartType.Corner, TeamSide.Home, corner);
 
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
         var (seconds, at) = RunUntilTaken(s);
 
         var taker = s.State.Player(Taken(s).ActorPlayerId!.Value);
         Assert.Equal(TeamSide.Home, taker.Team);
         Assert.DoesNotContain(taker.Definition.Position, new[] { PlayingPosition.LCB, PlayingPosition.RCB, PlayingPosition.ST, PlayingPosition.GK });
-        Assert.True(seconds >= Tuning.CornerDeadBallSeconds - 1e-9);
+        Assert.True(seconds >= deadBall - 1e-9);
         Assert.All(s.State.TeamPlayers(TeamSide.Away), p => Assert.True(at[p.PlayerId].DistanceTo(corner) >= Tuning.CornerExclusionRadius - 1e-9, $"{p} too close"));
 
         Assert.DoesNotContain(s.Log.Events, e => e.Type == MatchEventType.PassAttempted);
@@ -199,13 +202,14 @@ public class SetPieceRestartTests
         s.GiveBall(TeamSide.Away, PlayingPosition.ST);
         s.Context.StopPlay(StoppageReason.Offside, RestartType.IndirectFreeKick, TeamSide.Home, spot);
 
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
         var (seconds, at) = RunUntilTaken(s);
 
         var taken = Taken(s);
         var taker = s.State.Player(taken.ActorPlayerId!.Value);
         Assert.Equal(PositionGroup.Defender, taker.Definition.Position.Group());
         Assert.Equal("IndirectFreeKick", taken.Metadata["restart"]);
-        Assert.True(seconds >= Tuning.IndirectFreeKickDeadBallSeconds - 1e-9);
+        Assert.True(seconds >= deadBall - 1e-9);
         Assert.All(s.State.TeamPlayers(TeamSide.Away), p => Assert.True(at[p.PlayerId].DistanceTo(spot) >= Tuning.FreeKickExclusionRadius - 1e-9, $"{p} too close"));
         Assert.Equal(PossessionCause.FreeKick, s.Log.Events.Single(e => e.Type == MatchEventType.PossessionChanged && e.Team == TeamSide.Home).GetPossessionCause());
         Assert.Equal(MatchEventType.PassAttempted, s.Log.Events[^1].Type);
@@ -230,16 +234,17 @@ public class SetPieceRestartTests
         var spot = new Vec2(100, 68);
         var s = Stopped(RestartType.ThrowIn, TeamSide.Home, spot, config);
 
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
         var (seconds, _) = RunUntilTaken(s);
 
-        Assert.Equal(Tuning.ThrowInDeadBallSeconds, seconds, 6);
+        Assert.InRange(seconds, deadBall - 1e-9, deadBall + s.Context.Config.TickSeconds + 1e-9);
         Assert.Equal(spot, s.Log.Events.Single(e => e.Type == MatchEventType.RestartTaken).Position);
     }
 
     [Fact]
     public void Nothing_random_or_eventful_happens_until_the_restart_is_taken()
     {
-        var s = Stopped(RestartType.Corner, TeamSide.Home, new Vec2(105, 68), random: new ScriptedRandom()); // throws on any draw
+        var s = Stopped(RestartType.Corner, TeamSide.Home, new Vec2(105, 68), random: new ScriptedRandom(0.5)); // one draw for the dead-ball time, then throws on any draw
         var restarts = new RestartSystem(new PassResolver(), new ShotResolver(), AiTuning.Default.OnBall);
         var movement = new MovementSystem();
         var events = s.Log.Events.Count;
@@ -254,5 +259,17 @@ public class SetPieceRestartTests
 
         Assert.NotEqual(MatchPhase.OpenPlay, s.State.Phase);
         Assert.Equal(events, s.Log.Events.Count);
+    }
+
+    [Fact]
+    public void The_restart_waits_for_the_stoppages_own_dead_ball_time()
+    {
+        var s = Stopped(RestartType.ThrowIn, TeamSide.Away, new Vec2(30, 0), random: new MatchRng(5));
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
+
+        var (seconds, _) = RunUntilTaken(s);
+
+        Assert.True(deadBall > 0);
+        Assert.True(seconds >= deadBall - 1e-9, $"taken after {seconds} s, dead-ball time {deadBall} s");
     }
 }

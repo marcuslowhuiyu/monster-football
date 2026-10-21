@@ -1,30 +1,9 @@
 namespace MonsterFootball.Simulation.Restarts;
 
-/// <summary>Restart timing and law distances, as data (<see cref="Core.MatchConfig.Restarts"/>).</summary>
+/// <summary>Restart law distances, set-piece choices and setup timing, as data (<see cref="Core.MatchConfig.Restarts"/>).</summary>
 public sealed record RestartTuning
 {
     public static RestartTuning Default { get; } = new();
-
-    /// <summary>Minimum time between a goal and the kickoff (celebration, walking back).</summary>
-    public double GoalDeadBallSeconds { get; init; } = 45;
-
-    /// <summary>Minimum time between the ball going out and the throw-in.</summary>
-    public double ThrowInDeadBallSeconds { get; init; } = 8;
-
-    /// <summary>Minimum time between the ball going out and the goal kick.</summary>
-    public double GoalKickDeadBallSeconds { get; init; } = 15;
-
-    /// <summary>Minimum time between the ball going out and the corner (players go up for it).</summary>
-    public double CornerDeadBallSeconds { get; init; } = 20;
-
-    /// <summary>Minimum time between an offside and the indirect free kick (quickly taken, usually by a defender).</summary>
-    public double IndirectFreeKickDeadBallSeconds { get; init; } = 12;
-
-    /// <summary>Minimum time between a foul and the direct free kick.</summary>
-    public double DirectFreeKickDeadBallSeconds { get; init; } = 20;
-
-    /// <summary>Minimum time between a foul in the area and the penalty.</summary>
-    public double PenaltyDeadBallSeconds { get; init; } = 45;
 
     /// <summary>A direct free kick at most this far from the goal centre may be shot, over a wall.</summary>
     public double FreeKickShootingRange { get; init; } = 32;
@@ -35,7 +14,7 @@ public sealed record RestartTuning
     /// <summary>Players in the wall for a direct free kick within shooting range.</summary>
     public int WallSize { get; init; } = 4;
 
-    /// <summary>Once the dead-ball time is over, how long the restart waits for players to reach position before
+    /// <summary>Once the stoppage's dead-ball time (ADR-037) is over, how long the restart waits for players to reach position before
     /// placing any stragglers directly.</summary>
     public double SetupTimeoutSeconds { get; init; } = 30;
 

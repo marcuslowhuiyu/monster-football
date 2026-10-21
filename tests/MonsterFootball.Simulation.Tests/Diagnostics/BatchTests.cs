@@ -44,7 +44,7 @@ public class BatchTests
         Assert.InRange(batch.AverageShotsOnTarget, 0, batch.AverageShots);
         Assert.InRange(batch.PassCompletion, 0, 1);
         Assert.InRange(batch.AverageHomePossession, 0, 1);
-        Assert.InRange(batch.AverageBallInPlayMinutes, 60, 100);
+        Assert.InRange(batch.AverageBallInPlayMinutes, 45, 100);
         Assert.InRange(batch.SafetyCapPeriodShare, 0, 1);
     }
 

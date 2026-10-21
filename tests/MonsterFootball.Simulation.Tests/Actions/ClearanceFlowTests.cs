@@ -58,7 +58,7 @@ public class ClearanceFlowTests
     public void A_clearance_over_the_touchline_gives_the_opponents_a_throw_in()
     {
         // Wide: aim (35, 0); a lateral draw of 0 pushes the landing ~8 m sideways, over the line at (30, -6.25).
-        var s = new Scenario(random: new ScriptedRandom(0.0, 0.5));
+        var s = new Scenario(random: new ScriptedRandom(0.0, 0.5, 0.5)); // the last draw is the dead-ball time
         s.Place(TeamSide.Home, PlayingPosition.LCB, 10, 20);
         s.Place(TeamSide.Away, PlayingPosition.ST, 11, 20);
         Strike(s, PlayingPosition.LCB);
@@ -73,7 +73,7 @@ public class ClearanceFlowTests
     [Fact]
     public void An_attacker_offside_when_the_clearance_is_struck_is_penalised_for_collecting_it()
     {
-        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5));
+        var s = new Scenario(random: new ScriptedRandom(0.5, 0.5, 0.5)); // the last draw is the dead-ball time
         foreach (var p in s.State.TeamPlayers(TeamSide.Away).Where(p => !p.Role.IsGoalkeeper()).Select((p, i) => (p, i)))
             s.Place(TeamSide.Away, p.p.Role, 45, 4 + 6 * p.i); // the Away line at x = 45
         s.Place(TeamSide.Home, PlayingPosition.LCB, 20, 34);

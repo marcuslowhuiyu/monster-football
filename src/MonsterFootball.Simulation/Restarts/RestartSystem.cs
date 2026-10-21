@@ -41,7 +41,7 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
         var tuning = context.Config.Restarts;
         var stoppage = state.CurrentStoppage!;
         var elapsed = (state.Clock.Tick - stoppage.StoppedAtTick) * context.Config.TickSeconds;
-        var deadBall = DeadBallSeconds(stoppage, tuning);
+        var deadBall = stoppage.DeadBallSeconds;
 
         if (state.Phase == MatchPhase.Stopped && elapsed >= deadBall - 1e-9)
             state.BeginRestartSetup();
@@ -58,21 +58,6 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
 
         Take(context, stoppage, taker);
     }
-
-    private static double DeadBallSeconds(Stoppage stoppage, RestartTuning tuning) => stoppage.Reason switch
-    {
-        StoppageReason.Goal => tuning.GoalDeadBallSeconds,
-        StoppageReason.BallOutOfPlay => stoppage.Restart switch
-        {
-            RestartType.ThrowIn => tuning.ThrowInDeadBallSeconds,
-            RestartType.GoalKick => tuning.GoalKickDeadBallSeconds,
-            RestartType.Corner => tuning.CornerDeadBallSeconds,
-            _ => 0,
-        },
-        StoppageReason.Offside => tuning.IndirectFreeKickDeadBallSeconds,
-        StoppageReason.Foul => stoppage.Restart == RestartType.Penalty ? tuning.PenaltyDeadBallSeconds : tuning.DirectFreeKickDeadBallSeconds,
-        _ => 0,
-    };
 
     private PlayerMatchState Taker(MatchState state, Stoppage stoppage, RestartTuning tuning)
     {

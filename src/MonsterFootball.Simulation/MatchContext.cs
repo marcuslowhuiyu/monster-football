@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Random;
+using MonsterFootball.Simulation.Restarts;
 
 namespace MonsterFootball.Simulation;
 
@@ -32,19 +34,24 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
         });
 
     /// <summary>
-    /// Stops play (ADR-023): records the stoppage, clears every player's ongoing action and plan, and emits
-    /// PlayStopped (team = awarded team, position = restart location, metadata <c>reason</c> and <c>restart</c>).
+    /// Stops play (ADR-023): records the stoppage with its dead-ball time (ADR-037), clears every player's ongoing
+    /// action and plan, and emits PlayStopped (team = awarded team, position = restart location, metadata
+    /// <c>reason</c>, <c>restart</c>, <c>deadBall</c> and <c>wasted</c> in seconds). In regular time, goals, penalties
+    /// and a leading side's wasted time add to the added-time allowance.
     /// </summary>
     public void StopPlay(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null,
         DisciplinaryOutcome discipline = DisciplinaryOutcome.None)
     {
-        BeginStoppage(reason, restart, awardedTeam, location, offender, fouled, discipline);
+        var stoppage = NewStoppage(reason, restart, awardedTeam, location, offender, fouled, discipline);
+        var deadBall = DeadBallDuration.Compute(State, stoppage, Config, Random);
+        Begin(stoppage with { DeadBallSeconds = deadBall.Seconds });
         if (State.Clock.Tick < State.Clock.RegularEndTick)
         {
             if (reason == StoppageReason.Goal)
                 State.AddedTimeAllowanceSeconds += Config.AddedTime.PerGoalSeconds;
             if (restart == RestartType.Penalty)
                 State.AddedTimeAllowanceSeconds += Config.AddedTime.PerPenaltySeconds;
+            State.AddedTimeAllowanceSeconds += deadBall.WastedSeconds;
         }
 
         Emit(MatchEventType.PlayStopped, actor: offender, target: fouled, team: awardedTeam, position: location,
@@ -52,6 +59,8 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
             [
                 new KeyValuePair<string, string>("reason", reason.ToString()),
                 new KeyValuePair<string, string>("restart", restart.ToString()),
+                new KeyValuePair<string, string>("deadBall", deadBall.Seconds.ToString("R", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("wasted", deadBall.WastedSeconds.ToString("R", CultureInfo.InvariantCulture)),
             ]));
     }
 
@@ -103,9 +112,16 @@ internal sealed class MatchContext(MatchConfig config, MatchState state, IMatchR
 
     /// <summary>Records a stoppage and clears every player's ongoing action and plan, without emitting an event.</summary>
     public void BeginStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender = null, PlayerId? fouled = null,
-        DisciplinaryOutcome discipline = DisciplinaryOutcome.None)
+        DisciplinaryOutcome discipline = DisciplinaryOutcome.None) =>
+        Begin(NewStoppage(reason, restart, awardedTeam, location, offender, fouled, discipline));
+
+    private Stoppage NewStoppage(StoppageReason reason, RestartType restart, TeamSide awardedTeam, Vec2 location, PlayerId? offender, PlayerId? fouled,
+        DisciplinaryOutcome discipline) =>
+        new(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender, Fouled = fouled, Discipline = discipline };
+
+    private void Begin(Stoppage stoppage)
     {
-        State.StopPlay(new Stoppage(reason, restart, awardedTeam, location, State.Clock.Tick) { Offender = offender, Fouled = fouled, Discipline = discipline });
+        State.StopPlay(stoppage);
         foreach (var player in State.ActivePlayers)
         {
             player.ClearIntent();

@@ -4,6 +4,7 @@ using MonsterFootball.Simulation.Core;
 using MonsterFootball.Simulation.Events;
 using MonsterFootball.Simulation.Players;
 using MonsterFootball.Simulation.Random;
+using MonsterFootball.Simulation.Restarts;
 using MonsterFootball.Simulation.Tests.TestSupport;
 
 namespace MonsterFootball.Simulation.Tests.Actions;
@@ -118,7 +119,7 @@ public class ShotTests
     [Fact]
     public void Goal_increments_the_score_exactly_once_and_starts_a_restart()
     {
-        var s = Chance(95, 34, random: new ScriptedRandom(0.0, 0.5, 0.9999));
+        var s = Chance(95, 34, random: new ScriptedRandom(0.0, 0.5, 0.9999, 0.5)); // the last draw is the dead-ball time
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
         Assert.Equal(ShotOutcome.Goal, result.Outcome);
 
@@ -127,8 +128,10 @@ public class ShotTests
         Assert.Equal(1, s.State.Score.Home);
         Assert.Equal(0, s.State.Score.Away);
         Assert.Equal(MatchPhase.Stopped, s.State.Phase);
-        Assert.Equal(new Stoppage(StoppageReason.Goal, RestartType.Kickoff, TeamSide.Away, s.State.Pitch.Centre, s.State.Clock.Tick),
-            s.State.CurrentStoppage);
+        Assert.Equal(new Stoppage(StoppageReason.Goal, RestartType.Kickoff, TeamSide.Away, s.State.Pitch.Centre, s.State.Clock.Tick)
+        {
+            DeadBallSeconds = DeadBallTuning.Default.GoalSeconds, // draw 0.5: spread 1; this early on, no game-state factor
+        }, s.State.CurrentStoppage);
         Assert.Equal([MatchEventType.ShotTaken, MatchEventType.GoalScored, MatchEventType.PlayStopped], s.EventTypes);
         Assert.Equal(s.State.Pitch.Length, result.TargetPosition.X);
         Assert.InRange(result.TargetPosition.Y, 34 - PitchGeometry.GoalWidth / 2, 34 + PitchGeometry.GoalWidth / 2);
@@ -153,7 +156,7 @@ public class ShotTests
     public void A_save_parried_behind_is_a_corner()
     {
         // on target, placement, saved, not held, behind.
-        var s = Chance(95, 30, random: new ScriptedRandom(0.0, 0.2, 0.0, 0.9999, 0.0));
+        var s = Chance(95, 30, random: new ScriptedRandom(0.0, 0.2, 0.0, 0.9999, 0.0, 0.5)); // the last draw is the dead-ball time
         var keeper = s.State.Slot(TeamSide.Away, PlayingPosition.GK);
 
         StrikeAndFly(s, _resolver.Resolve(s.State, Intent(s), s.Context.Random));
@@ -185,7 +188,7 @@ public class ShotTests
     [Fact]
     public void Missed_shot_goes_behind_for_a_goal_kick()
     {
-        var s = Chance(95, 34, random: new ScriptedRandom(0.9999, 0.2, 0.5));
+        var s = Chance(95, 34, random: new ScriptedRandom(0.9999, 0.2, 0.5, 0.5)); // the last draw is the dead-ball time
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
 
         StrikeAndFly(s, result);
@@ -203,7 +206,7 @@ public class ShotTests
     public void A_miss_deflected_by_a_defender_in_the_lane_is_a_corner()
     {
         // miss, side, wide, deflected.
-        var s = Chance(90, 34, random: new ScriptedRandom(0.9999, 0.2, 0.5, 0.0));
+        var s = Chance(90, 34, random: new ScriptedRandom(0.9999, 0.2, 0.5, 0.0, 0.5)); // the last draw is the dead-ball time
         var blocker = s.Place(TeamSide.Away, PlayingPosition.LCB, 95, 34.5);
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
 
@@ -231,7 +234,7 @@ public class ShotTests
     [Fact]
     public void A_struck_shot_travels_and_its_outcome_is_applied_only_on_arrival()
     {
-        var s = Chance(85, 34, random: new ScriptedRandom(0.0, 0.5, 0.9999));
+        var s = Chance(85, 34, random: new ScriptedRandom(0.0, 0.5, 0.9999, 0.5)); // the last draw is the dead-ball time
         var result = _resolver.Resolve(s.State, Intent(s), s.Context.Random);
         Assert.Equal(ShotOutcome.Goal, result.Outcome);
 

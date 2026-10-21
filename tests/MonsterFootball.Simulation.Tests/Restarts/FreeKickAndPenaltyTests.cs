@@ -60,12 +60,13 @@ public class FreeKickAndPenaltyTests
     {
         var s = Fouled(RestartType.Penalty, HomePenaltySpot);
         var striker = s.State.Slot(TeamSide.Home, PlayingPosition.ST);
+        var deadBall = s.State.CurrentStoppage!.DeadBallSeconds;
 
         var (seconds, at) = RunUntilTaken(s);
 
         var taken = s.Log.Events.Single(e => e.Type == MatchEventType.RestartTaken);
         Assert.Equal("Penalty", taken.Metadata["restart"]);
-        Assert.True(seconds >= Tuning.PenaltyDeadBallSeconds - 1e-9);
+        Assert.True(seconds >= deadBall - 1e-9);
         var shot = s.Log.Events.Single(e => e.Type == MatchEventType.ShotTaken);
         Assert.Equal("true", shot.Metadata["penalty"]);
         Assert.Equal(HomePenaltySpot, shot.Position);
