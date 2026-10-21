@@ -28,11 +28,12 @@ internal sealed class PeriodSystem
         if (clock.AddedTimeTicks is not { } added || clock.Tick < clock.RegularEndTick + added)
             return;
 
-        // A penalty awarded as time runs out is still taken (Law 14): wait for it.
-        var stopped = state.Phase is MatchPhase.Stopped or MatchPhase.RestartSetup
-                      && state.CurrentStoppage?.Restart != RestartType.Penalty;
+        // A penalty awarded as time runs out is still taken (Law 14): wait for it, even past the safety cap — its
+        // dead-ball time (ADR-037) and setup timeout are bounded.
+        var penaltyPending = state.CurrentStoppage?.Restart == RestartType.Penalty;
+        var stopped = state.Phase is MatchPhase.Stopped or MatchPhase.RestartSetup && !penaltyPending;
         var capReached = clock.Tick >= clock.RegularEndTick + added + context.Config.TicksFor(context.Config.AddedTime.SafetyCapSeconds)
-                         && !state.Ball.IsInFlight;
+                         && !state.Ball.IsInFlight && !penaltyPending;
         if (stopped || capReached)
             EndPeriod(context, stopped ? "Stoppage" : "SafetyCap");
     }

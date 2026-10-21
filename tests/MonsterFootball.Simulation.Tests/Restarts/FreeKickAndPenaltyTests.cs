@@ -162,4 +162,35 @@ public class FreeKickAndPenaltyTests
         periods.Apply(s.Context);
         Assert.Contains(s.Log.Events, e => e.Type == MatchEventType.PeriodEnded);
     }
+
+    [Fact]
+    public void A_long_penalty_stoppage_late_in_added_time_is_not_cut_off_by_the_safety_cap()
+    {
+        var s = new Scenario(random: new ScriptedRandom(0.9999)); // the longest spread
+        var periods = new PeriodSystem();
+        while (s.State.Clock.AddedTimeTicks is null)
+        {
+            s.State.Clock.Advance();
+            periods.Apply(s.Context); // regular time ends; +0 announced
+        }
+
+        s.GiveBall(TeamSide.Away, PlayingPosition.CM);
+        for (var i = 0; i < 4 * 70; i++) // play on 70 s past the end: the safety cap is 110 s away
+        {
+            s.State.Clock.Advance();
+            periods.Apply(s.Context);
+        }
+
+        s.Context.StopPlay(StoppageReason.Foul, RestartType.Penalty, TeamSide.Home, HomePenaltySpot);
+        var waitSeconds = s.State.CurrentStoppage!.DeadBallSeconds + Tuning.SetupTimeoutSeconds;
+        Assert.True(waitSeconds > 110, $"premise: the penalty's wait ({waitSeconds:0.0} s) outlasts the safety cap");
+        for (var i = 0; i < s.Context.Config.TicksFor(waitSeconds); i++)
+        {
+            s.State.Clock.Advance();
+            periods.Apply(s.Context);
+        }
+
+        Assert.DoesNotContain(s.Log.Events, e => e.Type == MatchEventType.PeriodEnded);
+        Assert.Equal(RestartType.Penalty, s.State.CurrentStoppage?.Restart);
+    }
 }

@@ -935,8 +935,9 @@ Status: Accepted (M2.7b, step 4 of match realism). Supersedes the fixed per-type
 Decision:
 - **When**: `MatchContext.StopPlay` computes the dead-ball time once (`DeadBallDuration.Compute`, one `NextDouble`
   draw) and stores it on the stoppage (`Stoppage.DeadBallSeconds`); `RestartSystem` waits for it before the
-  restart-setup phase (setup timeout unchanged, counted from its end). Opening and half-time kickoffs (`BeginStoppage`)
-  take 0 s and draw nothing.
+  restart-setup phase (setup timeout unchanged, counted from its end). The opening kickoff (set up with the
+  match) and half-time kickoffs (`BeginStoppage`) take 0 s and draw nothing. A pending penalty is exempt from the
+  safety cap (ADR-024): its dead-ball time can exceed the cap's 180 s late in added time, and Law 14 says it is taken.
 - **Formula**: seconds = average(type) × spread × game state × location + card time. Values live in
   `MatchConfig.DeadBall` (`DeadBallTuning`).
 

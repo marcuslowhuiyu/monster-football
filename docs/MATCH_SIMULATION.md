@@ -54,7 +54,7 @@ Each `Step()`:
      9. `LooseBallSystem` — a rolling ball moves on (and may go out of play); then the nearest player within 1.5 m collects a loose ball (exact ties: one random draw).
      10. `StaminaSystem` — drain stamina for metres covered and for this tick's action events.
 4. Advance the clock one tick.
-5. `PeriodSystem`: announce added time at the end of regular time; end the period at a stoppage once time is up (or at the safety cap); start the second half or finish the match.
+5. `PeriodSystem`: announce added time at the end of regular time; end the period at a stoppage once time is up (or at the safety cap — never while a penalty is pending); start the second half or finish the match.
 
 Events emitted during a step carry the timestamp from **before** the clock advances, so the kickoff is at 00:00.
 

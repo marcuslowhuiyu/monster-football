@@ -49,6 +49,7 @@ public class BatchTests
         Assert.InRange(batch.AverageBallInPlayMinutes, 45, 100);
         Assert.InRange(batch.SafetyCapPeriodShare, 0, 1);
 
+        // Offside and penalty averages are not banded: six matches may contain none of them.
         var t = DeadBallTuning.Default;
         Assert.InRange(batch.AverageThrowInDeadBallSeconds, t.ThrowInSeconds * 0.8, t.ThrowInSeconds * 1.3);
         Assert.InRange(batch.AverageGoalKickDeadBallSeconds, t.GoalKickSeconds * 0.8, t.GoalKickSeconds * 1.3);

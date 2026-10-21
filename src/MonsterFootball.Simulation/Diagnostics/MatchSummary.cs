@@ -27,6 +27,7 @@ public sealed record MatchSummary(
     public bool Abandoned { get; init; }
 
     /// <summary>Every PlayStopped in the match, in order: restart type, dead-ball seconds, wasted seconds.</summary>
+    /// <remarks>A list, so record equality compares it by reference: compare <see cref="DeadBalls"/> element-wise.</remarks>
     public IReadOnlyList<StoppageTime> DeadBalls { get; init; } = [];
 
     public static MatchSummary From(MatchResult result)
