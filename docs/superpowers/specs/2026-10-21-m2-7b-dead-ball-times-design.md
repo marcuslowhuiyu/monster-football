@@ -1,6 +1,7 @@
 # M2.7b step 4 — Dead-ball times
 
 Status: approved design (2026-10-21). Part of **M2.7b match realism** (plan `docs/milestones/MILESTONE_2_PLAN.md`).
+Values below are provisional; final values are set in the calibration pass (ADR-037).
 
 ## Context
 

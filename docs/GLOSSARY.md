@@ -42,7 +42,7 @@
 
 **Tick** — One fixed simulation step (default 0.25 simulated seconds).
 
-**MatchConfig** — Match-wide settings: pitch, tick length, period length and count, added time, AI weights, restart timing.
+**MatchConfig** — Match-wide settings: pitch, tick length, period length and count, added time, AI weights, restart distances and timeouts, dead-ball times.
 
 **MatchClock** — Counts ticks (the authoritative measure of elapsed time) and tracks the current period and its added time.
 
@@ -144,7 +144,11 @@
 
 **Ball-in-play time** — Time the ball was live; the match clock keeps running through stoppages.
 
-**Added time (stoppage time)** — Minutes added to a period for time lost to goals, cards, penalties and dismissals; the period then ends at the next stoppage. Not to be confused with *extra time* (30-minute knockout periods, out of scope).
+**Dead-ball time** — How long the ball stays dead after play stops before the restart can be set up: drawn per stoppage around a real average for its type, shaped by the score late on, where it is and any card (ADR-037).
+
+**Wasted time** — The part of a leading side's dead-ball time caused by slowing its restarts down late on; the referee adds it to the added time.
+
+**Added time (stoppage time)** — Minutes added to a period for time lost to goals, cards, penalties, dismissals and wasted time; the period then ends at the next stoppage. Not to be confused with *extra time* (30-minute knockout periods, out of scope).
 
 **Last touch** — The player who last played the ball; decides throw-in, goal kick or corner when it goes out.
 

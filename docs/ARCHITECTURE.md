@@ -67,7 +67,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |
 | `Actions.Crossing` | `CrossIntent`, `CrossKind`, `CrossResult`, `CrossResolver`, `AerialContest`/`AerialOutcome`, `CrossExecution`, `HeaderClearance` | M2.7b |
 | `Actions.Clearing` | `ClearanceIntent`, `ClearanceKind`, `ClearanceResult`, `ClearanceResolver`, `ClearanceExecution` | M2.7b |
-| `Restarts` | `RestartSystem` (dispatch on restart type: dead ball → setup → restart), `RestartLayout` (restart positions, law distances), `RestartTakers`, `RestartTuning` | M1.7, M2.1c, M2.4 |
+| `Restarts` | `RestartSystem` (dispatch on restart type: dead ball → setup → restart), `RestartLayout` (restart positions, law distances), `RestartTakers`, `RestartTuning`; `DeadBallTuning` (`MatchConfig.DeadBall`), `DeadBallDuration` (per-stoppage dead-ball time, ADR-037) | M1.7, M2.1c, M2.4, M2.7b |
 | `Laws` | `OutOfPlay` (segment–boundary crossing, restart from line and last touch), `BoundaryLine`; `Offside` (line, position, judgement at the pass), `OffsideJudgement`; `Discipline` (cards for fouls), `CardReason` | M2.4–M2.7 |
 | `AI` | `ActionCandidate`/`ActionKind`, `UtilitySelector`, `IUtilityModifier`, `AiTuning`/`OnBallWeights`/`OffBallWeights` (weights), `OnBallCandidateGenerator` + `OnBallDecisionSystem`, `OffBallCandidateGenerator` + `OffBallDecisionSystem` + `OffBallPlan` | M1.9 |
 | `Fitness` | `FatigueModel`, `StaminaSystem` | M1.8 |
