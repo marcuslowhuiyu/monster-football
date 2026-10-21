@@ -25,7 +25,7 @@ the crossing point is where the segment meets the line. Whoever **last touched**
 | Goal line | attacking team | Goal kick to the defending team | corner of the goal area on that side |
 | Goal line | defending team | Corner to the attacking team | the corner on that side |
 
-Touches: gaining possession, striking a pass, shot or clearance, a tackle that knocks the ball loose, a goalkeeper's parry and a
+Touches: gaining possession, striking a pass, shot, clearance or cross, a headed clearance, a tackle that knocks the ball loose, a goalkeeper's parry and a
 defender's deflection. Ways the ball goes out: misplaced passes and clearances (in flight or rolling on after landing), tackles that
 knock it out, missed shots (a goal kick, or a corner if deflected by a defender in the lane), and saves parried
 behind (a corner).
@@ -86,8 +86,8 @@ The referee judges every foul (Law 12), checking in this order:
 - During a stoppage nobody decides, tackles or collects the ball, and nothing random happens. Players walk (jog) to
   restart positions, which still costs stamina.
 - If the restart is not ready 30 s after the dead-ball time, the taker and any offending opponents are placed.
-- Execution reuses passing: the taker passes at once to the best option (a throw within 25 m; a corner to an attacker
-  in the box, who may then shoot as in open play; a free kick to a teammate judged onside). An indirect free kick
+- Execution reuses passing: the taker passes at once to the best option (a throw within 25 m; a free kick to a teammate judged onside). A corner is crossed into the box, where attackers
+  and defenders contest it in the air (a first-time shot, a headed clearance, the keeper's catch); no offside from it. An indirect free kick
   cannot be scored directly. A direct free kick within 32 m is shot over the wall when worth it (xG ≥ 0.04).
   A penalty is a dedicated shot from the spot (≈ 74 % scored between equal players); a period waits for it.
   Throw-ins use the ordinary pass model.

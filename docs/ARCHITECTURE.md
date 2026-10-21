@@ -65,6 +65,7 @@ Namespaces inside the simulation are created as subtasks need them, not ahead of
 | `Actions` | `BallFlight` (pass or shot, M2.1b), `BallFlightSystem`, `LooseBallSystem`, `LooseBallMotion` (rolling ball, M2.4); `Actions.Passing`: `PassIntent`, `PassResolver`, `PassEstimate`, `InterceptionThreat`, `PassResult`, `PassOutcome`, `PassExecution` | M1.5 |
 | `Actions` (M1.6) | `ActionIntent`; `Actions.Carrying`: `CarryIntent`, `CarryResult`, `CarryResolver`, `CarrySystem`; `Actions.Tackling`: `TackleIntent`, `TackleResult`, `TackleOutcome`, `TackleResolver`, `TackleSystem` | M1.6 |
 | `Actions.Shooting` | `ShotIntent`, `ShotResult`, `ShotOutcome`, `ShotEstimate`, `ShotResolver`, `ShotExecution` | M1.7 |
+| `Actions.Crossing` | `CrossIntent`, `CrossKind`, `CrossResult`, `CrossResolver`, `AerialContest`/`AerialOutcome`, `CrossExecution`, `HeaderClearance` | M2.7b |
 | `Actions.Clearing` | `ClearanceIntent`, `ClearanceKind`, `ClearanceResult`, `ClearanceResolver`, `ClearanceExecution` | M2.7b |
 | `Restarts` | `RestartSystem` (dispatch on restart type: dead ball → setup → restart), `RestartLayout` (restart positions, law distances), `RestartTakers`, `RestartTuning` | M1.7, M2.1c, M2.4 |
 | `Laws` | `OutOfPlay` (segment–boundary crossing, restart from line and last touch), `BoundaryLine`; `Offside` (line, position, judgement at the pass), `OffsideJudgement`; `Discipline` (cards for fouls), `CardReason` | M2.4–M2.7 |

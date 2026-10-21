@@ -166,15 +166,16 @@ Restart handlers land first (unit-tested via `Scenario`, unreachable in matches)
 ### M2.7b — Match realism (addition after the M2.7 checkpoint, ADR-033)
 
 The user chose to aim for real football (≈ 40 throw-ins, 55–60 min of ball in play), not only the milestone bands.
-Four steps, one PR each, specs and plans in `docs/superpowers/`; the interim bands of ADR-033 tighten to the milestone
+Four building steps and a calibration pass, one PR each, specs and plans in `docs/superpowers/`; the interim bands of ADR-033 tighten to the milestone
 targets by the end.
 
 | PR | Branch | Scope | FP |
 |---|---|---|---|
 | b1 | `feat/m2-7b-width` | wide players hold the touchline in possession (shape, runs, support, carries). ADR-034. | yes |
 | b2 | `feat/m2-7b-clearances` | D6: defenders under pressure in their own third clear long and wide; fair loose-ball ties. ADR-035. | yes |
-| b3 | `feat/m2-7b-crosses` | wide players in the final third cross into the box; re-check goals (1.95 after b1) | yes |
-| b4 | `chore/m2-7b-dead-ball-times` | stoppage durations from real averages; tighten the interim bands | yes |
+| b3 | `feat/m2-7b-crosses` | wide players in the final third cross into the box; corners are crosses; aerial contest on landing. ADR-036 (provisionally tuned). | yes |
+| b4 | `feat/m2-7b-dead-ball-times` | stoppage durations from real averages | yes |
+| b5 | `chore/m2-7b-calibration` | calibration pass with all systems in place (goals, crosses, corners, throw-ins, ball in play); tighten the interim bands to the milestone targets (ADR-033) | if tuned |
 
 ### M2.8 — Tactical geometry and snapshot
 
@@ -229,6 +230,7 @@ targets by the end.
 | 10 | 7 | calibration: safety cap 180 s |
 | 11 | 7b1 | width |
 | 12 | 7b2 | clearances; fair loose-ball ties |
+| 13 | 7b3 | crosses; corners as crosses |
 
 Each is verified cross-platform by CI and recorded in its ADR. Any other PR that changes a fingerprint is a bug.
 

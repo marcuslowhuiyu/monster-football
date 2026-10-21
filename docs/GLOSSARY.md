@@ -180,6 +180,12 @@
 
 **Role** — The 4-3-3 slot a player fills now; changes when the team re-forms after a dismissal.
 
+**Cross** — A delivery from a wide position in the final third (or a corner) to a spot in the box, contested in the air where it lands (ADR-036).
+
+**Aerial contest** — Who wins a cross: the keeper in their goal area, else the best attacker against the best defender within 3 m, by Power, Awareness and Technique / Defending.
+
+**First-time shot** — A shot struck straight from a cross, harder to put on target than a shot from a controlled ball.
+
 **Clearance** — Kicking the ball away from danger to a spot rather than a teammate: wide towards the touchline when pressed near goal, otherwise long upfield (ADR-035).
 
 **Wide channel** — The strip along their own touchline that wingers (within 8 m) and full-backs (within 12 m) hold when their team has the ball (ADR-034).
