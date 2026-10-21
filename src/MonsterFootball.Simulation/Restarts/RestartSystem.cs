@@ -164,8 +164,8 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
             return;
         }
 
-        // No offside offence directly from a throw-in, goal kick or corner (Law 11); free kicks are judged as any pass.
-        var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick or RestartType.Corner);
+        // No offside offence directly from a throw-in or goal kick (Law 11; corners are crosses, judged in CrossExecution); free kicks are judged as any pass.
+        var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick);
         if (ChooseReceiver(state, context.Config.Restarts, stoppage, taker) is { } receiver)
             PassExecution.Launch(context, passResolver.Resolve(state, new PassIntent(taker.PlayerId, receiver.PlayerId), context.Random), offsideApplies);
     }
@@ -179,7 +179,7 @@ internal sealed class RestartSystem(PassResolver passResolver, ShotResolver shot
     {
         var pitch = state.Pitch;
         var takerX = TeamFrame.Convert(pitch, taker.Team, taker.Position).X;
-        var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick or RestartType.Corner);
+        var offsideApplies = stoppage.Restart is not (RestartType.ThrowIn or RestartType.GoalKick);
         var misjudge = weights.OffsideMisjudgement(taker.Definition.Stats.Awareness);
         var candidates = state.TeamPlayers(taker.Team)
             .Where(p => p != taker && p.Position.DistanceTo(taker.Position) >= weights.MinPassDistance)

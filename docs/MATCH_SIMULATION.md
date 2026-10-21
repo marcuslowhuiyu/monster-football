@@ -466,6 +466,7 @@ A pass, shot, clearance or cross in the air is `BallState.Flight` (`BallFlight`:
 - **Goals** ~3.9 per match with crosses provisionally tuned (ADR-036); the calibration pass revisits them. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; a corner is a cross into the box; no routines, short corners or flick-ons. Headers happen only where a cross lands.
+- A crosser is not excluded from the aerial contest: in odd geometry (crosser just outside the box width, landing within 3 m) they can meet their own cross — a double touch from a corner. Left for the calibration pass.
 - **Crosses are provisionally tuned** (ADR-036): goals are ~3.9 per match (real ≈ 2.7). The numbers are deliberately left for the M2.7b calibration pass, after dead-ball times.
 - No blocks as events or posts; deflections only send misses behind.
 - Presentation snaps (measured over 20 matches, M2.2): passes land exactly on the receiver or interceptor (max 0.4 m),

@@ -31,10 +31,10 @@ internal sealed class TeamShapeSystem
     private const double MidfieldCentralCompression = 0.8;
     private const double ForwardMaxDepthFromGoalLine = 6;
     private const double TouchlineMargin = 2;
+    private const double GoalLineMargin = 3;
 
     /// <summary>Outfield players the defending side sends to a cross's landing point.</summary>
     private const int CrossDefenders = 2;
-    private const double GoalLineMargin = 3;
 
     /// <summary>
     /// Moves each team's <see cref="MatchState.ShapeFocus"/> toward the ball — by <paramref name="attackingSmoothing"/>
@@ -62,7 +62,7 @@ internal sealed class TeamShapeSystem
 
         // A clearance or a cross in the air: the nearest outfield player of each side races to where it will land
         // (ADR-035); the side defending a cross sends its two nearest, so attackers rarely meet one unchallenged (ADR-036).
-        if (state.Ball.Flight is { Clearance: not null } or { Cross: not null } && state.Ball.Flight is { } flight)
+        if (state.Ball.Flight is { } flight && (flight.Clearance is not null || flight.Cross is not null))
         {
             var landing = state.Pitch.Clamp(flight.TargetPosition);
             foreach (var side in Enum.GetValues<TeamSide>())

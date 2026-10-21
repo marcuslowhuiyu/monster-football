@@ -15,7 +15,7 @@ namespace MonsterFootball.Simulation.AI;
 /// judges options with the same maths that decides outcomes. Rough scale: a safe square pass ≈ 45,
 /// a progressive pass ≈ 55–70, an open carry ≈ 55–60, a shot ≈ 22 + 318 × xG (offered from xG 0.03),
 /// a clear (own third, ≈ 20 + 40 × pressure + 30 × danger),
-/// a cross (wide in the final third, ≈ 30 + 8 × attackers in the box − 2 × defenders + 10 × depth). Values live in OnBallWeights.
+/// a cross (wide in the final third, ≈ 28 + 8 × attackers in the box − 2 × defenders + 10 × depth). Values live in OnBallWeights.
 /// No pass is offered to a teammate the carrier judges offside (Awareness-dependent margin, D8).
 /// </summary>
 internal sealed class OnBallCandidateGenerator(
