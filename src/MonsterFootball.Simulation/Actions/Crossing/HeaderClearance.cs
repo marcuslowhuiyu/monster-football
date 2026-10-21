@@ -4,12 +4,12 @@ using MonsterFootball.Simulation.Players;
 namespace MonsterFootball.Simulation.Actions.Crossing;
 
 /// <summary>
-/// A defender who wins a cross heads it clear (ADR-036): with chance 0.25 behind their own goal line beside the goal (a
+/// A defender who wins a cross heads it clear (ADR-036): with chance 0.12 behind their own goal line beside the goal (a
 /// corner), otherwise 15–25 m away from their goal along the line from its centre through the landing point, rolling.
 /// </summary>
 internal static class HeaderClearance
 {
-    public const double BehindChance = 0.25;
+    public const double BehindChance = 0.12;
     public const double MinDistance = 15;
     public const double MaxDistance = 25;
 

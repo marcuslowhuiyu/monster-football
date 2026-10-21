@@ -54,12 +54,12 @@ public class AerialContestTests
     }
 
     [Fact]
-    public void Equal_players_give_the_defender_a_slight_edge_and_ratings_matter()
+    public void Equal_players_give_the_defender_a_clear_edge_and_ratings_matter()
     {
         var s = new Scenario();
         var attacker = s.State.Slot(TeamSide.Home, PlayingPosition.ST);
         var defender = s.State.Slot(TeamSide.Away, PlayingPosition.LCB);
-        Assert.InRange(AerialContest.AttackerWinChance(attacker, defender), 0.42, 0.44);
+        Assert.InRange(AerialContest.AttackerWinChance(attacker, defender), 0.21, 0.23);
 
         var strong = new Scenario(homeStats: new PlayerStats(5, 5, 5, 5, 5, 9, 5, 5, 5));
         Assert.True(AerialContest.AttackerWinChance(strong.State.Slot(TeamSide.Home, PlayingPosition.ST), strong.State.Slot(TeamSide.Away, PlayingPosition.LCB)) > 0.5);

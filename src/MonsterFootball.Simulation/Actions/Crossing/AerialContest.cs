@@ -19,13 +19,14 @@ public enum AerialOutcome
 /// <summary>
 /// Who wins a cross where it lands (ADR-036), among active players within <see cref="ContestRadius"/>: the defending
 /// keeper claims it in their goal area; otherwise the best attacker and best defender by aerial rating contest it
-/// (P(attacker) = Sigmoid(0.4 × (A − D) − 0.14) ≈ 0.43 between equals, one draw); a side alone wins; nobody → loose.
+/// (P(attacker) = Sigmoid(0.4 × (A − D) − 0.68) ≈ 0.22 between equals — defenders face the ball and are
+/// usually taller, which the stat model has no attribute for — one draw); a side alone wins; nobody → loose.
 /// </summary>
 internal static class AerialContest
 {
     public const double ContestRadius = 3;
     public const double ContestScale = 0.4;
-    public const double ContestBias = -0.14;
+    public const double ContestBias = -0.68;
 
     public static double AttackerRating(PlayerStats s) => 0.5 * s.Power + 0.3 * s.Awareness + 0.2 * s.Technique;
 

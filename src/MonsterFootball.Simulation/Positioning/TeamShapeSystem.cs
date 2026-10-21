@@ -11,7 +11,8 @@ namespace MonsterFootball.Simulation.Positioning;
 /// in flight) uses the attacking shape, never pushing beyond the opponents' last outfield line; the other team (and both teams when the ball is loose) defends,
 /// with its nearest outfield player sprinting to close the ball (to a jockeying spot goal-side of a carrier). The ball carrier follows their carry,
 /// if any, and otherwise holds position. Whoever a pass in flight will reach sprints to meet it.
-/// While a clearance or a cross flies, the nearest outfield player of each side sprints to where it will land.
+/// While a clearance or a cross flies, the nearest outfield player of each side sprints to where it will land; for a
+/// cross the defending side sends its two nearest (ADR-036).
 /// </summary>
 internal sealed class TeamShapeSystem
 {
@@ -30,6 +31,9 @@ internal sealed class TeamShapeSystem
     private const double MidfieldCentralCompression = 0.8;
     private const double ForwardMaxDepthFromGoalLine = 6;
     private const double TouchlineMargin = 2;
+
+    /// <summary>Outfield players the defending side sends to a cross's landing point.</summary>
+    private const int CrossDefenders = 2;
     private const double GoalLineMargin = 3;
 
     /// <summary>
@@ -56,17 +60,20 @@ internal sealed class TeamShapeSystem
             receiver.MovementIntensity = MovementIntensity.Sprint;
         }
 
-        // A clearance or a cross in the air: the nearest outfield player of each side races to where it will land (ADR-035).
-        if (state.Ball.Flight is { Clearance: not null } or { Cross: not null })
+        // A clearance or a cross in the air: the nearest outfield player of each side races to where it will land
+        // (ADR-035); the side defending a cross sends its two nearest, so attackers rarely meet one unchallenged (ADR-036).
+        if (state.Ball.Flight is { Clearance: not null } or { Cross: not null } && state.Ball.Flight is { } flight)
         {
-            var landing = state.Pitch.Clamp(state.Ball.Flight.TargetPosition);
+            var landing = state.Pitch.Clamp(flight.TargetPosition);
             foreach (var side in Enum.GetValues<TeamSide>())
             {
-                var chaser = state.TeamPlayers(side).Where(p => !p.Role.IsGoalkeeper()).MinBy(p => p.Position.DistanceTo(landing));
-                if (chaser is null)
-                    continue;
-                chaser.MovementTarget = landing;
-                chaser.MovementIntensity = MovementIntensity.Sprint;
+                var chasers = flight.Cross is not null && side != flight.Team ? CrossDefenders : 1;
+                foreach (var chaser in state.TeamPlayers(side).Where(p => !p.Role.IsGoalkeeper())
+                             .OrderBy(p => p.Position.DistanceTo(landing)).Take(chasers))
+                {
+                    chaser.MovementTarget = landing;
+                    chaser.MovementIntensity = MovementIntensity.Sprint;
+                }
             }
         }
     }
