@@ -150,7 +150,7 @@ public class OutOfPlayTests
     public void A_tackle_can_knock_the_ball_out_off_the_tackler()
     {
         // contact, clean fails, direction (+y: toward the touchline), 5 m.
-        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.9999, 0.5, 0.9999, 0.9999));
+        var s = new Scenario(random: new ScriptedRandom(0.0, 0.0, 0.9999, 0.9999, 0.5, 0.9999, 0.9999, 0.5)); // the last draw is the dead-ball time
         s.Place(TeamSide.Home, PlayingPosition.LW, 40, 66);
         var tackler = s.Place(TeamSide.Away, PlayingPosition.RB, 41, 66);
         s.GiveBall(TeamSide.Home, PlayingPosition.LW);

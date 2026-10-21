@@ -136,7 +136,7 @@ public class DisciplineTests
     public void A_carded_foul_records_the_card_on_the_stoppage()
     {
         // attempt, contact, foul, then serious foul play.
-        var s = new Scenario(awayStats: new PlayerStats(5, 5, 5, 5, 5, 10, 5, 5, 5), random: new ScriptedRandom(0.0, 0.0, 0.0, 0.0));
+        var s = new Scenario(awayStats: new PlayerStats(5, 5, 5, 5, 5, 10, 5, 5, 5), random: new ScriptedRandom(0.0, 0.0, 0.0, 0.0, 0.5)); // the last draw is the dead-ball time
         s.Place(TeamSide.Home, PlayingPosition.CM, 40, 34);
         var tackler = s.Place(TeamSide.Away, PlayingPosition.CM, 39, 34); // from behind
         tackler.MovementIntensity = MovementIntensity.Sprint;

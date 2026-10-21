@@ -49,6 +49,9 @@ public sealed record Stoppage(StoppageReason Reason, RestartType Restart, TeamSi
 
     /// <summary>The card shown to the offender, if any.</summary>
     public DisciplinaryOutcome Discipline { get; init; }
+
+    /// <summary>How long the ball stays dead before the restart setup begins (ADR-037); 0 for opening kickoffs.</summary>
+    public double DeadBallSeconds { get; init; }
 }
 
 /// <summary>The card shown for a foul.</summary>

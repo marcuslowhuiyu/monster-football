@@ -47,7 +47,7 @@ public class MatchSimulationTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    public void Added_time_is_announced_once_per_half_from_its_goals_penalties_and_cards(int seed)
+    public void Added_time_is_announced_once_per_half_from_its_goals_penalties_cards_and_wasted_time(int seed)
     {
         var events = NewSimulation(seed).RunToCompletion().Events;
         var announced = events.Where(e => e.Type == MatchEventType.AddedTimeAnnounced).ToList();
@@ -62,7 +62,7 @@ public class MatchSimulationTests
             var seconds = events.Where(InRegularTime).Sum(x => x.Type switch
             {
                 MatchEventType.GoalScored => allowances.PerGoalSeconds,
-                MatchEventType.PlayStopped when x.Metadata["restart"] == "Penalty" => allowances.PerPenaltySeconds,
+                MatchEventType.PlayStopped => (x.Metadata["restart"] == "Penalty" ? allowances.PerPenaltySeconds : 0) + double.Parse(x.Metadata["wasted"], System.Globalization.CultureInfo.InvariantCulture),
                 MatchEventType.YellowCard => allowances.PerCardSeconds,
                 MatchEventType.RedCard => allowances.PerDismissalSeconds + (x.Metadata["reason"] == "SecondYellow" ? 0 : allowances.PerCardSeconds),
                 _ => 0,
