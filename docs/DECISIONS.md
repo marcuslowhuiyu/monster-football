@@ -926,3 +926,60 @@ Fingerprint change (ledger #13). Tuning record (1,000 matches each):
   crosses — most of the rise comes indirectly, from headed clearances and second balls near the box), 35.0 shots,
   72.9 min in play, safety cap 2 % of halves, home possession 50.0 %, HEALTHY. The user chose to tune the numbers once
   every system exists, in the calibration pass.
+
+## ADR-037 — Each Stoppage Draws Its Own Dead-Ball Time
+
+Status: Accepted (M2.7b, step 4 of match realism). Supersedes the fixed per-type dead-ball minimums of `RestartTuning`
+(ADR-023, ADR-028–030). **Provisional values**: the numbers are revisited in the M2.7b calibration pass.
+
+Decision:
+- **When**: `MatchContext.StopPlay` computes the dead-ball time once (`DeadBallDuration.Compute`, one `NextDouble`
+  draw) and stores it on the stoppage (`Stoppage.DeadBallSeconds`); `RestartSystem` waits for it before the
+  restart-setup phase (setup timeout unchanged, counted from its end). Opening and half-time kickoffs (`BeginStoppage`)
+  take 0 s and draw nothing.
+- **Formula**: seconds = average(type) × spread × game state × location + card time. Values live in
+  `MatchConfig.DeadBall` (`DeadBallTuning`).
+
+  | Stoppage | Average |
+  |---|---|
+  | Throw-in | 15 s |
+  | Goal kick | 25 s |
+  | Corner | 35 s |
+  | Direct free kick | 30 s |
+  | Indirect free kick (offside) | 20 s |
+  | Goal (to the kickoff) | 60 s |
+  | Penalty | 90 s |
+
+- **Spread**: uniform 0.65–1.35 (mean 1).
+- **Game state**, judged for the side taking the restart: from minute 60, rising linearly to full at minute 90 (and
+  through added time), scaled by the goal margin and full at a two-goal margin — a leading side × up to 1.6 (slow-down),
+  a trailing side × down to 0.6 (hurry), level × 1. After a goal the conceding side kicks off, so it hurries late on.
+- **Location**: in the attacking third of the side taking it, a free kick × 1.3 (wall, players go up) and a throw-in
+  × 1.2.
+- **Cards**: + 30 s for a yellow, + 45 s for a red or second yellow.
+- **Wasted time**: the slow-down part (average × spread × location × (game state − 1) when leading) is added to the
+  added-time allowance in regular time, alongside the existing per-goal, penalty and card allowances.
+- `PlayStopped` metadata gains `deadBall` and `wasted` (seconds, invariant round-trip format). The batch prints mean
+  dead-ball seconds per restart type and slow-down per match.
+
+Reason:
+After crosses (ADR-036) the ball was in play 72.9 min (real 55–60): each restart waited a fixed minimum (throw-in 8 s,
+goal kick 15 s, corner 20 s, free kick 20 s, offside 12 s, goal and penalty 45 s) and was taken almost at once. Real
+stoppages are longer and vary with their type, the score late on, where they are and whether a card is shown.
+
+Consequences:
+Fingerprint change (ledger #14); seeds 1–3 now end 0-1, 3-2, 2-2. Batch of 1,000 (before → after): ball in play 72.9 →
+61.3 min; goals 3.94 → 3.43; throw-ins 26.8 → 22.3; goal kicks 20.7 → 17.4; corners 11.6 → 10.2; added time per half
+2.4 → 2.5 min; halves ended by the safety cap 2 % → 1.7 %; home possession 50.0 %; home win / draw / away win
+37.2 / 23.2 / 39.6 %; HEALTHY. Seeds 1001–3000: HEALTHY, ball in play 61.3 min, goals 3.34, home possession 49.9 %,
+home win / draw / away win 39.0 / 24.1 / 36.9 %, safety cap 1.8 % — the Home/Away gap is noise.
+- Mean dead-ball seconds per stoppage: throw-in 15.6, goal kick 25.3, corner 35.4, direct free kick 40.3 (above its
+  30 s average because of the attacking-third factor and card time), offside free kick 20.2, goal 58.8, penalty 90.5;
+  slow-down by leading sides 61.5 s per match.
+- Less ball-in-play time reduces every in-play count; throw-ins (22.3) moved further from real (≈ 40). Left for the
+  calibration pass.
+- Test premises changed (no behaviour change): scripted-random tests that stop play get one extra draw at `StopPlay`;
+  the shape test judges the median open-play width and depth over the first ten minutes (one moment at 60 s fell just
+  after a corner); the ball-in-play floors of two tests drop from 60 to 45 min (the health band floor).
+- A separate rule for a trailing side's quick restarts deep in its own half is not added: the hurry factor covers it.
+  Time wasted during added time is not compensated; substitutions, injuries and time-wasting cautions are not modelled.

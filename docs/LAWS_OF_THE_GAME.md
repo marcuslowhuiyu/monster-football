@@ -7,8 +7,10 @@ The simplified laws the simulation implements; only implemented laws are listed.
 - Two halves of 45 minutes. The referee's clock runs through stoppages; ball-in-play time is measured separately.
 - Coin toss for the opening kickoff; the other team kicks off the second half. A goal is restarted by a kickoff for
   the team that conceded.
-- Added time for what happens in regular time — 45 s per goal, 45 s per penalty, 20 s per card, 30 s per dismissal —
-  rounded up to whole minutes and announced when regular time ends.
+- Added time for what happens in regular time — 45 s per goal, 45 s per penalty, 20 s per card, 30 s per dismissal,
+  plus time wasted by a leading side slowing its restarts down from minute 60 (ADR-037) — rounded up to whole minutes
+  and announced when regular time ends. Time wasted during added time is not added again. Not modelled: substitutions,
+  injuries and cautions for time-wasting.
 - **A half ends only when play stops** after regular plus added time — a ball in flight is never cut off. If play
   never stops, the half ends at a safety cap 3 minutes past added time (about one half in ten until clearances, D6).
 - Simplification: teams do not change ends at half-time (D1).
@@ -73,25 +75,28 @@ The referee judges every foul (Law 12), checking in this order:
 
 ## Restarts (implemented, M2.1 kickoffs; M2.4–M2.6 the rest)
 
-| Restart | Taker | Law respected before it is taken | Minimum dead ball |
+| Restart | Taker | Law respected before it is taken | Average dead ball |
 |---|---|---|---|
-| Kickoff | striker | everyone in position: own half, opponents outside the centre circle | 45 s after a goal |
-| Throw-in | nearest full-back or winger | opponents ≥ 2 m | 8 s |
-| Goal kick | goalkeeper | opponents outside the penalty area | 15 s |
-| Corner | best passer (not a centre-back or the striker) | opponents ≥ 9.15 m | 20 s |
-| Indirect free kick (offside) | nearest defender | opponents ≥ 9.15 m | 12 s |
-| Direct free kick | best finisher within 32 m of goal, otherwise nearest defender or midfielder | opponents ≥ 9.15 m; a four-man wall within 32 m | 20 s |
-| Penalty | best finisher | keeper on the line; everyone else outside the area and the arc | 45 s |
+| Kickoff | striker | everyone in position: own half, opponents outside the centre circle | 60 s after a goal |
+| Throw-in | nearest full-back or winger | opponents ≥ 2 m | 15 s |
+| Goal kick | goalkeeper | opponents outside the penalty area | 25 s |
+| Corner | best passer (not a centre-back or the striker) | opponents ≥ 9.15 m | 35 s |
+| Indirect free kick (offside) | nearest defender | opponents ≥ 9.15 m | 20 s |
+| Direct free kick | best finisher within 32 m of goal, otherwise nearest defender or midfielder | opponents ≥ 9.15 m; a four-man wall within 32 m | 30 s |
+| Penalty | best finisher | keeper on the line; everyone else outside the area and the arc | 90 s |
 
 - During a stoppage nobody decides, tackles or collects the ball, and nothing random happens. Players walk (jog) to
   restart positions, which still costs stamina.
+- Each stoppage's dead-ball time is drawn around its average (× 0.65–1.35): longer for a leading side and shorter for
+  a trailing one from minute 60, longer for a free kick (× 1.3) or throw-in (× 1.2) in the attacking third, + 30 s for
+  a booking and + 45 s for a sending-off (ADR-037; provisional values). Kickoffs that start a half wait for nothing.
 - If the restart is not ready 30 s after the dead-ball time, the taker and any offending opponents are placed.
 - Execution reuses passing: the taker passes at once to the best option (a throw within 25 m; a free kick to a teammate judged onside). A corner is crossed into the box, where attackers
   and defenders contest it in the air (a first-time shot, a headed clearance, the keeper's catch); no offside from it. An indirect free kick
   cannot be scored directly. A direct free kick within 32 m is shot over the wall when worth it (xG ≥ 0.04).
   A penalty is a dedicated shot from the spot (≈ 74 % scored between equal players); a period waits for it.
   Throw-ins use the ordinary pass model.
-- Routine restarts add no added time.
+- Routine restarts add no added time, except the time a leading side wastes over them.
 
 ## Not yet simulated
 

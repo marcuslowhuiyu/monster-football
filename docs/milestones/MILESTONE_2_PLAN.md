@@ -174,7 +174,7 @@ targets by the end.
 | b1 | `feat/m2-7b-width` | wide players hold the touchline in possession (shape, runs, support, carries). ADR-034. | yes |
 | b2 | `feat/m2-7b-clearances` | D6: defenders under pressure in their own third clear long and wide; fair loose-ball ties. ADR-035. | yes |
 | b3 | `feat/m2-7b-crosses` | wide players in the final third cross into the box; corners are crosses; aerial contest on landing. ADR-036 (provisionally tuned). | yes |
-| b4 | `feat/m2-7b-dead-ball-times` | stoppage durations from real averages | yes |
+| b4 | `feat/m2-7b-dead-ball-times` | each stoppage draws its own dead-ball time (type average, spread, game state, location, cards); wasted time added. ADR-037. | yes |
 | b5 | `chore/m2-7b-calibration` | calibration pass with all systems in place (goals, crosses, corners, throw-ins, ball in play); tighten the interim bands to the milestone targets (ADR-033) | if tuned |
 
 ### M2.8 — Tactical geometry and snapshot
@@ -231,6 +231,7 @@ targets by the end.
 | 11 | 7b1 | width |
 | 12 | 7b2 | clearances; fair loose-ball ties |
 | 13 | 7b3 | crosses; corners as crosses |
+| 14 | 7b4 | per-stoppage dead-ball times |
 
 Each is verified cross-platform by CI and recorded in its ADR. Any other PR that changes a fingerprint is a bug.
 

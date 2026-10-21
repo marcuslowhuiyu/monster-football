@@ -2,7 +2,7 @@
 
 Detailed documentation of the football simulation. Update whenever the simulation architecture materially changes.
 
-**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6), cards and reduced teams (M2.7), width, clearances and crosses (M2.7b) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
+**Status:** domain model (M1.2); loop, clock, RNG, phases, events (M1.3); movement and 4-3-3 shape (M1.4); passing (M1.5); carrying and tackling (M1.6); shooting, goalkeeping and goal restarts (M1.7); stamina and fatigue (M1.8); utility AI (M1.9); full-match results and statistics (M1.10); batch simulation and tuning (M1.11); match flow (M2.1), tactical zones (M2.3), ball out of play and restarts (M2.4), offside (M2.5), fouls, free kicks and penalties (M2.6), cards and reduced teams (M2.7), width, clearances, crosses and dead-ball times (M2.7b) implemented. "Design targets" below lists agreed designs from `milestones/MILESTONE_1.md` that are not yet built.
 
 ## Simulation API (implemented)
 
@@ -28,7 +28,7 @@ MatchResult result = simulation.RunToCompletion();
 
 ADR-024, `PeriodSystem`, checked every tick after the clock advances:
 
-- **Allowances**: in a period's regular time, each goal adds `AddedTime.PerGoalSeconds` (45 s), each penalty `PerPenaltySeconds` (45 s), each card `PerCardSeconds` (20 s) and each dismissal `PerDismissalSeconds` (30 s; a second yellow counts as a card and a dismissal).
+- **Allowances**: in a period's regular time, each goal adds `AddedTime.PerGoalSeconds` (45 s), each penalty `PerPenaltySeconds` (45 s), each card `PerCardSeconds` (20 s) and each dismissal `PerDismissalSeconds` (30 s; a second yellow counts as a card and a dismissal); a leading side's wasted time at a stoppage is added too (ADR-037, see *Stoppages*).
 - **Announcement**: at the end of regular time, `AddedTimeAnnounced` (metadata `minutes`, `period`) with the allowance rounded **up** to whole minutes.
 - **End of a period**: once regular + added time is up, the period ends at the first tick on which play is stopped. A ball in flight is never cut off: a struck shot always lands. If play has not stopped `AddedTime.SafetyCapSeconds` after that (180 s, ADR-033; see *Current limitations*), the period ends at the next tick with no ball in flight. `PeriodEnded` (metadata `period`, `end` = `Stoppage` or `SafetyCap`).
 - **Half-time** takes no ticks: the second period starts at once with a `PeriodStart` stoppage and a kickoff for the side that did not take the opening one; teams line up (placed) and kick off on the next tick. No stamina recovery.
@@ -70,8 +70,10 @@ A new match is `Stopped` with a `MatchStart` stoppage; a goal stops play with a 
 
 ## Stoppages (implemented)
 
-- `MatchState.CurrentStoppage` (`Stoppage`): `Reason` (`MatchStart`, `Goal`, `PeriodStart`, `BallOutOfPlay`, `Offside`, `Foul`), `Restart` (`Kickoff`, `ThrowIn`, `GoalKick`, `Corner`, `IndirectFreeKick`, `DirectFreeKick`, `Penalty`), `AwardedTeam`, `Location`, `StoppedAtTick`, `Offender` (offside, foul), `Fouled`, `Discipline` (the card for a foul: `None`, `Yellow`, `SecondYellow`, `Red`). Present exactly while play is stopped.
-- `MatchContext.StopPlay` records it, makes the ball dead (nobody holds it), clears every player's intent, carry, off-ball plan and tackle cooldown, and emits `PlayStopped` (team = awarded team, position = restart location, metadata `reason`, `restart`).
+- `MatchState.CurrentStoppage` (`Stoppage`): `Reason` (`MatchStart`, `Goal`, `PeriodStart`, `BallOutOfPlay`, `Offside`, `Foul`), `Restart` (`Kickoff`, `ThrowIn`, `GoalKick`, `Corner`, `IndirectFreeKick`, `DirectFreeKick`, `Penalty`), `AwardedTeam`, `Location`, `StoppedAtTick`, `Offender` (offside, foul), `Fouled`, `Discipline` (the card for a foul: `None`, `Yellow`, `SecondYellow`, `Red`), `DeadBallSeconds`. Present exactly while play is stopped.
+- `MatchContext.StopPlay` records it, makes the ball dead (nobody holds it), clears every player's intent, carry, off-ball plan and tackle cooldown, and emits `PlayStopped` (team = awarded team, position = restart location, metadata `reason`, `restart`, `deadBall`, `wasted` — seconds, invariant round-trip format).
+- **Dead-ball time** (ADR-037, `DeadBallDuration`, `MatchConfig.DeadBall`, provisional values): drawn once in `StopPlay` (one `NextDouble`) and stored on the stoppage. Seconds = average × spread × game state × location + card time. Averages: throw-in 15 s, goal kick 25 s, corner 35 s, direct free kick 30 s, offside free kick 20 s, goal 60 s, penalty 90 s. Spread uniform 0.65–1.35. Game state, for the side taking the restart: from minute 60, full at minute 90 and in added time, scaled by the margin (full at two goals) — leading × up to 1.6, trailing × down to 0.6. In that side's attacking third a free kick × 1.3 and a throw-in × 1.2. A yellow adds 30 s, a red or second yellow 45 s. Stoppages begun at the start of a period take 0 s and draw nothing.
+- **Wasted time**: the slow-down part of a leading side's dead-ball time (average × spread × location × (game state − 1)) is added to the added-time allowance in regular time. Time wasted in added time is not compensated.
 - The taker is chosen once, when play stops (`RestartTakers`; ties → earlier player): kickoff — the ST; throw-in — the nearest full-back or winger; goal kick — the goalkeeper; corner — the highest Passing (then Technique) outfielder other than the centre-backs and striker; indirect free kick — the nearest defender; direct free kick — the best finisher within 32 m of goal, otherwise the nearest defender or midfielder; penalty — the best finisher (then Technique, Power). Each falls back to any outfield player. A taker sent off during the stoppage is replaced.
 - Each stopped tick, `RestartSystem.Position` gives every player a restart target at `Jog` (`RestartLayout`):
   - kickoff — the 4-3-3 kickoff layout (everyone in their own half, opponents outside the centre circle), the taker on the ball;
@@ -80,7 +82,7 @@ A new match is `Stopped` with a `MatchStart` stoppage; a goal stops play with a 
   - direct free kick within 32 m — a wall of four (LCM, CM, RCM, then wingers/ST) 0.7 m apart across the line to goal, just beyond 9.15 m; the shot model counts them as lane blockers;
   - penalty — the defending keeper on the goal line; everyone else outside the penalty area and the arc (9.15 m from the spot);
   - then the taker's target is the ball, and opponents' targets are moved 0.5 m beyond the law's limit: 2 m from a throw-in, 9.15 m from a corner or free kick, outside the penalty area for a goal kick.
-- `RestartSystem.Advance`: once the minimum dead-ball time has passed (`MatchConfig.Restarts`: goal 45 s, throw-in 8 s, goal kick 15 s, corner 20 s, offside free kick 12 s, direct free kick 20 s, penalty 45 s; 0 at the start of a period) the phase becomes `RestartSetup`. A kickoff is taken when everyone is within 1 m of their target; any other restart when the taker is within 1 m of the ball and every opponent respects the law. After `SetupTimeoutSeconds` (30 s) the taker and any opponent breaking the law (everyone, for a kickoff) are placed directly and the restart is taken. A kickoff that starts a period is taken at once with the teams placed (they line up before the whistle).
+- `RestartSystem.Advance`: once the stoppage's dead-ball time (`Stoppage.DeadBallSeconds`) has passed the phase becomes `RestartSetup`. A kickoff is taken when everyone is within 1 m of their target; any other restart when the taker is within 1 m of the ball and every opponent respects the law. After `SetupTimeoutSeconds` (30 s) the taker and any opponent breaking the law (everyone, for a kickoff) are placed directly and the restart is taken. A kickoff that starts a period is taken at once with the teams placed (they line up before the whistle).
 - Kickoff: the taker is placed on the spot, shape focus resets to it, play resumes, `Kickoff` is emitted and the taker gets the ball (`PossessionChanged`, cause `Kickoff`, after a goal).
 - A penalty is struck at once (`ShotResolver.ResolvePenalty`). A direct free kick within 32 m is shot if its xG (wall included) is ≥ 0.04, otherwise passed.
 - Throw-in, goal kick, corner, free kick, penalty: the same, emitting `RestartTaken` (actor = taker, team, position, metadata `restart`) and giving the taker the ball (cause `ThrowIn` / `GoalKick` / `Corner` / `FreeKick` / `Penalty`, not open play). The taker then passes at once (`PassResolver`, as any pass) to the teammate with the best on-ball pass utility — no randomness in the choice: within 25 m for a throw-in, judged onside (as in open play) for a free kick. A corner is not a pass: the taker crosses (`CrossKind.Corner`, ADR-036). A free kick is judged for offside like any pass; throw-ins, goal kicks and corners are not. With nobody eligible the taker keeps the ball and open play takes over.
@@ -319,31 +321,35 @@ Full-match tests check the statistics against the score, the event log and a 5 4
 
 ADR-020. `DebugRunner batch [count] [--from SEED]` plays `count` matches (default 1 000, seeds from 1) in parallel, aggregates them in seed order and runs `BatchHealth` pathology bands; it exits 1 if any band fails. CI runs it on every code PR.
 
-Current defaults, 1 000 matches between all-5 teams (after M2.7b crosses — provisionally tuned):
+Current defaults, 1 000 matches between all-5 teams (after M2.7b dead-ball times — crosses and dead-ball times provisionally tuned):
 
 | Figure | Value |
 |---|---|
-| Goals per match | 3.94 (max 12) |
-| Shots / on target per match | 35.0 / 9.6 (27 %) |
-| Passes per match, completion | 1 190, 83 % |
-| Home win / draw / away win | 36.6 % / 23.6 % / 39.8 % |
+| Goals per match | 3.43 (max 11) |
+| Shots / on target per match | 30.1 / 8.5 (28 %) |
+| Passes per match, completion | 1 000, 83 % |
+| Home win / draw / away win | 37.2 % / 23.2 % / 39.6 % |
 | Home possession | 50.0 % |
-| Tackles / carries / possession changes | 238 / 188 / 336 |
-| Striker share of goals | 66 % |
-| Outfield distance, stamina at full time | 13.7 km, 55.6 |
-| Throw-ins / goal kicks / corners / offsides per match | 26.8 / 20.7 / 11.6 / 2.4 |
-| Fouls; clearances; crosses; penalties (scored) per match | 20.3; 46.1; 51.5; 0.10 (81 %) |
-| Shots / goals from crosses per match | 10.8 / 0.73 |
-| Yellow / red cards per match; abandoned | 3.02 / 0.11; 0 % |
-| Ball in play; added time per half; halves ended by the safety cap | 72.9 min; 2.4 min; 2 % |
+| Tackles / carries / possession changes | 201 / 156 / 284 |
+| Striker share of goals | 67 % |
+| Outfield distance, stamina at full time | 11.6 km, 62.3 |
+| Throw-ins / goal kicks / corners / offsides per match | 22.3 / 17.4 / 10.2 / 2.1 |
+| Fouls; clearances; crosses; penalties (scored) per match | 16.9; 39.1; 44.3; 0.07 (73 %) |
+| Shots / goals from crosses per match | 9.3 / 0.63 |
+| Yellow / red cards per match; abandoned | 2.53 / 0.08; 0 % |
+| Ball in play; added time per half; halves ended by the safety cap | 61.3 min; 2.5 min; 2 % |
+| Mean dead-ball seconds: throw-in / goal kick / corner | 15.6 / 25.3 / 35.4 |
+| Mean dead-ball seconds: direct free kick / offside / goal / penalty | 40.3 / 20.2 / 58.8 / 90.5 |
+| Slow-down by leading sides per match (wasted time) | 61.5 s |
 
 Health bands also cover, per match, goal kicks (8–35), corners (3–20), offsides (1–15), fouls (8–45), penalties
 (≤ 0.8), yellow cards (0.5–8), red cards (≤ 0.6), clearances (10–80), crosses (10–80), added minutes per period (0–10) and abandoned matches (≤ 0.1 %).
-Width, clearances and crosses (ADR-034–036) brought throw-ins from 8.1 to 26.8 (real ≈ 40) and corners from 6.4 to
-11.6 (real ≈ 10); the ball is still in play ~73 of ~95 minutes (real ≈ 55–60), and goals are 3.94 (real ≈ 2.7) with
-crosses provisionally tuned. Dead-ball times and the calibration pass (plan M2.7b)
-address these; until then three bands are interim (ADR-033): ball in
-play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
+Width, clearances and crosses (ADR-034–036) brought throw-ins from 8.1 to 26.8 and corners from 6.4 to 11.6; dead-ball
+times (ADR-037) brought the ball in play from 72.9 to 61.3 min (real ≈ 55–60), which also lowered every in-play count:
+throw-ins 22.3 (real ≈ 40), corners 10.2 (real ≈ 10), goals 3.43 (real ≈ 2.7). The free-kick mean exceeds its 30 s
+average because of the attacking-third factor and card time. The calibration pass (plan M2.7b) addresses these; until
+then three bands are interim (ADR-033): ball in play 45–85 min, throw-ins 5–70, halves ended by the safety cap ≤ 25 %.
+The batch also prints mean dead-ball seconds per restart type and slow-down per match.
 
 ## Observation (implemented)
 
@@ -458,16 +464,16 @@ A pass, shot, clearance or cross in the air is `BallState.Flight` (`BallFlight`:
 ## Current limitations
 
 - **Striker dominance**: strikers score ~66 % of goals; wingers and midfielders rarely finish moves.
-- **Volume**: ~1 190 passes, ~240 tackles and ~335 possession changes per match (~73 minutes of ball in play) — busy compared with real football.
-- **Distance**: 13.7 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
+- **Volume**: ~1 000 passes, ~200 tackles and ~285 possession changes per match (~61 minutes of ball in play) — busy compared with real football.
+- **Distance**: 11.6 km per outfield player (real ≈ 10–12 km); inside the 16 km band.
 - **Sensitivity**: shot volume is steep in `ShotBase` (22 → ~28 shots; 16 → ~14). Tune with batches only.
-- Stoppages: ~59 ball-out restarts (26.8 throw-ins, 20.7 goal kicks, 11.6 corners), ~20 fouls and ~2.4 offsides per match; ~2 % of halves end at the 180 s safety cap; dead-ball times are still the bare minimums (M2.7b step 4).
+- Stoppages: ~50 ball-out restarts (22.3 throw-ins, 17.4 goal kicks, 10.2 corners), ~17 fouls and ~2.1 offsides per match; ~2 % of halves end at the 180 s safety cap. Dead-ball times (ADR-037) are provisional; substitutions, injuries and time-wasting cautions take no time.
 - Clearances are simple: never blocked or charged down, no headers, goalkeepers do not punt from their hands, and a clearance costs no stamina. A long clearance aims at the striker even when they are only just ahead and wide (a near-sideways kick), and the clearer's chaser may be a player judged offside at the strike. Contested landings are a 50/50 draw, not stat-based.
-- **Goals** ~3.9 per match with crosses provisionally tuned (ADR-036); the calibration pass revisits them. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
+- **Goals** ~3.4 per match with crosses provisionally tuned (ADR-036); the calibration pass revisits them. Full-backs receive under 1 % of passes each. A wide player who ends up on the opposite flank still carries straight on (no drift back inside) until the final third.
 - No advantage (D7): every foul stops play. No substitutions, so a dismissal is permanent and nobody is replaced.
 - Set pieces are simple: a throw-in is an ordinary pass limited to 25 m; a corner is a cross into the box; no routines, short corners or flick-ons. Headers happen only where a cross lands.
 - A crosser is not excluded from the aerial contest: in odd geometry (crosser just outside the box width, landing within 3 m) they can meet their own cross — a double touch from a corner. Left for the calibration pass.
-- **Crosses are provisionally tuned** (ADR-036): goals are ~3.9 per match (real ≈ 2.7). The numbers are deliberately left for the M2.7b calibration pass, after dead-ball times.
+- **Crosses and dead-ball times are provisionally tuned** (ADR-036, ADR-037): goals are ~3.4 per match (real ≈ 2.7) and throw-ins 22.3 (real ≈ 40). The numbers are deliberately left for the M2.7b calibration pass.
 - No blocks as events or posts; deflections only send misses behind.
 - Presentation snaps (measured over 20 matches, M2.2): passes land exactly on the receiver or interceptor (max 0.4 m),
   but on a held save the ball jumps from the goal mouth to the keeper (median 2.5 m, max 4.3 m, M2.2 figure). Misses
